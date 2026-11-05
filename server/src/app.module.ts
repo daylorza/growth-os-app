@@ -9,6 +9,7 @@ import { CONFIG, type AppConfig } from './config'
 import { ContentModule } from './content/content.module'
 import { CreativeModule } from './creative/creative.module'
 import { EventsModule } from './events/events.module'
+import { McpModule } from './mcp/mcp.module'
 import { OpenApiModule } from './openapi/openapi.module'
 import { DbModule } from './db/db.module'
 import type { Store } from './db/store'
@@ -45,6 +46,7 @@ export class AppModule {
         WorkspaceModule,
         StateModule,
         OpenApiModule,
+        McpModule,
       ],
       providers: [{ provide: APP_PIPE, useValue: new ValidationPipe(VALIDATION) }],
     }

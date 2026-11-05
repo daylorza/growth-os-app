@@ -84,6 +84,10 @@ export const ROUTES: RouteSpec[] = [
   { method: 'POST', path: '/api/dispatch/daily-audit', tag: 'events', summary: "Send today's daily_audit to the analyst (scheduler)", roles: DISPATCH },
   { method: 'POST', path: '/api/dispatch/measure-requests', tag: 'events', summary: 'Send measure_request for posts published 24h or 72h ago (scheduler)', roles: DISPATCH },
 
+  { method: 'POST', path: '/mcp', tag: 'mcp', summary: 'MCP server for the analyst (streamable HTTP, stateless). Tools wrap the routes above', roles: ['analyst'] },
+  { method: 'GET', path: '/mcp', tag: 'mcp', summary: 'MCP: no server-sent stream in stateless mode (405)', roles: ['analyst'] },
+  { method: 'DELETE', path: '/mcp', tag: 'mcp', summary: 'MCP: no sessions to end in stateless mode (405)', roles: ['analyst'] },
+
   { method: 'POST', path: '/api/migrations/import', tag: 'migrations', summary: 'One-time import with a receipt (creator only)', body: dto.ImportDto, roles: ['creator'] },
   { method: 'GET', path: '/api/migrations', tag: 'migrations', summary: 'Migration receipts' },
 ]

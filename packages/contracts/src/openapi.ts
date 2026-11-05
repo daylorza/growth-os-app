@@ -1,16 +1,12 @@
-// @ts-expect-error: class-transformer ships no types for its storage entry point
-import { defaultMetadataStorage } from 'class-transformer/cjs/storage'
-import { validationMetadatasToSchemas } from 'class-validator-jsonschema'
 import { ROUTES, rolesFor } from './routes'
+import { allSchemas, schemaName as nameOf } from './schema'
 
 type Schema = Record<string, unknown>
 
 /** Builds the OpenAPI 3.1 document from the route table and the class-validator DTOs. Deterministic. */
 export function buildOpenApi(): Schema {
-  const schemas = validationMetadatasToSchemas({ refPointerPrefix: '#/components/schemas/', classTransformerMetadataStorage: defaultMetadataStorage }) as Record<string, Schema>
+  const schemas = allSchemas() as Record<string, Schema>
   const paths: Record<string, Record<string, Schema>> = {}
-  // Update DTOs extend a generated Partial class that carries the validation metadata.
-  const nameOf = (cls: Function): string => (schemas[cls.name] || !Object.getPrototypeOf(cls)?.name ? cls.name : nameOf(Object.getPrototypeOf(cls)))
   for (const r of ROUTES) {
     const params: Schema[] = [...r.path.matchAll(/\{(\w+)\}/g)].map((m) => ({ name: m[1], in: 'path', required: true, schema: { type: 'string' } }))
     if (r.query) {

@@ -4762,6 +4762,71 @@
         }
       }
     },
+    "/mcp": {
+      "post": {
+        "tags": [
+          "mcp"
+        ],
+        "summary": "MCP server for the analyst (streamable HTTP, stateless). Tools wrap the routes above",
+        "operationId": "postMcp",
+        "x-roles": [
+          "analyst"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "mcp"
+        ],
+        "summary": "MCP: no server-sent stream in stateless mode (405)",
+        "operationId": "getMcp",
+        "x-roles": [
+          "analyst"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "mcp"
+        ],
+        "summary": "MCP: no sessions to end in stateless mode (405)",
+        "operationId": "deleteMcp",
+        "x-roles": [
+          "analyst"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
     "/api/migrations/import": {
       "post": {
         "tags": [

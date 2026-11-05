@@ -2,8 +2,8 @@ import 'server-only'
 import { NextResponse, type NextRequest } from 'next/server'
 import { apiBase } from './workspace.server'
 
-const PASS_REQUEST = ['authorization', 'content-type', 'x-growth-client', 'x-growth-source']
-const PASS_RESPONSE = ['content-type', 'www-authenticate']
+const PASS_REQUEST = ['authorization', 'content-type', 'accept', 'x-growth-client', 'x-growth-source', 'mcp-protocol-version', 'mcp-session-id', 'last-event-id']
+const PASS_RESPONSE = ['content-type', 'www-authenticate', 'allow', 'mcp-session-id', 'cache-control']
 
 /** Forwards a request to the API with the same path and query. */
 export async function forward(req: NextRequest): Promise<Response> {

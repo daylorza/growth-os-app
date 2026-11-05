@@ -4,7 +4,7 @@ const CHALLENGE = 'Basic realm="Growth OS", charset="UTF-8"'
 
 /**
  * In endpoint mode every page needs a valid login. The check is delegated to the API (`/api/session`),
- * so the Next server holds no credentials. API routes and /health are authenticated by the API itself.
+ * so the Next server holds no credentials. /api, /mcp and /health are authenticated by the API itself.
  * Local mode (no GROWTH_OS_API) is a localhost-only dev setup and is not gated.
  */
 export async function proxy(req: NextRequest) {
@@ -27,5 +27,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api/|health|_next/static|_next/image|icon.svg).*)'],
+  matcher: ['/((?!api/|mcp|health|_next/static|_next/image|icon.svg).*)'],
 }
