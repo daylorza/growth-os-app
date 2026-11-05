@@ -21,7 +21,9 @@ export class AuthGuard implements CanActivate {
     const req = ctx.switchToHttp().getRequest<AuthedRequest>()
     const spec = TABLE.get(`${req.method} ${req.route?.path}`)
     if (spec?.public) return true
-    const actor = this.credentials.authenticate(req.header('authorization'))
+    const found = this.credentials.authenticate(req.header('authorization'))
+    // A key sent in the URL (moved into the header by the dashboard host) must be the connector key.
+    const actor = found && req.header('x-growth-key-source') === 'query' && found.scope !== 'mcp' ? null : found
     if (!actor) {
       ctx.switchToHttp().getResponse<Response>().setHeader('WWW-Authenticate', CHALLENGE)
       throw new UnauthorizedException()

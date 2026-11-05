@@ -1,6 +1,6 @@
 import 'server-only'
 import { NextResponse, type NextRequest } from 'next/server'
-import { connectorAuth } from './connectorAuth'
+import { connectorAuth, KEY_SOURCE_HEADER } from './connectorAuth'
 import { apiBase } from './workspace.server'
 
 const PASS_REQUEST = ['authorization', 'content-type', 'accept', 'x-growth-client', 'x-growth-source', 'mcp-protocol-version', 'mcp-session-id', 'last-event-id']
@@ -21,6 +21,7 @@ export async function forward(req: NextRequest, { queryKey = false } = {}): Prom
     if (v) headers.set(h, v)
   }
   if (auth.authorization) headers.set('authorization', auth.authorization)
+  if (auth.fromQuery) headers.set(KEY_SOURCE_HEADER, 'query')
   const body = ['GET', 'HEAD'].includes(req.method) ? undefined : await req.arrayBuffer()
   try {
     const res = await fetch(url, { method: req.method, headers, body, cache: 'no-store', redirect: 'manual' })

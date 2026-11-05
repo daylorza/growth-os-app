@@ -6,7 +6,7 @@ import { forward } from './forward.server'
 const KEY = 'connector-key-0123456789abcdef0123456789'
 
 describe('connector key in the query string', () => {
-  let calls: { url: string; auth: string | null }[]
+  let calls: { url: string; auth: string | null; source: string | null }[]
   let logged: string[]
   beforeEach(() => {
     process.env.GROWTH_OS_API = 'http://127.0.0.1:8767'
@@ -20,7 +20,7 @@ describe('connector key in the query string', () => {
   })
   const upstream = (status = 200) =>
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
-      calls.push({ url: String(url), auth: new Headers(init?.headers).get('authorization') })
+      calls.push({ url: String(url), auth: new Headers(init?.headers).get('authorization'), source: new Headers(init?.headers).get('x-growth-key-source') })
       return new Response('{}', { status, headers: { 'content-type': 'application/json' } })
     })
 
@@ -28,18 +28,18 @@ describe('connector key in the query string', () => {
     upstream()
     const res = await forward(new NextRequest(`http://atlas:8766/mcp?key=${KEY}&x=1`, { method: 'POST', body: '{}' }), { queryKey: true })
     expect(res.status).toBe(200)
-    expect(calls).toEqual([{ url: 'http://127.0.0.1:8767/mcp?x=1', auth: `Bearer ${KEY}` }])
+    expect(calls).toEqual([{ url: 'http://127.0.0.1:8767/mcp?x=1', auth: `Bearer ${KEY}`, source: 'query' }])
   })
 
   it('an Authorization header wins over ?key=', () => {
-    expect(connectorAuth(`?key=${KEY}`, 'Bearer other', true)).toEqual({ search: '', authorization: 'Bearer other' })
+    expect(connectorAuth(`?key=${KEY}`, 'Bearer other', true)).toEqual({ search: '', authorization: 'Bearer other', fromQuery: false })
   })
 
   it('on /api/* the key is ignored and still stripped, so it never reaches the API', async () => {
     upstream(401)
     const res = await forward(new NextRequest(`http://atlas:8766/api/state?key=${KEY}`))
     expect(res.status).toBe(401)
-    expect(calls).toEqual([{ url: 'http://127.0.0.1:8767/api/state', auth: null }])
+    expect(calls).toEqual([{ url: 'http://127.0.0.1:8767/api/state', auth: null, source: null }])
   })
 
   it('never puts the key in logs or error messages, even when the API is down', async () => {
