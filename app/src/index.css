@@ -1,0 +1,44 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-ink-950: #07080b;
+  --color-ink-900: #0c0d11;
+  --color-ink-800: #16171c;
+  --color-ink-700: #1f2027;
+  --color-ink-600: #2a2b33;
+  --color-fg: #f3f3f5;
+  --color-muted: #9b9ba7;
+  --color-faint: #6b6b78;
+  --color-accent: #a78bfa;
+  --color-accent-strong: #8b5cf6;
+  --color-ok: #6ee7b7;
+  --color-warn: #f5b14c;
+  --color-danger: #f87171;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-ink-950 text-fg font-sans antialiased;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+  ::selection {
+    @apply bg-accent/30;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}
