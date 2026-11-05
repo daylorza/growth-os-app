@@ -129,7 +129,8 @@ describe('connector key (analyst, /mcp only)', () => {
     const viaQuery = (token: string) =>
       fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream', authorization: `Bearer ${token}`, 'x-growth-key-source': 'query' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }) })
     expect((await viaQuery(TOKENS.connector)).status).toBe(200)
-    for (const t of [TOKENS.analyst, TOKENS.creative, TOKENS.creator]) expect((await viaQuery(t)).status).toBe(401)
+    for (const t of [TOKENS.analyst, TOKENS.creative, TOKENS.creator]) expect((await viaQuery(t)).status).toBe(403)
+    expect((await viaQuery('not-a-key-not-a-key-not-a-key')).status).toBe(401)
   })
 
   it('works only on /mcp: every REST route refuses it', async () => {

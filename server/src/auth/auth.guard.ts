@@ -21,13 +21,13 @@ export class AuthGuard implements CanActivate {
     const req = ctx.switchToHttp().getRequest<AuthedRequest>()
     const spec = TABLE.get(`${req.method} ${req.route?.path}`)
     if (spec?.public) return true
-    const found = this.credentials.authenticate(req.header('authorization'))
-    // A key sent in the URL (moved into the header by the dashboard host) must be the connector key.
-    const actor = found && req.header('x-growth-key-source') === 'query' && found.scope !== 'mcp' ? null : found
+    const actor = this.credentials.authenticate(req.header('authorization'))
     if (!actor) {
       ctx.switchToHttp().getResponse<Response>().setHeader('WWW-Authenticate', CHALLENGE)
       throw new UnauthorizedException()
     }
+    // A key sent in the URL (moved into the header by the dashboard host) must be the connector key.
+    if (req.header('x-growth-key-source') === 'query' && actor.scope !== 'mcp') throw new ForbiddenException('Only the connector key may be sent in the URL.')
     if (!spec) throw new ForbiddenException('This route is not in the API contract.')
     if (actor.scope === 'mcp' && spec.path !== '/mcp') throw new ForbiddenException('This key only works on /mcp.')
     if (!rolesFor(spec).includes(actor.role)) throw new ForbiddenException(`The ${actor.role} role cannot call ${spec.method} ${spec.path}.`)
