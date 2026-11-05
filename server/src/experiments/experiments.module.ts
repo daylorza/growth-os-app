@@ -25,6 +25,7 @@ export class ExperimentsService extends CollectionService<Experiment> {
   }
 
   async create(ctx: WriteContext, input: Partial<Experiment>) {
+    this.own(ctx)
     if (ctx.actor.role === 'analyst' && !input.contentItemId) throw new BadRequestException('Name the contentItemId this result was measured on.')
     if (input.contentItemId && !(await this.store.collection('content_items').get(input.contentItemId))) throw new BadRequestException(`Content item ${input.contentItemId} does not exist.`)
     const x = await super.create(ctx, input)

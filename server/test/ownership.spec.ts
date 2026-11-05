@@ -29,10 +29,13 @@ describe('collection ownership', () => {
 
   it("the analyst cannot write the creative agent's collections", async () => {
     for (const [path, body] of creativeWrites(id, analysisId)) expect((await as(app, bearer('analyst')).post(path, body)).status, path).toBe(403)
+    // Ownership is checked before anything else, even when the body is otherwise invalid.
+    for (const [path, body] of creativeWrites('C-404', 'H-404')) expect((await as(app, bearer('analyst')).post(path, body)).status, path).toBe(403)
   })
 
   it("the creative agent cannot write the analyst's collections", async () => {
     for (const [path, body] of analystWrites(id)) expect((await as(app, bearer('creative')).post(path, body)).status, path).toBe(403)
+    for (const [path, body] of analystWrites('C-404')) expect((await as(app, bearer('creative')).post(path, body)).status, path).toBe(403)
   })
 
   it('neither agent writes the profile, brief, settings, keywords or migrations', async () => {

@@ -71,6 +71,7 @@ export class BriefsService extends CreativeService<Brief> {
 
   /** A brief must cite the analysis it builds on. Writing one hands it to the analyst (brief_created). */
   async create(ctx: WriteContext, input: Partial<Brief>) {
+    this.own(ctx)
     const source = input.sourceHandoffId ? await this.handoffs.get(input.sourceHandoffId).catch(() => null) : null
     if (!source || (source.type !== 'analysis' && source.type !== 'result')) throw new BadRequestException('sourceHandoffId must be an analysis or result handoff. No brief without a cited source.')
     const brief = await super.create(ctx, input)
