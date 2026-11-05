@@ -1,3 +1,6 @@
+'use client'
+
+import Link from 'next/link'
 import { CalendarDays, ChartNoAxesColumnIncreasing, ListChecks, Sparkles, SquareCheck, Target, Users, Video } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Badge, Button, Card, CardTitle, Checkbox, Empty, Input, PageHeader, ProgressBar, Stat } from '../components/ui'
@@ -106,7 +109,7 @@ export default function Overview() {
           </form>
           {overdue.length > 0 && (
             <p className="mt-3 text-xs text-warn">
-              {overdue.length} earlier task{overdue.length > 1 ? 's' : ''} still open. <a className="underline" href="#/goals">Pick the smallest next step</a>
+              {overdue.length} earlier task{overdue.length > 1 ? 's' : ''} still open. <Link className="underline" href="/goals">Pick the smallest next step</Link>
             </p>
           )}
         </Card>
@@ -115,15 +118,15 @@ export default function Overview() {
           <CardTitle icon={<ListChecks size={20} />}>Waiting on you</CardTitle>
           <ul className="flex flex-col gap-3 text-sm">
             <li className="flex items-center justify-between gap-3">
-              <a href="#/studio" className="hover:text-accent">Content to review</a>
+              <Link href="/studio" className="hover:text-accent">Content to review</Link>
               <Badge tone={toReview.length ? 'accent' : 'neutral'}>{toReview.length}</Badge>
             </li>
             <li className="flex items-center justify-between gap-3">
-              <a href="#/engagement" className="hover:text-accent">Replies and escalations</a>
+              <Link href="/engagement" className="hover:text-accent">Replies and escalations</Link>
               <Badge tone={repliesToReview.length ? 'accent' : 'neutral'}>{repliesToReview.length}</Badge>
             </li>
             <li className="flex items-center justify-between gap-3">
-              <a href="#/settings" className="hover:text-accent">Brief fields still UNKNOWN</a>
+              <Link href="/settings" className="hover:text-accent">Brief fields still UNKNOWN</Link>
               <Badge tone={unknowns.length ? 'warn' : 'ok'}>{unknowns.length}</Badge>
             </li>
           </ul>
@@ -138,7 +141,7 @@ export default function Overview() {
 
       {unknowns.length > 0 && (
         <Card className="mt-4">
-          <CardTitle right={<a href="#/settings" className="text-xs text-accent">Fill in the brief</a>}>Missing inputs</CardTitle>
+          <CardTitle right={<Link href="/settings" className="text-xs text-accent">Fill in the brief</Link>}>Missing inputs</CardTitle>
           {unknowns.length === 0 ? (
             <Empty title="Brief complete" />
           ) : (
@@ -156,7 +159,7 @@ export default function Overview() {
 
 function AgentCard({ icon, name, role }: { icon: ReactNode; name: string; role: string }) {
   return (
-    <a href="#/agents" className="block">
+    <Link href="/agents" className="block">
       <Card className="transition-colors hover:border-accent/40">
         <div className="flex items-center gap-3">
           <span className="text-accent">{icon}</span>
@@ -167,6 +170,6 @@ function AgentCard({ icon, name, role }: { icon: ReactNode; name: string; role: 
           <Badge>Not connected</Badge>
         </div>
       </Card>
-    </a>
+    </Link>
   )
 }

@@ -1,5 +1,5 @@
 import { BRIEF_FIELDS, PILLARS, UNKNOWN, withProject } from './labels'
-import { PRIVATE_MASTER_PROMPT } from './private'
+import { privateMasterPrompt } from './private'
 import type { AppState } from './types'
 
 type AgentRole = 'analyst' | 'creative'
@@ -13,7 +13,8 @@ export function buildAgentPrompt(s: AppState, role: AgentRole): string {
   const me = p.agents[role]
   const other = p.agents[role === 'analyst' ? 'creative' : 'analyst']
   const header = `You are ${me.name}, ${me.role}, on ${p.creatorName}'s growth team. Follow the shared rules below. Draft-only: do not post, publish, message or take any action without ${p.creatorName}'s explicit approval.`
-  if (PRIVATE_MASTER_PROMPT) return `${header}\n\n${PRIVATE_MASTER_PROMPT}`
+  const master = privateMasterPrompt()
+  if (master) return `${header}\n\n${master}`
 
   const brief = BRIEF_FIELDS.map((f) => {
     const v = s.brief[f.key]

@@ -1,3 +1,5 @@
+'use client'
+
 import { Plus, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Badge, Button, Card, CardTitle, CopyButton, Drawer, Empty, Field, Input, Mono, Notice, PageHeader, Select, Textarea } from '../components/ui'
@@ -19,6 +21,7 @@ const statusTone: Record<ContentStatus, 'neutral' | 'accent' | 'ok' | 'warn' | '
   scheduled: 'accent',
   published: 'ok',
   failed: 'danger',
+  killed: 'danger',
 }
 
 

@@ -11,9 +11,14 @@ import {
   viewWindow,
 } from './tiktok'
 import { combinedSnapshots, dataAge } from './tiktokData'
-import { PRIVATE_TIKTOK } from './private'
+import { existsSync, readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { buildSampleTikTok } from './sampleTikTok'
+import type { TikTokSnapshot } from './tiktok'
 import type { FollowerSnapshot } from './types'
+
+const VAULT = fileURLToPath(new URL('../../../private/vault/tiktok/tiktok-snapshot.json', import.meta.url))
+const PRIVATE_TIKTOK = existsSync(VAULT) ? (JSON.parse(readFileSync(VAULT, 'utf8')) as TikTokSnapshot) : undefined
 
 const AT = '2026-11-05T12:00:00Z'
 /** A synthetic TikTok-style ID whose top 32 bits encode the given upload time. */

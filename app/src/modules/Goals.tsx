@@ -1,3 +1,5 @@
+'use client'
+
 import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Badge, Button, Card, CardTitle, Checkbox, Field, Input, Mono, PageHeader, ProgressBar, Select, Textarea } from '../components/ui'

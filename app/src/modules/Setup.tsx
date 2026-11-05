@@ -1,3 +1,6 @@
+'use client'
+
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Button, Drawer, Field, Input, Notice } from '../components/ui'
 import { CONNECTORS } from '../lib/connectors'
@@ -31,6 +34,7 @@ const empty: Profile = { creatorName: '', brandName: '', company: '', projectNam
 /** First run: replace the fictional sample with the visitor's own empty workspace. */
 export function SetupDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [p, setP] = useState<Profile>(empty)
+  const router = useRouter()
   const ready = p.creatorName.trim().length > 0
   return (
     <Drawer
@@ -45,7 +49,7 @@ export function SetupDrawer({ open, onClose }: { open: boolean; onClose: () => v
             onClick={() => {
               resetAll(createBlankSeed({ ...p, brandName: p.brandName.trim() || p.creatorName.trim().toUpperCase() }))
               onClose()
-              window.location.hash = '/settings'
+              router.push('/settings')
             }}
           >
             Create my workspace

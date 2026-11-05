@@ -1,0 +1,4827 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Growth OS API",
+    "version": "1.0.0",
+    "description": "Draft-only. No route posts, publishes, replies, likes, follows or messages on any platform. Metrics are a number or \"UNKNOWN\", never an estimate. TikTok and X are never combined."
+  },
+  "security": [
+    {
+      "basic": []
+    },
+    {
+      "bearer": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "basic": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Creator login"
+      },
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Per-agent key (analyst, creative) or scheduler key"
+      }
+    },
+    "schemas": {
+      "AgentProfileDto": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "role": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "role"
+        ]
+      },
+      "AgentsDto": {
+        "properties": {
+          "analyst": {
+            "$ref": "#/components/schemas/AgentProfileDto"
+          },
+          "creative": {
+            "$ref": "#/components/schemas/AgentProfileDto"
+          }
+        },
+        "type": "object",
+        "required": [
+          "analyst",
+          "creative"
+        ]
+      },
+      "BriefFieldDto": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": [
+              "tiktokHandle",
+              "xHandle",
+              "timezone",
+              "availability",
+              "goals",
+              "idealAudience",
+              "projectEvent",
+              "projectCapabilities",
+              "projectPrize",
+              "offers",
+              "landingPage",
+              "contactRoute",
+              "publicResources",
+              "approvedClaims",
+              "boundaries",
+              "analyticsAccess",
+              "approvalPolicy",
+              "disclosure"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "type": "object",
+        "required": [
+          "key"
+        ]
+      },
+      "CreateCaptionDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "contentItemId": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "approved",
+              "changes_requested",
+              "killed"
+            ]
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "tiktok",
+              "x"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "hashtags": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "type": "object",
+        "required": [
+          "contentItemId",
+          "platform",
+          "text"
+        ]
+      },
+      "CreateCheckInDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "date": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "morning",
+              "evening"
+            ]
+          },
+          "fields": {
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "CreateContentDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "owner": {
+            "type": "string",
+            "enum": [
+              "creator",
+              "analyst",
+              "creative"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "idea",
+              "draft",
+              "needs_review",
+              "approved",
+              "scheduled",
+              "published",
+              "failed",
+              "killed"
+            ]
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "tiktok",
+              "x"
+            ]
+          },
+          "plannedDate": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          },
+          "pillar": {
+            "type": "string",
+            "enum": [
+              "build",
+              "commentary",
+              "founder",
+              "travel",
+              "business"
+            ]
+          },
+          "format": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "spontaneous",
+              "educational",
+              "founder"
+            ]
+          },
+          "objective": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "audience": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "hookCuriosity": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "hookOpinion": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "hookOutcome": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "talkingPoints": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "visuals": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "caption": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "hashtags": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "cta": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "xAdaptation": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "claimSource": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "approval": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "changes_requested"
+            ]
+          },
+          "experimentId": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "url": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "publishedAt": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/PostMetricsDto",
+            "type": "object"
+          },
+          "demo": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "CreateCreativeBriefDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "contentItemId": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "sourceHandoffId": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "approved",
+              "changes_requested",
+              "killed"
+            ]
+          },
+          "objective": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "audience": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "talkingPoints": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "cta": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "xAdaptation": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "claimSource": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 50000
+          }
+        },
+        "type": "object",
+        "required": [
+          "contentItemId",
+          "sourceHandoffId"
+        ]
+      },
+      "CreateEngagementDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "tiktok",
+              "x"
+            ]
+          },
+          "sourcePost": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "author": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "keyword": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "question",
+              "technical",
+              "appreciation",
+              "criticism",
+              "client_inquiry",
+              "collaboration",
+              "spam",
+              "sensitive"
+            ]
+          },
+          "draftReply": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "drafted",
+              "approved",
+              "posted_by_day",
+              "escalated",
+              "dismissed"
+            ]
+          },
+          "leadId": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "createdAt": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "updatedAt": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "demo": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "CreateExperimentDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "hypothesis": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "change": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "audiencePillar": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "posts": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "primaryMetric": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "baseline": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "window": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "result": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "confidence": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "nextAction": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "planned",
+              "running",
+              "done",
+              "stopped"
+            ]
+          },
+          "contentItemId": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "demo": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "CreateHandoffDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "contentItemId": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "from": {
+            "type": "string",
+            "enum": [
+              "creator",
+              "analyst",
+              "creative"
+            ]
+          },
+          "to": {
+            "type": "string",
+            "enum": [
+              "creator",
+              "analyst",
+              "creative"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "analysis",
+              "brief",
+              "result",
+              "question",
+              "approval"
+            ]
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 100000
+          },
+          "refs": {
+            "items": {
+              "$ref": "#/components/schemas/RefDto"
+            },
+            "type": "array",
+            "maxItems": 50
+          },
+          "createdAt": {
+            "oneOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "format": "date-time",
+                "type": "string"
+              }
+            ]
+          },
+          "demo": {
+            "type": "boolean"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contentItemId",
+          "to",
+          "type",
+          "body"
+        ]
+      },
+      "CreateHookDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "contentItemId": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "approved",
+              "changes_requested",
+              "killed"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "curiosity",
+              "opinion",
+              "outcome"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "type": "object",
+        "required": [
+          "contentItemId",
+          "kind",
+          "text"
+        ]
+      },
+      "CreateKeywordDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "keyword": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "approvedResource": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "deliveryMethod": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "cta": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "replyTemplate": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "demo": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "CreateLeadDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "handle": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "tiktok",
+              "x",
+              "other"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "client_inquiry",
+              "collaboration",
+              "partnership",
+              "sponsor"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "day_reviewing",
+              "discovery_call",
+              "won",
+              "parked",
+              "lost"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "nextStep": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "attributedRevenue": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "revenueEvidence": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "createdAt": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "demo": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "CreateReportDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "weekOf": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          },
+          "repeatedQuestions": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "evidence": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "objections": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "requestedTopics": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "businessSignals": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "opportunities": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "limitations": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "demo": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "CreateScriptDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "contentItemId": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "approved",
+              "changes_requested",
+              "killed"
+            ]
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 50000
+          }
+        },
+        "type": "object",
+        "required": [
+          "contentItemId",
+          "body"
+        ]
+      },
+      "CreateSnapshotDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "tiktok",
+              "x"
+            ]
+          },
+          "date": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "sourceType": {
+            "type": "string",
+            "enum": [
+              "platform_export",
+              "analyst_agent",
+              "manual"
+            ]
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/MetricsDto",
+            "type": "object"
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "demo": {
+            "type": "boolean"
+          }
+        },
+        "type": "object",
+        "required": [
+          "platform",
+          "date",
+          "source",
+          "metrics"
+        ]
+      },
+      "CreateTaskDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "owner": {
+            "type": "string",
+            "enum": [
+              "creator",
+              "analyst",
+              "creative"
+            ]
+          },
+          "date": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          },
+          "done": {
+            "type": "boolean"
+          },
+          "nextSmallestAction": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "demo": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "DecisionDto": {
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approve",
+              "request_changes",
+              "kill"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 5000
+          }
+        },
+        "type": "object",
+        "required": [
+          "decision"
+        ]
+      },
+      "HandoffQuery": {
+        "properties": {
+          "acknowledged": {
+            "type": "string",
+            "enum": [
+              "true",
+              "false"
+            ]
+          },
+          "to": {
+            "type": "string",
+            "enum": [
+              "creator",
+              "analyst",
+              "creative"
+            ]
+          },
+          "contentItemId": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ImportDto": {
+        "properties": {
+          "profile": {
+            "type": "object"
+          },
+          "brief": {
+            "type": "object"
+          },
+          "settings": {
+            "type": "object"
+          },
+          "content": {
+            "items": {},
+            "type": "array"
+          },
+          "engagements": {
+            "items": {},
+            "type": "array"
+          },
+          "keywords": {
+            "items": {},
+            "type": "array"
+          },
+          "snapshots": {
+            "items": {},
+            "type": "array"
+          },
+          "experiments": {
+            "items": {},
+            "type": "array"
+          },
+          "reports": {
+            "items": {},
+            "type": "array"
+          },
+          "leads": {
+            "items": {},
+            "type": "array"
+          },
+          "tasks": {
+            "items": {},
+            "type": "array"
+          },
+          "checkins": {
+            "items": {},
+            "type": "array"
+          },
+          "handoffs": {
+            "items": {},
+            "type": "array"
+          },
+          "tiktokVault": {
+            "type": "object"
+          },
+          "masterPrompt": {
+            "maxLength": 200000,
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 300,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "LatestQuery": {
+        "properties": {
+          "platform": {
+            "type": "string",
+            "enum": [
+              "tiktok",
+              "x"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "platform"
+        ]
+      },
+      "MetricsDto": {
+        "properties": {
+          "followers": {
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "UNKNOWN"
+                ]
+              }
+            ]
+          },
+          "following": {
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "UNKNOWN"
+                ]
+              }
+            ]
+          },
+          "posts": {
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "UNKNOWN"
+                ]
+              }
+            ]
+          },
+          "views7d": {
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "UNKNOWN"
+                ]
+              }
+            ]
+          },
+          "views14d": {
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "UNKNOWN"
+                ]
+              }
+            ]
+          },
+          "views28d": {
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "UNKNOWN"
+                ]
+              }
+            ]
+          },
+          "engagementRate": {
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "UNKNOWN"
+                ]
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "PartialCreateCaptionDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "contentItemId": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "approved",
+              "changes_requested",
+              "killed"
+            ]
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "tiktok",
+              "x"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "hashtags": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "type": "object"
+      },
+      "PartialCreateCheckInDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "date": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "morning",
+              "evening"
+            ]
+          },
+          "fields": {
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "PartialCreateContentDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "owner": {
+            "type": "string",
+            "enum": [
+              "creator",
+              "analyst",
+              "creative"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "idea",
+              "draft",
+              "needs_review",
+              "approved",
+              "scheduled",
+              "published",
+              "failed",
+              "killed"
+            ]
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "tiktok",
+              "x"
+            ]
+          },
+          "plannedDate": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          },
+          "pillar": {
+            "type": "string",
+            "enum": [
+              "build",
+              "commentary",
+              "founder",
+              "travel",
+              "business"
+            ]
+          },
+          "format": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "spontaneous",
+              "educational",
+              "founder"
+            ]
+          },
+          "objective": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "audience": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "hookCuriosity": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "hookOpinion": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "hookOutcome": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "talkingPoints": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "visuals": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "caption": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "hashtags": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "cta": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "xAdaptation": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "claimSource": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "approval": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "changes_requested"
+            ]
+          },
+          "experimentId": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "url": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "publishedAt": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/PostMetricsDto",
+            "type": "object"
+          },
+          "demo": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "PartialCreateCreativeBriefDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "contentItemId": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "sourceHandoffId": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "approved",
+              "changes_requested",
+              "killed"
+            ]
+          },
+          "objective": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "audience": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "talkingPoints": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "cta": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "xAdaptation": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "claimSource": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 50000
+          }
+        },
+        "type": "object"
+      },
+      "PartialCreateEngagementDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "tiktok",
+              "x"
+            ]
+          },
+          "sourcePost": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "author": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "keyword": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "question",
+              "technical",
+              "appreciation",
+              "criticism",
+              "client_inquiry",
+              "collaboration",
+              "spam",
+              "sensitive"
+            ]
+          },
+          "draftReply": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "drafted",
+              "approved",
+              "posted_by_day",
+              "escalated",
+              "dismissed"
+            ]
+          },
+          "leadId": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "createdAt": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "updatedAt": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "demo": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "PartialCreateExperimentDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "hypothesis": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "change": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "audiencePillar": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "posts": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "primaryMetric": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "baseline": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "window": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "result": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "confidence": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "nextAction": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "planned",
+              "running",
+              "done",
+              "stopped"
+            ]
+          },
+          "contentItemId": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "demo": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "PartialCreateHookDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "contentItemId": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "approved",
+              "changes_requested",
+              "killed"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "curiosity",
+              "opinion",
+              "outcome"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "type": "object"
+      },
+      "PartialCreateKeywordDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "keyword": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "approvedResource": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "deliveryMethod": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "cta": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "replyTemplate": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "demo": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "PartialCreateLeadDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "handle": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "tiktok",
+              "x",
+              "other"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "client_inquiry",
+              "collaboration",
+              "partnership",
+              "sponsor"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "day_reviewing",
+              "discovery_call",
+              "won",
+              "parked",
+              "lost"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "nextStep": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "attributedRevenue": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "revenueEvidence": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "createdAt": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "demo": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "PartialCreateReportDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "weekOf": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          },
+          "repeatedQuestions": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "evidence": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "objections": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "requestedTopics": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "businessSignals": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "opportunities": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "limitations": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "demo": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "PartialCreateScriptDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "contentItemId": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "approved",
+              "changes_requested",
+              "killed"
+            ]
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 50000
+          }
+        },
+        "type": "object"
+      },
+      "PartialCreateTaskDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "owner": {
+            "type": "string",
+            "enum": [
+              "creator",
+              "analyst",
+              "creative"
+            ]
+          },
+          "date": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          },
+          "done": {
+            "type": "boolean"
+          },
+          "nextSmallestAction": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "demo": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "PatchBriefDto": {
+        "properties": {
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/BriefFieldDto"
+            },
+            "type": "array",
+            "maxItems": 18
+          }
+        },
+        "type": "object",
+        "required": [
+          "fields"
+        ]
+      },
+      "PostMetricsDto": {
+        "properties": {
+          "views": {
+            "type": "number"
+          },
+          "avgWatchSec": {
+            "type": "number"
+          },
+          "completionPct": {
+            "type": "number"
+          },
+          "shares": {
+            "type": "number"
+          },
+          "saves": {
+            "type": "number"
+          },
+          "comments": {
+            "type": "number"
+          },
+          "profileVisits": {
+            "type": "number"
+          },
+          "follows": {
+            "type": "number"
+          },
+          "sameCohort": {
+            "type": "boolean"
+          },
+          "ageHours": {
+            "type": "number"
+          },
+          "measuredAt": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ProfileDto": {
+        "properties": {
+          "creatorName": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "brandName": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "company": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "projectName": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "handles": {
+            "type": "object"
+          },
+          "agents": {
+            "$ref": "#/components/schemas/AgentsDto"
+          },
+          "sample": {
+            "type": "boolean"
+          },
+          "masterPrompt": {
+            "maxLength": 200000,
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "creatorName",
+          "brandName",
+          "company",
+          "projectName",
+          "handles",
+          "agents",
+          "sample"
+        ]
+      },
+      "RefDto": {
+        "properties": {
+          "collection": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "collection",
+          "id"
+        ]
+      },
+      "SeriesQuery": {
+        "properties": {
+          "platform": {
+            "type": "string",
+            "enum": [
+              "tiktok",
+              "x"
+            ]
+          },
+          "metric": {
+            "type": "string",
+            "enum": [
+              "followers",
+              "following",
+              "posts",
+              "views7d",
+              "views14d",
+              "views28d",
+              "engagementRate"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "platform",
+          "metric"
+        ]
+      },
+      "SettingsDto": {
+        "properties": {
+          "campaignStart": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          },
+          "tiktokGoal": {
+            "type": "number"
+          },
+          "weeklyTikTokTarget": {
+            "type": "number"
+          },
+          "planChecks": {
+            "type": "object"
+          }
+        },
+        "type": "object",
+        "required": [
+          "campaignStart",
+          "tiktokGoal",
+          "weeklyTikTokTarget",
+          "planChecks"
+        ]
+      },
+      "SnapshotQuery": {
+        "properties": {
+          "platform": {
+            "type": "string",
+            "enum": [
+              "tiktok",
+              "x"
+            ]
+          },
+          "since": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SummaryQuery": {
+        "properties": {
+          "platform": {
+            "type": "string",
+            "enum": [
+              "tiktok",
+              "x"
+            ]
+          },
+          "from": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          },
+          "to": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "platform"
+        ]
+      },
+      "TikTokVaultDto": {
+        "properties": {
+          "version": {
+            "type": "number"
+          },
+          "handle": {
+            "maxLength": 200,
+            "type": "string"
+          },
+          "generatedAt": {
+            "type": "string"
+          },
+          "exports": {
+            "items": {},
+            "type": "array"
+          },
+          "daily": {
+            "items": {},
+            "type": "array"
+          },
+          "viewers": {
+            "items": {},
+            "type": "array"
+          },
+          "followers": {
+            "items": {},
+            "type": "array"
+          },
+          "videos": {
+            "items": {},
+            "type": "array"
+          },
+          "audience": {
+            "type": "object"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "handle",
+          "generatedAt",
+          "exports",
+          "daily",
+          "viewers",
+          "followers",
+          "videos",
+          "audience"
+        ]
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Status only, no data",
+        "operationId": "getHealth",
+        "x-roles": [],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          }
+        }
+      }
+    },
+    "/api/openapi.json": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "This OpenAPI spec",
+        "operationId": "getApiOpenapiJson",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative",
+          "worker"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/session": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Who is calling",
+        "operationId": "getApiSession",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative",
+          "worker"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/state": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Everything the dashboard needs in one read",
+        "operationId": "getApiState",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/profile": {
+      "get": {
+        "tags": [
+          "profile"
+        ],
+        "summary": "Workspace profile",
+        "operationId": "getApiProfile",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "profile"
+        ],
+        "summary": "Replace the profile (creator only)",
+        "operationId": "putApiProfile",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/brief": {
+      "get": {
+        "tags": [
+          "brief"
+        ],
+        "summary": "Approved brief fields: value, verified, source",
+        "operationId": "getApiBrief",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "brief"
+        ],
+        "summary": "Update brief fields (creator only)",
+        "operationId": "patchApiBrief",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchBriefDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/audience/latest": {
+      "get": {
+        "tags": [
+          "audience"
+        ],
+        "summary": "Latest snapshot for exactly one platform",
+        "operationId": "getApiAudienceLatest",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "platform",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "tiktok",
+                "x"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/audience/snapshots": {
+      "get": {
+        "tags": [
+          "audience"
+        ],
+        "summary": "Snapshots, optionally for one platform and since a date",
+        "operationId": "getApiAudienceSnapshots",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "platform",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "tiktok",
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "audience"
+        ],
+        "summary": "Record a snapshot (analyst or creator)",
+        "operationId": "postApiAudienceSnapshots",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSnapshotDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/audience/snapshots/{id}": {
+      "delete": {
+        "tags": [
+          "audience"
+        ],
+        "summary": "Delete a snapshot (creator only; analytics keeps a retraction)",
+        "operationId": "deleteApiAudienceSnapshotsId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/audience/tiktok-vault": {
+      "get": {
+        "tags": [
+          "audience"
+        ],
+        "summary": "Normalised TikTok Studio export data",
+        "operationId": "getApiAudienceTiktokVault",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "audience"
+        ],
+        "summary": "Upload export data (creator only)",
+        "operationId": "putApiAudienceTiktokVault",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TikTokVaultDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/analytics/catalog": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Governed table definitions",
+        "operationId": "getApiAnalyticsCatalog",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/analytics/series": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "One metric over time for one platform",
+        "operationId": "getApiAnalyticsSeries",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "platform",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "tiktok",
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "metric",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "followers",
+                "following",
+                "posts",
+                "views7d",
+                "views14d",
+                "views28d",
+                "engagementRate"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/analytics/summary": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Start, end and net per metric for one platform",
+        "operationId": "getApiAnalyticsSummary",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "platform",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "tiktok",
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/content": {
+      "get": {
+        "tags": [
+          "content"
+        ],
+        "summary": "List content",
+        "operationId": "getApiContent",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "content"
+        ],
+        "summary": "Create a content item",
+        "operationId": "postApiContent",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateContentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/content/{id}": {
+      "patch": {
+        "tags": [
+          "content"
+        ],
+        "summary": "Update a content item",
+        "operationId": "patchApiContentId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartialCreateContentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "content"
+        ],
+        "summary": "Delete a content item (creator only)",
+        "operationId": "deleteApiContentId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "content"
+        ],
+        "summary": "One content item",
+        "operationId": "getApiContentId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/content-items": {
+      "get": {
+        "tags": [
+          "content-items"
+        ],
+        "summary": "Content items: the shared id everything hangs off",
+        "operationId": "getApiContentItems",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "content-items"
+        ],
+        "summary": "Create a content item (the API assigns the id)",
+        "operationId": "postApiContentItems",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateContentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/content-items/{id}": {
+      "get": {
+        "tags": [
+          "content-items"
+        ],
+        "summary": "One content item",
+        "operationId": "getApiContentItemsId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/content-items/{id}/handoffs": {
+      "get": {
+        "tags": [
+          "content-items"
+        ],
+        "summary": "The handoff thread for an item, oldest first",
+        "operationId": "getApiContentItemsIdHandoffs",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/content-items/{id}/next-step": {
+      "get": {
+        "tags": [
+          "content-items"
+        ],
+        "summary": "Latest analysis, brief, open approvals and one recommended next action",
+        "operationId": "getApiContentItemsIdNextStep",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/content-items/{id}/decision": {
+      "post": {
+        "tags": [
+          "content-items"
+        ],
+        "summary": "Approve, request changes or kill (creator only)",
+        "operationId": "postApiContentItemsIdDecision",
+        "x-roles": [
+          "creator"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/handoffs": {
+      "get": {
+        "tags": [
+          "handoffs"
+        ],
+        "summary": "Handoffs, e.g. ?acknowledged=false",
+        "operationId": "getApiHandoffs",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "acknowledged",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "creator",
+                "analyst",
+                "creative"
+              ]
+            }
+          },
+          {
+            "name": "contentItemId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "handoffs"
+        ],
+        "summary": "Send a handoff as yourself",
+        "operationId": "postApiHandoffs",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHandoffDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/handoffs/{id}/ack": {
+      "post": {
+        "tags": [
+          "handoffs"
+        ],
+        "summary": "Mark read by its recipient",
+        "operationId": "postApiHandoffsIdAck",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/briefs": {
+      "get": {
+        "tags": [
+          "briefs"
+        ],
+        "summary": "List briefs",
+        "operationId": "getApiBriefs",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "briefs"
+        ],
+        "summary": "Create a briefs item",
+        "operationId": "postApiBriefs",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCreativeBriefDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/briefs/{id}": {
+      "patch": {
+        "tags": [
+          "briefs"
+        ],
+        "summary": "Update a briefs item",
+        "operationId": "patchApiBriefsId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartialCreateCreativeBriefDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "briefs"
+        ],
+        "summary": "Delete a briefs item (creator only)",
+        "operationId": "deleteApiBriefsId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/hooks": {
+      "get": {
+        "tags": [
+          "hooks"
+        ],
+        "summary": "List hooks",
+        "operationId": "getApiHooks",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "hooks"
+        ],
+        "summary": "Create a hooks item",
+        "operationId": "postApiHooks",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHookDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/hooks/{id}": {
+      "patch": {
+        "tags": [
+          "hooks"
+        ],
+        "summary": "Update a hooks item",
+        "operationId": "patchApiHooksId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartialCreateHookDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "hooks"
+        ],
+        "summary": "Delete a hooks item (creator only)",
+        "operationId": "deleteApiHooksId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/scripts": {
+      "get": {
+        "tags": [
+          "scripts"
+        ],
+        "summary": "List scripts",
+        "operationId": "getApiScripts",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "scripts"
+        ],
+        "summary": "Create a scripts item",
+        "operationId": "postApiScripts",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateScriptDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/scripts/{id}": {
+      "patch": {
+        "tags": [
+          "scripts"
+        ],
+        "summary": "Update a scripts item",
+        "operationId": "patchApiScriptsId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartialCreateScriptDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "scripts"
+        ],
+        "summary": "Delete a scripts item (creator only)",
+        "operationId": "deleteApiScriptsId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/captions": {
+      "get": {
+        "tags": [
+          "captions"
+        ],
+        "summary": "List captions",
+        "operationId": "getApiCaptions",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "captions"
+        ],
+        "summary": "Create a captions item",
+        "operationId": "postApiCaptions",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCaptionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/captions/{id}": {
+      "patch": {
+        "tags": [
+          "captions"
+        ],
+        "summary": "Update a captions item",
+        "operationId": "patchApiCaptionsId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartialCreateCaptionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "captions"
+        ],
+        "summary": "Delete a captions item (creator only)",
+        "operationId": "deleteApiCaptionsId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/experiments": {
+      "get": {
+        "tags": [
+          "experiments"
+        ],
+        "summary": "List experiments",
+        "operationId": "getApiExperiments",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "experiments"
+        ],
+        "summary": "Create a experiments item",
+        "operationId": "postApiExperiments",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExperimentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/experiments/{id}": {
+      "patch": {
+        "tags": [
+          "experiments"
+        ],
+        "summary": "Update a experiments item",
+        "operationId": "patchApiExperimentsId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartialCreateExperimentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "experiments"
+        ],
+        "summary": "Delete a experiments item (creator only)",
+        "operationId": "deleteApiExperimentsId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/engagement-queue": {
+      "get": {
+        "tags": [
+          "engagement-queue"
+        ],
+        "summary": "List engagement-queue",
+        "operationId": "getApiEngagementQueue",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "engagement-queue"
+        ],
+        "summary": "Create a engagement-queue item",
+        "operationId": "postApiEngagementQueue",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEngagementDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/engagement-queue/{id}": {
+      "patch": {
+        "tags": [
+          "engagement-queue"
+        ],
+        "summary": "Update a engagement-queue item",
+        "operationId": "patchApiEngagementQueueId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartialCreateEngagementDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/leads": {
+      "get": {
+        "tags": [
+          "leads"
+        ],
+        "summary": "List leads",
+        "operationId": "getApiLeads",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "leads"
+        ],
+        "summary": "Create a leads item",
+        "operationId": "postApiLeads",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLeadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/leads/{id}": {
+      "patch": {
+        "tags": [
+          "leads"
+        ],
+        "summary": "Update a leads item",
+        "operationId": "patchApiLeadsId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartialCreateLeadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "leads"
+        ],
+        "summary": "Delete a leads item (creator only)",
+        "operationId": "deleteApiLeadsId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/keywords": {
+      "get": {
+        "tags": [
+          "keywords"
+        ],
+        "summary": "List keywords",
+        "operationId": "getApiKeywords",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "keywords"
+        ],
+        "summary": "Create a keywords item",
+        "operationId": "postApiKeywords",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateKeywordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/keywords/{id}": {
+      "patch": {
+        "tags": [
+          "keywords"
+        ],
+        "summary": "Update a keywords item",
+        "operationId": "patchApiKeywordsId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartialCreateKeywordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "keywords"
+        ],
+        "summary": "Delete a keywords item (creator only)",
+        "operationId": "deleteApiKeywordsId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/tasks": {
+      "get": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "List tasks",
+        "operationId": "getApiTasks",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Create a tasks item",
+        "operationId": "postApiTasks",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}": {
+      "patch": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Update a tasks item",
+        "operationId": "patchApiTasksId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartialCreateTaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Delete a tasks item (creator only)",
+        "operationId": "deleteApiTasksId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/checkins": {
+      "get": {
+        "tags": [
+          "checkins"
+        ],
+        "summary": "List checkins",
+        "operationId": "getApiCheckins",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "checkins"
+        ],
+        "summary": "Create a checkins item",
+        "operationId": "postApiCheckins",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCheckInDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/checkins/{id}": {
+      "patch": {
+        "tags": [
+          "checkins"
+        ],
+        "summary": "Update a checkins item",
+        "operationId": "patchApiCheckinsId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartialCreateCheckInDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "checkins"
+        ],
+        "summary": "Delete a checkins item (creator only)",
+        "operationId": "deleteApiCheckinsId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/reports": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "List reports",
+        "operationId": "getApiReports",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Create a reports item",
+        "operationId": "postApiReports",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/reports/{id}": {
+      "patch": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Update a reports item",
+        "operationId": "patchApiReportsId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartialCreateReportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Delete a reports item (creator only)",
+        "operationId": "deleteApiReportsId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/settings": {
+      "get": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Dashboard settings",
+        "operationId": "getApiSettings",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Replace settings (creator only)",
+        "operationId": "putApiSettings",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/events": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Webhook outbox: every event, its recipient and delivery status",
+        "operationId": "getApiEvents",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/dispatch/daily-audit": {
+      "post": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Send today's daily_audit to the analyst (scheduler)",
+        "operationId": "postApiDispatchDailyAudit",
+        "x-roles": [
+          "creator",
+          "worker"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/dispatch/measure-requests": {
+      "post": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Send measure_request for posts published 24h or 72h ago (scheduler)",
+        "operationId": "postApiDispatchMeasureRequests",
+        "x-roles": [
+          "creator",
+          "worker"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/migrations/import": {
+      "post": {
+        "tags": [
+          "migrations"
+        ],
+        "summary": "One-time import with a receipt (creator only)",
+        "operationId": "postApiMigrationsImport",
+        "x-roles": [
+          "creator"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/migrations": {
+      "get": {
+        "tags": [
+          "migrations"
+        ],
+        "summary": "Migration receipts",
+        "operationId": "getApiMigrations",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    }
+  }
+}

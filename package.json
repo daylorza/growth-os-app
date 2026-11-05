@@ -1,0 +1,11 @@
+{
+  "name": "growth-os-root",
+  "private": true,
+  "scripts": {
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint && bash ci/no-platform-writes.sh",
+    "build": "pnpm -r build",
+    "openapi": "pnpm -C packages/contracts openapi",
+    "ci": "bash ci/check.sh"
+  }
+}

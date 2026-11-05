@@ -1,9 +1,9 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
-import { PRIVATE_WORKSPACE } from './private'
 import { describe, expect, it } from 'vitest'
+import type { AppState } from './types'
 import { campaignPosition, weekRange } from './dates'
 import { growthPct, milestoneProgress, netFollowers, per1k, periodChange, profileToFollow } from './metrics'
 import {
@@ -122,6 +122,7 @@ describe('draft-only guards', () => {
   it('next id', () => {
     expect(nextId('C', [{ id: 'C-001' }, { id: 'C-009' }])).toBe('C-010')
     expect(nextId('C', [])).toBe('C-001')
+    expect(nextId('H', [{ id: 'H-002' }, { id: 'H-DECISION-C-001-1793917743859' }, { id: 'H-AUDIT-2026-11-05' }])).toBe('H-003')
   })
 })
 
@@ -134,7 +135,8 @@ describe('privacy', () => {
       return [] // not a git checkout
     }
   }
-  const p = PRIVATE_WORKSPACE?.profile
+  const wsFile = join(root, 'private', 'workspace.json')
+  const p = existsSync(wsFile) ? (JSON.parse(readFileSync(wsFile, 'utf8')) as { profile?: AppState['profile'] }).profile : undefined
 
   it('keeps every personal identifier from private/workspace.json out of tracked files', () => {
     if (!p) return
@@ -143,7 +145,7 @@ describe('privacy', () => {
       .filter((t): t is string => !!t && t.length >= 4)
     const variants = terms.flatMap((t) => [t, t.replace(/\s+/g, ''), t.replace(/\s+/g, '_')]).map((t) => t.toLowerCase())
     const leaks = tracked()
-      .filter((f) => !/\.(png|jpe?g|pdf|ico)$/i.test(f) && f !== 'app/pnpm-lock.yaml')
+      .filter((f) => !/\.(png|jpe?g|pdf|ico)$/i.test(f) && !/(^|\/)pnpm-lock\.yaml$/.test(f))
       .flatMap((f) => {
         const text = readFileSync(join(root, f), 'utf8').toLowerCase()
         return variants.filter((v) => text.includes(v)).map((v) => `${f}: ${v}`)

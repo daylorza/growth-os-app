@@ -2,7 +2,7 @@
 
 ```
 pnpm install
-pnpm dev             # start the dashboard
+pnpm dev             # start the dashboard (local mode; set GROWTH_OS_API for endpoint mode)
 pnpm test            # vitest
 pnpm lint            # oxlint
 pnpm build           # type-check and production build

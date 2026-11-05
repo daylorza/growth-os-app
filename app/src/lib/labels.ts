@@ -35,6 +35,7 @@ export const CONTENT_STATUS: Record<ContentStatus, string> = {
   scheduled: 'Scheduled by you',
   published: 'Published',
   failed: 'Failed',
+  killed: 'Killed',
 }
 
 export const CATEGORY: Record<CommentCategory, string> = {

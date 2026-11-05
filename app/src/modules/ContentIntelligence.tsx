@@ -1,3 +1,5 @@
+'use client'
+
 import { Plus, Trash2 } from 'lucide-react'
 import { Badge, Button, Card, CardTitle, CopyButton, Empty, Field, Input, Mono, PageHeader, Select, Textarea } from '../components/ui'
 import { addDays, today, weekRange } from '../lib/dates'

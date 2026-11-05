@@ -1,6 +1,6 @@
 import { BRIEF_FIELDS, UNKNOWN } from './labels'
 import { addDays, nowStamp, today } from './dates'
-import { PRIVATE_WORKSPACE } from './private'
+import { privateWorkspace } from './private'
 import type { AppState, BriefField, BriefKey, ContentItem, KeywordRule, Owner, Profile } from './types'
 
 export const blankContent = (id: string, plannedDate: string): ContentItem => ({
@@ -205,7 +205,7 @@ export interface Migrations {
 }
 
 /** Upgrade saved data: legacy owner names and brief keys, missing profile. */
-export function migrateState(saved: Partial<AppState> & Record<string, unknown>, base: AppState, m: Migrations = (PRIVATE_WORKSPACE as { migrations?: Migrations } | undefined)?.migrations ?? {}): AppState {
+export function migrateState(saved: Partial<AppState> & Record<string, unknown>, base: AppState, m: Migrations = (privateWorkspace() as { migrations?: Migrations } | undefined)?.migrations ?? {}): AppState {
   const owner = (o: string) => m.owners?.[o] ?? (o as Owner)
   const brief = { ...base.brief, ...(saved.brief ?? {}) } as Record<string, BriefField>
   for (const [old, key] of Object.entries(m.briefKeys ?? {})) {
@@ -223,5 +223,6 @@ export function migrateState(saved: Partial<AppState> & Record<string, unknown>,
 
 /** The personal workspace from private/workspace.json when present, otherwise the fictional sample. */
 export function createSeed(start: string = today()): AppState {
-  return PRIVATE_WORKSPACE ? migrateState(PRIVATE_WORKSPACE as AppState & Record<string, unknown>, createSampleSeed(start)) : createSampleSeed(start)
+  const ws = privateWorkspace()
+  return ws ? migrateState(ws as AppState & Record<string, unknown>, createSampleSeed(start)) : createSampleSeed(start)
 }

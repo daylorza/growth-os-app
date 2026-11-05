@@ -1,3 +1,6 @@
+'use client'
+
+import Link from 'next/link'
 import { X } from 'lucide-react'
 import {
   useEffect,
@@ -183,9 +186,9 @@ function DemoBadge() {
   const s = useAppState()
   if (!hasDemoData(s)) return null
   return (
-    <a href="#/settings" title="Example records are shown. Clear them in Settings.">
+    <Link href="/settings" title="Example records are shown. Clear them in Settings.">
       <Badge>Demo data</Badge>
-    </a>
+    </Link>
   )
 }
 
