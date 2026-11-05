@@ -109,6 +109,14 @@ Each event is stored in an outbox (`GET /api/events`, id `<event>:<handoffId>:<r
 
 Events: `daily_audit`, `brief_created`, `analysis_created`, `post_published`, `measure_request`, `experiment_logged`, `approval_given`.
 
+### MCP server (analyst)
+
+`POST /mcp` on the tailnet listener (`http://<host>:8766/mcp`) is a stateless streamable-HTTP MCP server. Only the analyst key can connect (`Authorization: Bearer <analyst key>`); it is never exposed through Funnel. Each tool wraps an existing service with the same DTO, so ownership, draft-only and `UNKNOWN` rules match the REST API: `get_snapshots`, `get_experiments`, `get_openapi`, `create_snapshot` (one platform, unverified), `create_engagement_items` (always drafts), `create_experiment`, `create_report`, `create_lead`, `create_handoff` (an analysis needs refs), `list_inbox`, `ack_handoff`. No tool posts, replies, likes, follows or messages, and there is no tool for the creative collections.
+
+```
+npx @modelcontextprotocol/inspector --cli http://<host>:8766/mcp --transport http --header "Authorization: Bearer $KEY" --method tools/list
+```
+
 ### Contract first
 
 All DTOs live in `packages/contracts` (`@growth-os/contracts`): domain types, class-validator DTOs, the ownership table and the route table. The API's routes must equal that table (tested), and the OpenAPI spec is generated from it and committed (`packages/contracts/openapi.json`, `pnpm openapi`; the build fails if it is stale). It is served at `GET /api/openapi.json`. Agents read it as the source of truth for field names.
@@ -185,7 +193,7 @@ Pushes `private/workspace.json`, `private/endpoint-seed.json` (extra verified re
 
 | Port | Bound to | Service |
 |---|---|---|
-| 8766 | tailnet IP only | Next.js dashboard and `/api` pass-through |
+| 8766 | tailnet IP only | Next.js dashboard, `/api` and `/mcp` pass-through |
 | 8767 | 127.0.0.1 | NestJS API |
 | 27017 | 127.0.0.1 | MongoDB 7.0 (Docker). 8.x does not start on Linux 6.19+/7.0 kernels yet (MongoDB SERVER-121912) |
 
