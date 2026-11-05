@@ -75,5 +75,7 @@ describe('auth', () => {
     const c = loadConfig({ ...base, GROWTH_OS_ANALYST_KEY: 'analyst-key-0000000001', GROWTH_OS_ANALYST_NAME: 'scout', ANALYST_WEBHOOK_URL: 'https://hooks.example/a', ANALYST_WEBHOOK_KEY: 'k' })
     expect(c.keys).toEqual([{ name: 'scout', role: 'analyst', token: 'analyst-key-0000000001' }])
     expect(c.webhooks).toEqual({ analyst: { url: 'https://hooks.example/a', key: 'k' } })
+    expect(() => loadConfig({ ...base, GROWTH_OS_CONNECTOR_KEY: 'too-short-for-a-url-key' })).toThrow(/32/)
+    expect(loadConfig({ ...base, GROWTH_OS_CONNECTOR_KEY: 'c'.repeat(64) }).keys).toEqual([{ name: 'analyst-connector', role: 'analyst', token: 'c'.repeat(64), scope: 'mcp' }])
   })
 })

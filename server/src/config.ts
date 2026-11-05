@@ -5,6 +5,8 @@ export interface ApiKey {
   name: string
   role: Exclude<Role, 'creator'> | 'creator'
   token: string
+  /** A key limited to the MCP endpoint (the analyst's connector). Revocable on its own. */
+  scope?: 'mcp'
 }
 
 export interface Webhook {
@@ -46,14 +48,23 @@ const webhook = (env: NodeJS.ProcessEnv, role: Owner): Webhook[] => {
 
 /**
  * Fails closed: the server refuses to start without a creator login.
- * Keys: GROWTH_OS_ANALYST_KEY, GROWTH_OS_CREATIVE_KEY, GROWTH_OS_CREATOR_KEY (scripts), GROWTH_OS_WORKER_KEY (scheduler).
+ * Keys: GROWTH_OS_ANALYST_KEY, GROWTH_OS_CREATIVE_KEY, GROWTH_OS_CREATOR_KEY (scripts), GROWTH_OS_WORKER_KEY (scheduler),
+ * GROWTH_OS_CONNECTOR_KEY (analyst, /mcp only; the one the dashboard host accepts as ?key=).
  * Names for attribution: GROWTH_OS_<ROLE>_NAME. Webhooks: ANALYST_WEBHOOK_URL / ANALYST_WEBHOOK_KEY (and CREATIVE_…).
  */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const creatorUser = env.GROWTH_OS_USER?.trim() ?? ''
   const creatorPass = env.GROWTH_OS_PASS ?? ''
   if (!creatorUser || creatorPass.length < MIN_SECRET) throw new Error(`GROWTH_OS_USER and GROWTH_OS_PASS (min ${MIN_SECRET} characters) are required.`)
-  const keys = [...key(env, 'analyst', 'analyst'), ...key(env, 'creative', 'creative'), ...key(env, 'creator', creatorUser), ...key(env, 'worker', 'scheduler')]
+  const connector = env.GROWTH_OS_CONNECTOR_KEY?.trim()
+  if (connector && connector.length < 32) throw new Error('GROWTH_OS_CONNECTOR_KEY is too short (min 32 characters).')
+  const keys: ApiKey[] = [
+    ...key(env, 'analyst', 'analyst'),
+    ...key(env, 'creative', 'creative'),
+    ...key(env, 'creator', creatorUser),
+    ...key(env, 'worker', 'scheduler'),
+    ...(connector ? [{ name: env.GROWTH_OS_CONNECTOR_NAME?.trim() || 'analyst-connector', role: 'analyst' as const, token: connector, scope: 'mcp' as const }] : []),
+  ]
   if (new Set(keys.map((k) => k.token)).size !== keys.length) throw new Error('Every key must be different.')
   return {
     host: env.GROWTH_OS_HOST?.trim() || '127.0.0.1',

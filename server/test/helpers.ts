@@ -7,7 +7,7 @@ import type { AppConfig } from '../src/config'
 import { MemoryStore } from '../src/db/memory.store'
 
 export const CREATOR = { user: 'creator-test', pass: 'creator-test-password-0001' }
-export const TOKENS = { analyst: 'analyst-test-token-000000001', creative: 'creative-test-token-00000001', worker: 'worker-test-token-0000000001', creator: 'creator-test-token-000000001' }
+export const TOKENS = { analyst: 'analyst-test-token-000000001', creative: 'creative-test-token-00000001', worker: 'worker-test-token-0000000001', creator: 'creator-test-token-000000001', connector: 'connector-test-key-0123456789abcdef0123' }
 
 export const testConfig: AppConfig = {
   host: '127.0.0.1',
@@ -21,6 +21,7 @@ export const testConfig: AppConfig = {
     { name: 'creative-agent', role: 'creative', token: TOKENS.creative },
     { name: 'scheduler', role: 'worker', token: TOKENS.worker },
     { name: 'creator-script', role: 'creator', token: TOKENS.creator },
+    { name: 'analyst-connector', role: 'analyst', token: TOKENS.connector, scope: 'mcp' },
   ],
   webhooks: {},
   webhookRetryBaseMs: 1,

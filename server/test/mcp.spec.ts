@@ -99,3 +99,67 @@ describe('MCP server for the analyst', () => {
     expect(creative.status).toBe(403)
   })
 })
+
+describe('connector key (analyst, /mcp only)', () => {
+  let app: INestApplication
+  let url: string
+  const rpc = (auth?: string) =>
+    fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream', ...(auth ? { authorization: auth } : {}) },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+    })
+
+  beforeAll(async () => {
+    app = await makeApp()
+    await app.listen(0, '127.0.0.1')
+    url = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}/mcp`
+  })
+  afterAll(() => app.close())
+
+  it('a valid connector key returns 200, no key 401, a creative key 403', async () => {
+    const ok = await rpc(`Bearer ${TOKENS.connector}`)
+    expect(ok.status).toBe(200)
+    expect((await ok.json()).result.tools.length).toBe(11)
+    expect((await rpc()).status).toBe(401)
+    expect((await rpc(`Bearer ${TOKENS.creative}`)).status).toBe(403)
+  })
+
+  it('works only on /mcp: every REST route refuses it', async () => {
+    const base = url.replace('/mcp', '')
+    for (const path of ['/api/state', '/api/handoffs', '/api/session', '/api/openapi.json']) expect((await fetch(base + path, { headers: { authorization: `Bearer ${TOKENS.connector}` } })).status, path).toBe(403)
+  })
+
+  it('writes are attributed to the connector key', async () => {
+    const c = new Client({ name: 'test', version: '1.0.0' })
+    await c.connect(new StreamableHTTPClientTransport(new URL(url), { requestInit: { headers: { authorization: `Bearer ${TOKENS.connector}` } } }))
+    const r = (await c.callTool({ name: 'create_snapshot', arguments: { platform: 'tiktok', date: '2026-01-01', source: 's', metrics: {} } })) as Result
+    expect(r.structuredContent!.result._meta.createdBy).toBe('analyst-connector')
+    await c.close()
+  })
+
+  it('the key never appears in logs or error responses', async () => {
+    const out: string[] = []
+    const write = (chunk: unknown) => (out.push(String(chunk)), true)
+    const restore = [process.stdout.write, process.stderr.write]
+    process.stdout.write = write as typeof process.stdout.write
+    process.stderr.write = write as typeof process.stderr.write
+    const logs = (['log', 'warn', 'error', 'info', 'debug'] as const).map((m) => [m, console[m]] as const)
+    for (const [m] of logs) console[m] = (...a: unknown[]) => void out.push(a.map(String).join(' '))
+    try {
+      const bodies: string[] = []
+      for (const r of [
+        await rpc(`Bearer ${TOKENS.connector}`),
+        await fetch(url.replace('/mcp', '/api/state'), { headers: { authorization: `Bearer ${TOKENS.connector}` } }),
+        await fetch(`${url}?key=${TOKENS.connector}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: 'not json' }),
+        await fetch(`${url.replace('/mcp', '/api/state')}?key=${TOKENS.connector}`),
+      ])
+        bodies.push(await r.text(), JSON.stringify([...r.headers]))
+      expect(bodies.join('\n')).not.toContain(TOKENS.connector)
+    } finally {
+      ;[process.stdout.write, process.stderr.write] = restore
+      for (const [m, fn] of logs) console[m] = fn
+    }
+    expect(out.join('\n')).not.toContain(TOKENS.connector)
+  })
+})

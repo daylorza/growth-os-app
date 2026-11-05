@@ -27,6 +27,7 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException()
     }
     if (!spec) throw new ForbiddenException('This route is not in the API contract.')
+    if (actor.scope === 'mcp' && spec.path !== '/mcp') throw new ForbiddenException('This key only works on /mcp.')
     if (!rolesFor(spec).includes(actor.role)) throw new ForbiddenException(`The ${actor.role} role cannot call ${spec.method} ${spec.path}.`)
     // The dashboard identifies itself so writes are attributed to it rather than to a manual API call.
     req.actor = actor.role === 'creator' && req.header('x-growth-client') === 'dashboard' ? { ...actor, name: 'dashboard' } : actor

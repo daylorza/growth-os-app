@@ -8,6 +8,8 @@ export type { Role }
 export interface Actor {
   name: string
   role: Role
+  /** Set for keys limited to the MCP endpoint. */
+  scope?: 'mcp'
 }
 
 export interface WriteContext {

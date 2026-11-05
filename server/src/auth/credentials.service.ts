@@ -28,7 +28,7 @@ export class CredentialsService {
     if (scheme?.toLowerCase() === 'bearer' && value) {
       // Compare against every key so timing does not reveal which one matched.
       let found: Actor | null = null
-      for (const k of this.config.keys) if (same(value, k.token)) found = { name: k.name, role: k.role }
+      for (const k of this.config.keys) if (same(value, k.token)) found = { name: k.name, role: k.role, ...(k.scope ? { scope: k.scope } : {}) }
       return found
     }
     return null

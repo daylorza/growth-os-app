@@ -2,7 +2,7 @@
 # Additive install of Growth OS on a Linux host with systemd and Docker. Run as root (sudo).
 #
 #   sudo APP_DIR=/home/<user>/growth-os APP_USER=<user> BIND_HOST=<tailnet IP> CREATOR_USER=<login> \
-#        ANALYST_NAME=<analyst agent name> CREATIVE_NAME=<creative agent name> WORKER_NAME=<scheduler name> ./deploy/install-atlas.sh
+#        ANALYST_NAME=<analyst agent name> CREATIVE_NAME=<creative agent name> WORKER_NAME=<scheduler name> CONNECTOR_NAME=<connector name> ./deploy/install-atlas.sh
 #
 # Units (nothing else on the host is touched):
 #   growth-os-mongo.service          MongoDB in Docker, 127.0.0.1:27017 only, data in /var/lib/growth-os/mongo
@@ -46,6 +46,10 @@ ANALYST_KEY="$(keep growth-os-api.service GROWTH_OS_ANALYST_KEY "$(secret)")"
 CREATIVE_KEY="$(keep growth-os-api.service GROWTH_OS_CREATIVE_KEY "$(secret)")"
 CREATOR_KEY="$(keep growth-os-api.service GROWTH_OS_CREATOR_KEY "$(secret)")"
 WORKER_KEY="$(keep growth-os-api.service GROWTH_OS_WORKER_KEY "$(secret)")"
+# Analyst connector key: /mcp only, may be sent as ?key=. Rotate it alone with ROTATE_CONNECTOR_KEY=1.
+CONNECTOR_KEY="$(keep growth-os-api.service GROWTH_OS_CONNECTOR_KEY "$(openssl rand -hex 32)")"
+[ "${ROTATE_CONNECTOR_KEY:-0}" = 1 ] && CONNECTOR_KEY="$(openssl rand -hex 32)"
+CONNECTOR_NAME="$(keep growth-os-api.service GROWTH_OS_CONNECTOR_NAME "${CONNECTOR_NAME:-analyst-connector}")"
 ANALYST_NAME="$(keep growth-os-api.service GROWTH_OS_ANALYST_NAME "${ANALYST_NAME:-analyst}")"
 CREATIVE_NAME="$(keep growth-os-api.service GROWTH_OS_CREATIVE_NAME "${CREATIVE_NAME:-creative}")"
 WORKER_NAME="$(keep growth-os-api.service GROWTH_OS_WORKER_NAME "${WORKER_NAME:-scheduler}")"
@@ -103,6 +107,8 @@ Environment=GROWTH_OS_CREATIVE_NAME=$CREATIVE_NAME
 Environment=GROWTH_OS_CREATOR_KEY=$CREATOR_KEY
 Environment=GROWTH_OS_WORKER_KEY=$WORKER_KEY
 Environment=GROWTH_OS_WORKER_NAME=$WORKER_NAME
+Environment=GROWTH_OS_CONNECTOR_KEY=$CONNECTOR_KEY
+Environment=GROWTH_OS_CONNECTOR_NAME=$CONNECTOR_NAME
 # The analyst's listener (URL and sender key from its routine panel), added on the host only.
 Environment=ANALYST_WEBHOOK_URL=$ANALYST_WEBHOOK_URL
 Environment=ANALYST_WEBHOOK_KEY=$ANALYST_WEBHOOK_KEY
