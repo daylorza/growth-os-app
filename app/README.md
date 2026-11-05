@@ -1,10 +1,12 @@
-# Growth OS
-
-A draft-only growth dashboard for creators. Plan content, draft replies, track real analytics from platform exports, and coordinate an analyst agent and a creative agent. Nothing in the app posts, publishes or sends.
+# Growth OS app
 
 ```
 pnpm install
-pnpm dev
+pnpm dev             # start the dashboard
+pnpm test            # vitest
+pnpm lint            # oxlint
+pnpm build           # type-check and production build
+pnpm tiktok:ingest   # import TikTok exports from ../private/vault/tiktok/inbox/
 ```
 
-Opens with a fictional sample creator. Choose **Make it yours** to start your own workspace. Everything stays in your browser, and personal files go in the gitignored `private/` folder. See `../AGENTS.md`.
+See the [main README](../README.md) for what the app does and [AGENTS.md](../AGENTS.md) for project rules.
