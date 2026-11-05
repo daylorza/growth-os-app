@@ -187,7 +187,7 @@ Pushes `private/workspace.json`, `private/endpoint-seed.json` (extra verified re
 |---|---|---|
 | 8766 | tailnet IP only | Next.js dashboard and `/api` pass-through |
 | 8767 | 127.0.0.1 | NestJS API |
-| 27017 | 127.0.0.1 | MongoDB (Docker) |
+| 27017 | 127.0.0.1 | MongoDB 7.0 (Docker). 8.x does not start on Linux 6.19+/7.0 kernels yet (MongoDB SERVER-121912) |
 
 Run only one live dashboard. Once the endpoint is live, a local preview is a cold backup and stays stopped.
 

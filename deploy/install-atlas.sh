@@ -20,7 +20,9 @@ set -euo pipefail
 WEB_PORT="${WEB_PORT:-8766}"
 API_PORT="${API_PORT:-8767}"
 MONGO_PORT="${MONGO_PORT:-27017}"
-MONGO_IMAGE="${MONGO_IMAGE:-mongo:8.0}"
+# MongoDB 8.x ships a tcmalloc that crashes or refuses to start on Linux 6.19+ / 7.0 kernels (SERVER-121912).
+# 7.0 runs cleanly there; move to 8.x once the kernel check is fixed upstream (SERVER-136848).
+MONGO_IMAGE="${MONGO_IMAGE:-mongo:7.0}"
 UNITS=/etc/systemd/system
 DATA=/var/lib/growth-os/mongo
 
