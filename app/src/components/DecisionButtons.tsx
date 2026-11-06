@@ -2,16 +2,21 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import type { DecisionState as State } from '../lib/rules'
 import { refresh } from '../lib/store'
 import { Button } from './ui'
 
 type Decision = 'approve' | 'request_changes' | 'kill'
 
-/** The creator's call on one content item. The endpoint writes the creator handoff and wakes the agents. */
-export function DecisionButtons({ id }: { id: string }) {
+/**
+ * The creator's call on one content item. The endpoint writes the creator handoff and wakes the agents.
+ * A decision already made is greyed out, so a second click cannot repeat it.
+ */
+export function DecisionButtons({ id, state: initial }: { id: string; state: State }) {
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [state, setState] = useState<State>(initial)
 
   const decide = async (decision: Decision) => {
     let note = ''
@@ -30,6 +35,7 @@ export function DecisionButtons({ id }: { id: string }) {
         body: JSON.stringify({ decision, ...(note ? { note } : {}) }),
       })
       if (!res.ok) throw new Error(((await res.json().catch(() => null)) as { message?: string } | null)?.message ?? `Failed (${res.status})`)
+      setState(decision === 'approve' ? 'approved' : decision === 'kill' ? 'killed' : 'changes_requested')
       router.refresh()
       await refresh(true)
     } catch (e) {
@@ -41,9 +47,15 @@ export function DecisionButtons({ id }: { id: string }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Button size="sm" variant="primary" disabled={busy} onClick={() => decide('approve')}>Approve</Button>
-      <Button size="sm" disabled={busy} onClick={() => decide('request_changes')}>Request changes</Button>
-      <Button size="sm" variant="ghost" disabled={busy} onClick={() => decide('kill')}>Kill</Button>
+      <Button size="sm" variant="primary" disabled={busy || state === 'approved' || state === 'killed'} onClick={() => decide('approve')}>
+        {state === 'approved' ? 'Approved' : 'Approve'}
+      </Button>
+      <Button size="sm" disabled={busy || state === 'killed'} onClick={() => decide('request_changes')}>
+        {state === 'changes_requested' ? 'Changes requested' : 'Request changes'}
+      </Button>
+      <Button size="sm" variant="ghost" disabled={busy || state === 'killed'} onClick={() => decide('kill')}>
+        {state === 'killed' ? 'Killed' : 'Kill'}
+      </Button>
       {error && <span role="alert" className="text-xs text-danger">{error}</span>}
     </div>
   )

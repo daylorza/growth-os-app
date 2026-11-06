@@ -1,5 +1,6 @@
 import type { ContentItem, NextStep, Profile } from '@growth-os/contracts'
 import { apiBase, apiGet } from '../../lib/workspace.server'
+import { decisionState } from '../../lib/rules'
 import { DecisionButtons } from '../DecisionButtons'
 
 const MAX = 12
@@ -44,7 +45,7 @@ export async function NextSteps() {
                   <dd>{n.openApprovals.length}</dd>
                 </dl>
                 {n.overdueHandoffs.length > 0 && <p className="text-xs text-warn">{n.overdueHandoffs.length} handoff(s) unread for more than 24h: {n.overdueHandoffs.map((h) => h.id).join(', ')}</p>}
-                <DecisionButtons id={n.contentItem.id} />
+                <DecisionButtons key={`${n.contentItem.id}:${n.contentItem.status}:${n.contentItem.approval}`} id={n.contentItem.id} state={decisionState(n.contentItem.status, n.contentItem.approval)} />
               </article>
             ),
         )}

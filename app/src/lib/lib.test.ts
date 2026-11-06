@@ -10,6 +10,7 @@ import {
   isRepeatReply,
   keywordActivationError,
   keywordMatches,
+  decisionState,
   nextId,
   publishBlock,
   publishLogError,
@@ -118,6 +119,13 @@ describe('draft-only guards', () => {
     expect(s.keywords.every((k) => !k.active)).toBe(true)
     expect(s.content.every((c) => c.status !== 'published' && c.approval === 'pending')).toBe(true)
     expect(s.engagements.every((e) => e.status !== 'posted_by_day')).toBe(true)
+  })
+  it('decision buttons grey out a decision already made', () => {
+    expect(decisionState('approved', 'approved')).toBe('approved')
+    expect(decisionState('published', 'approved')).toBe('approved')
+    expect(decisionState('needs_review', 'changes_requested')).toBe('changes_requested')
+    expect(decisionState('killed', 'pending')).toBe('killed')
+    expect(decisionState('draft', 'pending')).toBe('open')
   })
   it('next id', () => {
     expect(nextId('C', [{ id: 'C-001' }, { id: 'C-009' }])).toBe('C-010')

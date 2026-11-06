@@ -90,3 +90,9 @@ export const nextId = (prefix: string, existing: { id: string }[]) => {
 const DAY_MS = 86_400_000
 /** A handoff nobody acknowledged within 24 hours is flagged in the dashboard. */
 export const isOverdue = (h: Pick<Handoff, 'acknowledged' | 'createdAt'>, now = Date.now()) => !h.acknowledged && now - Date.parse(h.createdAt) > DAY_MS
+
+export type DecisionState = 'approved' | 'changes_requested' | 'killed' | 'open'
+
+/** Where an item stands for the creator's decision buttons. A decision already made is shown greyed out. */
+export const decisionState = (status: string, approval: string): DecisionState =>
+  status === 'killed' ? 'killed' : approval === 'approved' && status !== 'needs_review' ? 'approved' : approval === 'changes_requested' ? 'changes_requested' : 'open'
