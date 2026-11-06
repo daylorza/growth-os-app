@@ -6,7 +6,7 @@ export type Owner = 'creator' | 'analyst' | 'creative'
 export type Pillar = 'build' | 'commentary' | 'founder' | 'travel' | 'business'
 export type BriefMode = 'spontaneous' | 'educational' | 'founder'
 
-export type ContentStatus = 'idea' | 'draft' | 'needs_review' | 'approved' | 'scheduled' | 'published' | 'failed'
+export type ContentStatus = 'idea' | 'draft' | 'needs_review' | 'approved' | 'scheduled' | 'published' | 'failed' | 'killed'
 export type Approval = 'pending' | 'approved' | 'changes_requested'
 
 export interface PostMetrics {
@@ -178,7 +178,11 @@ export interface Handoff {
   message: string
   createdAt: string
   acknowledged: boolean
+  /** Endpoint handoff type (analysis, brief, result, question, approval). */
+  type?: 'analysis' | 'brief' | 'result' | 'question' | 'approval'
   demo?: boolean
+  /** Set by the endpoint: who wrote it, when and from where. */
+  _meta?: { createdBy: string; createdAt: string; updatedBy: string; updatedAt: string }
 }
 
 export interface BriefField {

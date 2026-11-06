@@ -1,3 +1,5 @@
+'use client'
+
 import { ArrowRight, ChartNoAxesColumnIncreasing, Sparkles } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Badge, Button, Card, CardTitle, Checkbox, CopyButton, Empty, Field, Mono, PageHeader, Select, Textarea } from '../components/ui'
@@ -5,7 +7,7 @@ import { cx } from '../lib/cx'
 import { nowStamp, parseDate, today } from '../lib/dates'
 import { buildAgentPrompt } from '../lib/agentPrompt'
 import { ownerName, useProfile } from '../lib/profile'
-import { nextId } from '../lib/rules'
+import { isOverdue, nextId } from '../lib/rules'
 import { patch, upsert, useAppState } from '../lib/store'
 import type { Handoff, Owner, Profile } from '../lib/types'
 
@@ -103,8 +105,36 @@ export default function AgentControl() {
         </div>
       </Card>
 
+      <PasteAnalystReply />
       <HandoffLog />
     </>
+  )
+}
+
+/** Paste-in mode: the analyst's reply, copied from wherever it ran, is stored as a handoff naming an audit id. */
+function PasteAnalystReply() {
+  const s = useAppState()
+  const p = useProfile()
+  const [text, setText] = useState('')
+  const itemId = `AUDIT-${today()}`
+  return (
+    <Card className="mt-4">
+      <CardTitle>Paste {p.agents.analyst.name}'s reply</CardTitle>
+      <p className="mb-3 text-sm text-muted">
+        Stores the reply as a handoff from {p.agents.analyst.name} to {p.agents.creative.name} for <Mono>{itemId}</Mono>, so {p.agents.creative.name} reads it from the endpoint. Nothing is posted anywhere.
+      </p>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (!text.trim()) return
+          upsert('handoffs', { id: nextId('H', s.handoffs), from: 'analyst', to: 'creative', itemId, type: 'analysis', message: text.trim(), createdAt: nowStamp(), acknowledged: false })
+          setText('')
+        }}
+      >
+        <Field label="Analyst reply">{(id) => <Textarea id={id} rows={5} value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste the full audit here" />}</Field>
+        <Button type="submit" variant="primary" className="mt-3" disabled={!text.trim()}>Store as handoff</Button>
+      </form>
+    </Card>
   )
 }
 
@@ -117,7 +147,7 @@ function HandoffLog() {
   const itemOptions: Record<string, string> = {
     '': 'Choose an item',
     ...Object.fromEntries(s.content.map((c) => [c.id, `${c.id} · ${c.title || 'Untitled'}`])),
-    ...Object.fromEntries(s.experiments.map((x) => [x.id, `${x.id} · experiment`])),
+    [`AUDIT-${today()}`]: `AUDIT-${today()} · daily audit`,
   }
   const sorted = [...s.handoffs].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   const open = sorted.filter((h) => !h.acknowledged)
@@ -151,7 +181,11 @@ function HandoffLog() {
           <ul className="flex flex-col divide-y divide-ink-700">
             {sorted.map((h) => (
               <li key={h.id} className="flex flex-wrap items-start gap-3 py-3 text-sm">
-                <Checkbox checked={h.acknowledged} onChange={(acknowledged) => patch('handoffs', h.id, { acknowledged })} label={<Handoffline h={h} />} />
+                {h.to === 'creator' ? (
+                  <Checkbox checked={h.acknowledged} onChange={(acknowledged) => acknowledged && patch('handoffs', h.id, { acknowledged })} label={<Handoffline h={h} />} />
+                ) : (
+                  <Handoffline h={h} />
+                )}
               </li>
             ))}
           </ul>
@@ -169,9 +203,12 @@ function Handoffline({ h }: { h: Handoff }): ReactNode {
         <Mono>{h.id}</Mono>
         <span>{p.owner(h.from)} → {p.owner(h.to)}</span>
         {h.itemId && <Badge tone="accent">{h.itemId}</Badge>}
+        {h.type && h.type !== 'question' && <Badge>{h.type}</Badge>}
         {h.demo && <Badge>Demo</Badge>}
+        {isOverdue(h) && <Badge tone="warn">Unread 24h+</Badge>}
+        {h._meta && <span className="text-faint">by {h._meta.createdBy}</span>}
       </span>
-      <span>{h.message}</span>
+      <span className="whitespace-pre-wrap">{h.message}</span>
     </span>
   )
 }

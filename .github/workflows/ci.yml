@@ -1,0 +1,22 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.18
+      # Same script as .gitlab-ci.yml, so the pipeline is portable between GitHub and GitLab.
+      - run: bash ci/check.sh

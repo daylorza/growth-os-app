@@ -1,4 +1,4 @@
-import type { ContentItem, Engagement, KeywordRule } from './types'
+import type { ContentItem, Engagement, Handoff, KeywordRule } from './types'
 
 /** Tokenize text into uppercase alphanumeric words. */
 const tokens = (s: string): string[] => s.toUpperCase().match(/[A-Z0-9]+/g) ?? []
@@ -77,10 +77,22 @@ export function replyRiskWarnings(draft: string, who: string): string[] {
   return out
 }
 
+/** Next sequential id like C-010. Only ids of exactly that form count (not e.g. H-AUDIT-2026-11-05). */
 export const nextId = (prefix: string, existing: { id: string }[]) => {
+  const pattern = new RegExp(`^${prefix}-(\\d+)$`)
   const max = existing.reduce((m, e) => {
-    const n = Number(e.id.split('-').at(-1))
+    const n = Number(pattern.exec(e.id)?.[1])
     return Number.isFinite(n) && n > m ? n : m
   }, 0)
   return `${prefix}-${String(max + 1).padStart(3, '0')}`
 }
+
+const DAY_MS = 86_400_000
+/** A handoff nobody acknowledged within 24 hours is flagged in the dashboard. */
+export const isOverdue = (h: Pick<Handoff, 'acknowledged' | 'createdAt'>, now = Date.now()) => !h.acknowledged && now - Date.parse(h.createdAt) > DAY_MS
+
+export type DecisionState = 'approved' | 'changes_requested' | 'killed' | 'open'
+
+/** Where an item stands for the creator's decision buttons. A decision already made is shown greyed out. */
+export const decisionState = (status: string, approval: string): DecisionState =>
+  status === 'killed' ? 'killed' : approval === 'approved' && status !== 'needs_review' ? 'approved' : approval === 'changes_requested' ? 'changes_requested' : 'open'

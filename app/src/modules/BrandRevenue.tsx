@@ -1,3 +1,6 @@
+'use client'
+
+import Link from 'next/link'
 import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Badge, Button, Card, CardTitle, Drawer, Empty, Field, Input, Mono, Notice, PageHeader, Select, Stat, Textarea } from '../components/ui'
@@ -64,7 +67,7 @@ export default function BrandRevenue() {
       )}
 
       <Card className="mt-4">
-        <CardTitle right={<a href="#/settings" className="text-xs text-accent">Edit in brief</a>}>Approved offers and resources</CardTitle>
+        <CardTitle right={<Link href="/settings" className="text-xs text-accent">Edit in brief</Link>}>Approved offers and resources</CardTitle>
         <dl className="grid gap-4 text-sm sm:grid-cols-3">
           {([['offers', 'Offers'], ['landingPage', 'Landing page'], ['contactRoute', 'Contact route']] as const).map(([k, label]) => (
             <div key={k}>

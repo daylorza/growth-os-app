@@ -1,0 +1,14 @@
+# Mirror of .github/workflows/ci.yml. Both run ci/check.sh: install, lint, test, build for server/ and app/.
+stages: [check]
+
+check:
+  stage: check
+  image: node:22.18
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@8.15.4 --activate
+  script:
+    - bash ci/check.sh
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

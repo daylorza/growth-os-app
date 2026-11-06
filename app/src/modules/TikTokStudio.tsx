@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react'
 import { Badge, Button, Card, CardTitle, Empty, Notice } from '../components/ui'
 import { addDays, shortDate } from '../lib/dates'

@@ -1,9 +1,11 @@
+'use client'
+
 import { Lock } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { Badge, Button, Card, CardTitle, Checkbox, Field, Input, Notice, PageHeader, Textarea } from '../components/ui'
 import { BRIEF_FIELDS, UNKNOWN, withProject } from '../lib/labels'
-import { HAS_PRIVATE_WORKSPACE } from '../lib/private'
-import { clearDemoData, exportJSON, hasDemoData, importJSON, resetAll, update, useAppState } from '../lib/store'
+import { hasPrivateWorkspace } from '../lib/private'
+import { clearDemoData, exportJSON, hasDemoData, importJSON, resetAll, update, useAppState, useSyncStatus } from '../lib/store'
 import type { BriefKey, Profile, Settings as SettingsT } from '../lib/types'
 import ConnectorsCard from './Connectors'
 import { ProfileFields } from './Setup'
@@ -22,6 +24,7 @@ const looksLikeSecret = (v: string) =>
 
 export default function Settings() {
   const s = useAppState()
+  const sync = useSyncStatus()
   const fileRef = useRef<HTMLInputElement>(null)
   const [importMsg, setImportMsg] = useState<string | null>(null)
   const setBrief = (k: BriefKey, c: Partial<{ value: string; verified: boolean }>) =>
@@ -112,8 +115,8 @@ export default function Settings() {
       <Card className="mt-4">
         <CardTitle>Your data</CardTitle>
         <p className="mb-4 text-sm text-muted">
-          Everything is stored in this browser only. Export a backup before clearing browser data. To make a backup this repo's default workspace, save it as <code>private/workspace.json</code> (gitignored).
-          {HAS_PRIVATE_WORKSPACE && ' A private workspace file is loaded.'}
+          {sync.mode === 'endpoint' ? 'Stored on the Growth OS endpoint. This browser keeps only an offline, read-only copy.' : 'Everything is stored in this browser only. Export a backup before clearing browser data.'} To make a backup this repo's default workspace, save it as <code>private/workspace.json</code> (gitignored).
+          {hasPrivateWorkspace() && ' A private workspace file is loaded.'}
         </p>
         <div className="flex flex-wrap gap-2">
           <Button

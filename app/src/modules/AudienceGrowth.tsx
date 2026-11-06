@@ -1,3 +1,6 @@
+'use client'
+
+import Link from 'next/link'
 import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Badge, Button, Card, CardTitle, Checkbox, Empty, Field, Input, Mono, PageHeader, Select } from '../components/ui'
@@ -48,7 +51,7 @@ export default function AudienceGrowth() {
         <CardTitle>Post performance</CardTitle>
         {published.length === 0 ? (
           <Empty title="No published posts logged yet">
-            Log a post as published in <a className="text-accent" href="#/studio">Content Studio</a>, then add its metrics there.
+            Log a post as published in <Link className="text-accent" href="/studio">Content Studio</Link>, then add its metrics there.
           </Empty>
         ) : (
           <div className="-mx-5 overflow-x-auto">

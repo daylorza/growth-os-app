@@ -1,3 +1,6 @@
+'use client'
+
+import Link from 'next/link'
 import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Badge, Button, Card, CardTitle, CopyButton, Empty, Field, Input, Mono, Notice, PageHeader, Select, Textarea } from '../components/ui'
@@ -212,7 +215,7 @@ function EngagementCard({ e }: { e: Engagement }) {
           {['client_inquiry', 'collaboration'].includes(e.category) && !e.leadId && (
             <Button size="sm" onClick={() => flagLead(e.category === 'collaboration' ? 'collaboration' : 'client_inquiry')}>Flag as lead</Button>
           )}
-          {e.leadId && <a href="#/revenue" className="text-xs text-accent">Lead {e.leadId}</a>}
+          {e.leadId && <Link href="/revenue" className="text-xs text-accent">Lead {e.leadId}</Link>}
           <Button size="sm" variant="ghost" className="ml-auto" onClick={() => set({ status: 'dismissed' })}>Dismiss</Button>
         </footer>
       )}

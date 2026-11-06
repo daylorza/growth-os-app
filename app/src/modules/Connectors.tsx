@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect, useRef, useState } from 'react'
 import { Badge, Button, Card, CardTitle, Input, Notice } from '../components/ui'
 import { CONNECTORS, type ConnectorDef } from '../lib/connectors'
@@ -33,7 +35,7 @@ export default function ConnectorsCard() {
       </div>
       {!server && (
         <p className="mt-4 text-xs text-faint">
-          “Connect” buttons need a connector server that runs OAuth and keeps tokens off this browser. Set <code>VITE_CONNECTOR_SERVER</code> to enable them.
+          “Connect” buttons need a connector server that runs OAuth and keeps tokens off this browser. Set <code>NEXT_PUBLIC_CONNECTOR_SERVER</code> to enable them.
         </p>
       )}
     </Card>
@@ -74,7 +76,7 @@ function ConnectorRow({ c, handle, connection, onConnections }: { c: ConnectorDe
                 <Button size="sm" variant="ghost" onClick={async () => { await disconnect(c.id); onConnections(await fetchConnections()) }}>Disconnect</Button>
               </div>
             ) : (
-              <Button size="sm" disabled={!url} onClick={() => url && window.location.assign(url)} title={url ? undefined : 'Needs VITE_CONNECTOR_SERVER'}>
+              <Button size="sm" disabled={!url} onClick={() => url && window.location.assign(url)} title={url ? undefined : 'Needs NEXT_PUBLIC_CONNECTOR_SERVER'}>
                 Connect {c.name}
               </Button>
             )}

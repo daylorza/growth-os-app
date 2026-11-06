@@ -1,6 +1,6 @@
 /**
  * Client side of OAuth connectors. The browser never sees access tokens: a separate
- * connector server (set VITE_CONNECTOR_SERVER) runs the OAuth flow, stores tokens, and
+ * connector server (set NEXT_PUBLIC_CONNECTOR_SERVER) runs the OAuth flow, stores tokens, and
  * returns read-only, normalised data. Without a server, "Connect" stays disabled.
  *
  * Server contract (all read-only, session cookie, CORS for this origin):
@@ -21,13 +21,13 @@ export interface ServerConnection {
 }
 
 export const connectorServer = (): string | null => {
-  const url = (import.meta.env.VITE_CONNECTOR_SERVER as string | undefined)?.trim()
+  const url = process.env.NEXT_PUBLIC_CONNECTOR_SERVER?.trim()
   return url ? url.replace(/\/+$/, '') : null
 }
 
 export function connectUrl(id: ConnectorId, server = connectorServer()): string | null {
   if (!server) return null
-  const back = `${window.location.origin}${window.location.pathname}#/settings`
+  const back = `${window.location.origin}/settings`
   return `${server}/connect/${id}?return_to=${encodeURIComponent(back)}`
 }
 
