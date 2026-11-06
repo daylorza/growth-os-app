@@ -104,6 +104,12 @@ export class WorkflowService {
   /** The creator's call on an item. Writes a creator handoff to the creative agent; approval sends approval_given. */
   async decide(ctx: WriteContext, id: string, decision: Decision, note = '') {
     const item = await this.content.get(id)
+    // Repeating the same call (e.g. a double click) changes nothing and sends nothing new.
+    const current = { approve: item.approval === 'approved' && item.status !== 'needs_review', kill: item.status === 'killed', request_changes: false }[decision]
+    if (current && !note) {
+      const previous = (await this.handoffs.thread(id)).filter((h) => h.from === 'creator' && h.type === 'approval').at(-1)
+      if (previous) return { decision, handoff: previous, nextStep: await this.nextStep(id), unchanged: true }
+    }
     const status = { approve: 'approved', request_changes: 'changes_requested', kill: 'killed' } as const
     const brief = await this.briefs.decide(ctx, id, status[decision])
     await Promise.all([this.hooks, this.scripts, this.captions].map((s) => s.decide(ctx, id, status[decision])))

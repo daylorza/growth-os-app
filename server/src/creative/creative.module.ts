@@ -45,10 +45,11 @@ abstract class CreativeService<T extends CreativeDoc> extends CollectionService<
     return this.list({ contentItemId }).then((xs) => xs.sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] ?? null)
   }
 
-  /** Applies the creator's decision to the item's latest draft. */
+  /** Applies the creator's decision to every draft for the item (killed ones stay killed). Returns the latest. */
   async decide(ctx: WriteContext, contentItemId: string, status: DraftStatus) {
-    const doc = await this.latest(contentItemId)
-    return doc ? this.update(ctx, doc.id, { status } as Partial<T>) : null
+    const docs = await this.list({ contentItemId })
+    for (const d of docs) if (d.status !== 'killed' && d.status !== status) await this.update(ctx, d.id, { status } as Partial<T>)
+    return this.latest(contentItemId)
   }
 }
 

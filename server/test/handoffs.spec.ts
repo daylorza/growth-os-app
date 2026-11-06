@@ -66,9 +66,19 @@ describe('the agent loop: no human step between a brief and an analysis', () => 
     expect(briefEvent).toMatchObject({ path: '/analyst', body: { event: 'brief_created', contentItemId: id, from: 'creative' } })
     expect(briefEvent.headers.authorization).toBe('Bearer analyst-hook-key')
 
+    // Two hooks and two captions: approval covers every draft for the item, not just the latest.
+    await creative.post('/api/hooks', { contentItemId: id, kind: 'outcome', text: 'Demo first' })
+    await creative.post('/api/hooks', { contentItemId: id, kind: 'curiosity', text: 'Held for later' })
+    await creative.post('/api/captions', { contentItemId: id, platform: 'tiktok', text: 'T' })
+    await creative.post('/api/captions', { contentItemId: id, platform: 'x', text: 'X' })
     const decision = await day.post(`/api/content-items/${id}/decision`, { decision: 'approve' })
     expect(decision.status).toBe(201)
+    for (const c of ['hooks', 'captions']) expect((await day.get(`/api/${c}?contentItemId=${id}`)).body.map((x: { status: string }) => x.status)).toEqual(['approved', 'approved'])
+    // A double click does not write a second approval or send a second event.
+    const again = await day.post(`/api/content-items/${id}/decision`, { decision: 'approve' })
+    expect(again.body).toMatchObject({ unchanged: true, handoff: { id: decision.body.handoff.id } })
     await idle()
+    expect(hooks.got.filter((g) => g.body.event === 'approval_given')).toHaveLength(1)
     expect(hooks.got.at(-1)).toMatchObject({ path: '/creative', body: { event: 'approval_given', from: 'creator' } })
     expect((await day.get(`/api/briefs?contentItemId=${id}`)).body[0].status).toBe('approved')
 
