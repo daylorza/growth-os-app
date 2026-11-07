@@ -20,10 +20,10 @@ pnpm install
 pnpm dev        # http://localhost:5173
 pnpm test       # vitest: formulas, guards, privacy guard, parsers, sync diff
 pnpm lint       # oxlint
-pnpm build      # tsc --noEmit && next build
+pnpm build      # next typegen && tsc --noEmit && next build
 ```
 
-Layout: `src/app/` (App Router: one route per module, `api/[...path]` pass-through to the endpoint), `src/proxy.ts` (page auth via the endpoint), `src/lib/` (types, store, remote sync, seeds, metrics, rules/guards, connectors, TikTok parsing; `*.server.ts` is server-only), `src/components/` (`ui.tsx`, `Shell.tsx`, `server/` Server Components), `src/modules/` (one client component per nav module).
+Layout: `src/app/` (App Router: dashboard routes in `(dashboard)/`, `login/` + `auth/` for the in-app sign-in, `api/[...path]` pass-through to the endpoint), `src/proxy.ts` (page auth via the endpoint; redirects to `/login`, never a browser Basic prompt), `src/lib/session.server.ts` (encrypted session cookie), `src/lib/` (types, store, remote sync, seeds, metrics, rules/guards, connectors, TikTok parsing; `*.server.ts` is server-only), `src/components/` (`ui.tsx`, `Shell.tsx`, `server/` Server Components), `src/modules/` (one client component per nav module).
 
 ## API (`server/`)
 NestJS 12 + MongoDB driver. One module per domain, logic in services, DTOs from `@growth-os/contracts`, global auth guard driven by the contract route table. Services use the `Repository` interface (`src/db/store.ts`), never the driver. Tests run on the in-memory store. Roles in code are `creator`, `analyst`, `creative` (plus `worker` for the scheduler); agent names come from the profile and the host environment. Never add a route or client that posts, publishes, replies, likes, follows or messages on any platform.

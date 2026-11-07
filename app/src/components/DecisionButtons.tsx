@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { signInAgainIf401 } from '../lib/remote'
 import type { DecisionState as State } from '../lib/rules'
 import { refresh } from '../lib/store'
 import { Button, ConfirmButton, Field, Textarea } from './ui'
@@ -29,6 +30,7 @@ export function DecisionButtons({ id, state: initial }: { id: string; state: Sta
         headers: { 'content-type': 'application/json', 'x-growth-client': 'dashboard', 'x-growth-source': 'dashboard' },
         body: JSON.stringify({ decision, ...(decision === 'request_changes' && note ? { note } : {}) }),
       })
+      signInAgainIf401(res)
       if (!res.ok) throw new Error(((await res.json().catch(() => null)) as { message?: string } | null)?.message ?? `Failed (${res.status})`)
       setState(decision === 'approve' ? 'approved' : decision === 'kill' ? 'killed' : 'changes_requested')
       setEditingNote(false)

@@ -7,6 +7,7 @@ import {
   ChevronRight,
   FlaskConical,
   LayoutGrid,
+  LogOut,
   Menu,
   MessageCircle,
   Orbit,
@@ -21,7 +22,7 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { NEEDS_ACTION } from '../lib/labels'
 import { useProfile } from '../lib/profile'
-import { useAppState } from '../lib/store'
+import { useAppState, useSyncStatus } from '../lib/store'
 import { useDropDemoTikTokBaseline } from '../lib/tiktokData'
 import { cx } from '../lib/cx'
 import { SetupDrawer } from '../modules/Setup'
@@ -57,6 +58,7 @@ export default function Shell({ children }: { children: ReactNode }) {
   const profile = useProfile()
   const brand = profile.brandName.trim() || 'GROWTH OS'
   const route = ROUTES.find((r) => r.href === pathname) ?? ROUTES[0]
+  const syncMode = useSyncStatus().mode
   const needsReply = useAppState().engagements.filter((e) => NEEDS_ACTION.includes(e.status) && !e.demo).length
 
   useEffect(() => {
@@ -138,6 +140,13 @@ export default function Shell({ children }: { children: ReactNode }) {
         <p className="mt-6 px-2 text-xs leading-relaxed text-faint">
           Draft-only. Nothing here posts, publishes, or sends messages. {profile.creatorName} approves and publishes every public action.
         </p>
+        {syncMode !== 'local' && (
+          <form method="post" action="/auth/logout" className="mt-4 px-2">
+            <button type="submit" className="flex items-center gap-2 rounded-lg px-1 py-1.5 text-xs text-muted hover:text-fg">
+              <LogOut size={14} /> Sign out
+            </button>
+          </form>
+        )}
       </aside>
       {navOpen && <div className="fixed inset-0 z-30 bg-black/60 lg:hidden" onClick={() => setNavOpen(false)} aria-hidden />}
 
