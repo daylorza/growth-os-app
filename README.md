@@ -198,6 +198,8 @@ Pushes `private/workspace.json`, `private/endpoint-seed.json` (extra verified re
 
 Run only one live dashboard. Once the endpoint is live, a local preview is a cold backup and stays stopped.
 
+**Auto-deploy (pull-based).** `growth-os-deploy.timer` runs `deploy/update-atlas.sh` every 5 minutes. When `origin/main` has a new commit and every GitHub check on it passed, it fast-forwards the checkout, runs `pnpm install --frozen-lockfile` and `pnpm -r build`, re-runs the installer (secrets and webhook settings are kept) and waits for both `/health` checks. A red or failed commit is skipped until a newer one lands. Nothing is pushed to the host and GitHub holds no host secrets. Enable once: `sudo systemctl enable --now growth-os-deploy.timer`. Logs: `journalctl -u growth-os-deploy`. Redeploy the current commit: `sudo systemctl set-environment FORCE=1 && sudo systemctl start growth-os-deploy; sudo systemctl unset-environment FORCE`.
+
 ### Stack mapping
 
 Built in the same shape as a larger NestJS / Next.js / MongoDB product so it can move without a rewrite:
