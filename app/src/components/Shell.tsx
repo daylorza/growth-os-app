@@ -78,6 +78,9 @@ export default function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[19rem_1fr]">
+      <a href="#main-content" className="sr-only z-50 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-ink-950 focus:not-sr-only focus:fixed focus:top-3 focus:left-3">
+        Skip to content
+      </a>
       <aside
         id="main-navigation"
         className={cx(
@@ -148,7 +151,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           </button>
           <span className="text-sm font-medium">{route.label}</span>
         </div>
-        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-10 xl:px-12">
+        <main id="main-content" tabIndex={-1} className="mx-auto max-w-7xl outline-none px-4 py-6 sm:px-8 sm:py-10 xl:px-12">
           {profile.sample && (
             <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-accent/40 bg-accent/5 px-4 py-3 text-sm">
               <span className="min-w-0 flex-1">

@@ -85,7 +85,7 @@ export default function Overview() {
           <span className="text-accent tabular-nums">{progress ? `${Math.round(progress.pct)}%` : '—'}</span>
         </div>
         <div className="mt-4">
-          <ProgressBar pct={progress?.pct ?? 0} />
+          <ProgressBar pct={progress?.pct ?? null} label="Progress to the follower goal" />
         </div>
         <p className="mt-3 text-sm text-muted">
           {progress

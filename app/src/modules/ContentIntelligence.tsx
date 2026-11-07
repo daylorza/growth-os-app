@@ -86,13 +86,13 @@ export default function ContentIntelligence() {
         <CardTitle right={<span className="text-xs text-muted">{total} items counted</span>}>Content mix vs starting hypothesis</CardTitle>
         <div className="flex flex-col gap-3">
           {mix.map((m) => (
-            <div key={m.pillar} className="grid grid-cols-[minmax(0,12rem)_1fr_5rem] items-center gap-3 text-sm">
+            <div key={m.pillar} className="grid grid-cols-[minmax(0,1fr)_5rem] items-center gap-x-3 gap-y-1.5 text-sm sm:grid-cols-[minmax(0,12rem)_1fr_5rem]">
               <span className="truncate" title={PILLARS[m.pillar].note}>{PILLARS[m.pillar].label}</span>
-              <div className="relative h-2 rounded-full bg-ink-600">
+              <div className="relative order-last col-span-2 h-2 rounded-full bg-ink-600 sm:order-none sm:col-span-1" aria-hidden>
                 <div className="absolute inset-y-0 left-0 rounded-full bg-accent" style={{ width: `${m.actual}%` }} />
                 <div className="absolute -inset-y-1 w-0.5 bg-fg/70" style={{ left: `${m.target}%` }} title={`Target ${m.target}%`} />
               </div>
-              <span className="text-right text-xs tabular-nums text-muted">{Math.round(m.actual)}% / {m.target}%</span>
+              <span className="text-right text-xs tabular-nums text-muted"><span className="sr-only">Actual </span>{Math.round(m.actual)}%<span aria-hidden> / </span><span className="sr-only">, target </span>{m.target}%</span>
             </div>
           ))}
         </div>

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
-import { ConfirmButton, Drawer } from './ui'
+import { ConfirmButton, Drawer, ProgressBar } from './ui'
 
 afterEach(cleanup)
 
@@ -47,4 +47,13 @@ it('names the drawer, keeps keyboard focus inside it, and returns focus on close
   view.unmount()
   expect(document.activeElement).toBe(trigger)
   trigger.remove()
+})
+
+it('shows an unknown follower baseline as unknown, not as a zero-valued bar', () => {
+  const view = render(<ProgressBar pct={null} label="Goal" />)
+  expect(screen.queryByRole('progressbar')).toBeNull()
+  expect(screen.getByRole('img', { name: 'Goal: unknown' })).toBeTruthy()
+  view.rerender(<ProgressBar pct={0} label="Goal" />)
+  const bar = screen.getByRole('progressbar', { name: 'Goal' })
+  expect(bar.getAttribute('aria-valuenow')).toBe('0')
 })

@@ -21,3 +21,12 @@ it('reports mobile navigation state and closes it with Escape', () => {
   expect(menu.getAttribute('aria-expanded')).toBe('false')
   expect(document.activeElement).toBe(menu)
 })
+
+it('offers a skip link to the main content before the navigation', () => {
+  resetAll(createSampleSeed())
+  render(<Shell>Dashboard</Shell>)
+  const skip = screen.getByRole('link', { name: 'Skip to content' })
+  expect(skip.getAttribute('href')).toBe('#main-content')
+  expect(document.getElementById('main-content')?.tagName).toBe('MAIN')
+  expect(skip.compareDocumentPosition(screen.getByRole('link', { name: /Overview/ })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+})

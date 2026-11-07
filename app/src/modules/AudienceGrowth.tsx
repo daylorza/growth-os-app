@@ -51,7 +51,7 @@ export default function AudienceGrowth() {
         <CardTitle>Post performance</CardTitle>
         {published.length === 0 ? (
           <Empty title="No published posts logged yet">
-            Log a post as published in <Link className="text-accent" href="/studio">Content Studio</Link>, then add its metrics there.
+            Log a post as published in <Link className="text-accent underline underline-offset-2" href="/studio">Content Studio</Link>, then add its metrics there.
           </Empty>
         ) : (
           <div className="-mx-5 overflow-x-auto" role="region" aria-label="Post performance table, scroll horizontally for more columns" tabIndex={0}>
@@ -106,7 +106,7 @@ function PlatformPanel({ platform, snaps, from, to }: { platform: Platform; snap
         <h2 className="text-sm text-muted">{PLATFORM[platform]} followers</h2>
         {latest && <Badge tone={latest.verified ? 'ok' : 'warn'}>{latest.verified ? 'Verified' : 'Unverified'}</Badge>}
       </div>
-      <div className="mt-3 text-4xl font-semibold tabular-nums">{latest ? latest.count.toLocaleString() : 'UNKNOWN'}</div>
+      <div className="mt-3 text-3xl font-semibold tabular-nums xl:text-4xl">{latest ? latest.count.toLocaleString() : 'UNKNOWN'}</div>
       <p className="mt-1 text-xs text-faint">{latest ? `As of ${shortDate(latest.date)} · ${latest.source}` : 'No snapshot recorded'}</p>
       <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-ink-600 pt-4 text-sm">
         <div>
@@ -167,7 +167,7 @@ function SnapshotForm({ snaps }: { snaps: FollowerSnapshot[] }) {
       <CardTitle>Manual follower snapshots</CardTitle>
       <p className="-mt-2 mb-4 text-sm text-muted">TikTok follower history comes from exports automatically. Record X, or anything an export doesn't cover, here.</p>
       <form
-        className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-[8rem_10rem_8rem_1fr_auto_auto]"
+        className="grid items-end gap-3 sm:grid-cols-2 xl:grid-cols-[8rem_10rem_8rem_1fr_auto_auto]"
         onSubmit={(e) => {
           e.preventDefault()
           if (!valid) return

@@ -61,7 +61,7 @@ export default function Goals() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardTitle>First {s.settings.tiktokGoal.toLocaleString()} TikTok followers</CardTitle>
-          <ProgressBar pct={prog?.pct ?? 0} />
+          <ProgressBar pct={prog?.pct ?? null} label="Progress to the follower goal" />
           <p className="mt-3 text-sm text-muted">
             {prog ? `${tiktok!.count.toLocaleString()} now · ${prog.remaining.toLocaleString()} to go · ${tiktok!.verified ? 'verified' : 'unverified'}` : 'No baseline recorded yet.'}
           </p>
@@ -168,7 +168,7 @@ function TaskList({ tasks }: { tasks: Task[] }) {
                       <div className="flex-1"><Checkbox checked={x.done} onChange={(done) => patch('tasks', x.id, { done })} label={x.title} /></div>
                       <Mono>{x.owner}</Mono>
                       <span className="w-14 text-right text-xs text-muted">{shortDate(x.date)}</span>
-                      <button className="text-faint hover:text-danger" aria-label="Delete task" onClick={() => remove('tasks', x.id)}><Trash2 size={14} /></button>
+                      <button className="flex size-6 shrink-0 items-center justify-center rounded text-faint hover:text-danger" aria-label="Delete task" onClick={() => remove('tasks', x.id)}><Trash2 size={14} /></button>
                     </div>
                     {label === 'Overdue' && (
                       <div className="flex flex-wrap gap-2 pl-7">

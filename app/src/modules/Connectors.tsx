@@ -76,7 +76,7 @@ function ConnectorRow({ c, server, connection, onConnections }: { c: ConnectorDe
     <details className="rounded-xl border border-ink-600 bg-ink-900">
       <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 px-4 py-3">
         <span className="w-24 text-sm font-medium">{c.name}</span>
-        <span className="min-w-0 flex-1 truncate text-xs text-muted">{handles.join(' · ') || 'No handle set'}</span>
+        <span className="min-w-32 flex-1 truncate text-xs text-muted">{handles.join(' · ') || 'No handle set'}</span>
         <span className="text-xs text-faint">{latest ? `Latest data ${shortDate(latest)}` : 'No data yet'}</span>
         {status}
       </summary>

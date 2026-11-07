@@ -210,7 +210,7 @@ export function Drawer({
 export function PageHeader({ eyebrow, title, right, children }: { eyebrow: string; title: string; right?: ReactNode; children?: ReactNode }) {
   return (
     <header className="mb-6 flex flex-wrap items-start gap-4">
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-[1_1_20rem]">
         <p className="text-xs tracking-widest text-muted uppercase">{eyebrow}</p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">{title}</h1>
         {children && <p className="mt-2 max-w-2xl text-sm text-muted">{children}</p>}
@@ -280,9 +280,11 @@ export function Checkbox({ checked, onChange, label, strike = true }: { checked:
   )
 }
 
-export function ProgressBar({ pct }: { pct: number }) {
+/** `pct: null` means unknown (no baseline): an empty dashed track, never a bar at zero. A real 0 still renders as 0%. */
+export function ProgressBar({ pct, label }: { pct: number | null; label: string }) {
+  if (pct == null) return <div className="h-2 w-full rounded-full border border-dashed border-ink-600" role="img" aria-label={`${label}: unknown`} />
   return (
-    <div className="h-2 w-full overflow-hidden rounded-full bg-ink-600" role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}>
+    <div className="h-2 w-full overflow-hidden rounded-full bg-ink-600" role="progressbar" aria-label={label} aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}>
       <div className="h-full rounded-full bg-accent transition-[width] duration-700" style={{ width: `${pct}%` }} />
     </div>
   )
