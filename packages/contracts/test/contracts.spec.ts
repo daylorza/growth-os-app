@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import * as dto from '../src/dto'
-import { buildOpenApi, canWrite, ROUTES, WRITE_ACCESS } from '../src'
+import { buildOpenApi, canWrite, CREATIVE_PLATFORMS, ROUTES, WRITE_ACCESS } from '../src'
 
 const errors = (cls: new () => object, body: object) => validateSync(plainToInstance(cls, body), { whitelist: true, forbidNonWhitelisted: true }).map((e) => e.property)
 
@@ -103,7 +103,10 @@ describe('contracts: UNKNOWN', () => {
 describe('contracts: ownership and spec', () => {
   it('agents write only their own collections', () => {
     for (const c of ['briefs', 'hooks', 'scripts', 'captions'] as const) expect([canWrite('creative', c), canWrite('analyst', c)]).toEqual([true, false])
-    for (const c of ['audience_snapshots', 'engagement_queue', 'experiments'] as const) expect([canWrite('analyst', c), canWrite('creative', c)]).toEqual([true, false])
+    for (const c of ['engagement_queue', 'experiments'] as const) expect([canWrite('analyst', c), canWrite('creative', c)]).toEqual([true, false])
+    // Snapshots: both agents, the creative agent for CREATIVE_PLATFORMS only (enforced by the audience service).
+    expect([canWrite('analyst', 'audience_snapshots'), canWrite('creative', 'audience_snapshots')]).toEqual([true, true])
+    expect(CREATIVE_PLATFORMS).toEqual(['tiktok', 'threads'])
     for (const c of Object.keys(WRITE_ACCESS) as (keyof typeof WRITE_ACCESS)[]) {
       expect(canWrite('creator', c)).toBe(true)
       expect(canWrite('worker', c)).toBe(false)

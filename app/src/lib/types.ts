@@ -1,6 +1,6 @@
 import type { TikTokSnapshot } from './tiktok'
 
-export type Platform = 'tiktok' | 'x'
+export type Platform = 'tiktok' | 'x' | 'threads'
 /** Workspace roles. Display names come from the profile (e.g. creator "Sam", analyst "Scout"). */
 export type Owner = 'creator' | 'analyst' | 'creative'
 export type Pillar = 'build' | 'commentary' | 'founder' | 'travel' | 'business'
@@ -217,7 +217,7 @@ export interface Settings {
   planChecks: Record<string, boolean>
 }
 
-export type ConnectorId = 'tiktok' | 'x' | 'instagram' | 'youtube' | 'linkedin'
+export type ConnectorId = 'tiktok' | 'x' | 'threads' | 'instagram' | 'youtube' | 'linkedin'
 
 export interface AgentProfile {
   name: string

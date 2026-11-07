@@ -71,3 +71,26 @@ describe('audience snapshots: platforms are never summed', () => {
     expect(c.body.tables[0]).toMatchObject({ name: 'growth_os.audience.snapshot_facts', tags: { write_mode: 'append_only', platform_scoped: 'true' } })
   })
 })
+
+describe('audience snapshots: the creative agent', () => {
+  let app: INestApplication
+  beforeAll(async () => {
+    app = await makeApp()
+  })
+  afterAll(() => app.close())
+
+  it('the creative agent records TikTok and Threads only, always unverified', async () => {
+    const creative = as(app, bearer('creative'))
+    const THREADS = { platform: 'threads', date: '2026-01-11', source: 'Threads profile', sourceType: 'creative_agent', metrics: { followers: 210 } }
+    const t = await creative.post('/api/audience/snapshots', THREADS)
+    expect(t.status).toBe(201)
+    expect(t.body).toMatchObject({ platform: 'threads', verified: false, metrics: { followers: 210, posts: 'UNKNOWN' } })
+    expect((await creative.post('/api/audience/snapshots', { ...TIKTOK, date: '2026-01-11', sourceType: 'creative_agent' })).status).toBe(201)
+    expect((await creative.post('/api/audience/snapshots', { ...X, date: '2026-01-12' })).status).toBe(403)
+    expect((await creative.post('/api/audience/snapshots', { ...THREADS, verified: true })).status).toBe(403)
+    expect((await creative.delete(`/api/audience/snapshots/${t.body.id}`)).status).toBe(403)
+    const day = as(app, basic)
+    expect((await day.get('/api/audience/latest?platform=threads')).body.metrics.followers).toBe(210)
+    expect((await day.get('/api/analytics/summary?platform=threads')).body.platform).toBe('threads')
+  })
+})

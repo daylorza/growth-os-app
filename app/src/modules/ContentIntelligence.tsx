@@ -3,12 +3,12 @@
 import { Plus, Trash2 } from 'lucide-react'
 import { Badge, Button, Card, CardTitle, CopyButton, Empty, Field, Input, Mono, PageHeader, Select, Textarea } from '../components/ui'
 import { addDays, today, weekRange } from '../lib/dates'
-import { EXPERIMENT_STATUS, PILLARS, PLATFORM, UNKNOWN } from '../lib/labels'
+import { EXPERIMENT_STATUS, PILLARS, PLATFORM, PLATFORMS, UNKNOWN } from '../lib/labels'
 import { fmt, per1k, periodChange, pillarMix } from '../lib/metrics'
 import { nextId } from '../lib/rules'
 import { patch, remove, upsert, useAppState } from '../lib/store'
 import { useFollowerSnapshots } from '../lib/tiktokData'
-import type { AppState, AudienceReport, Experiment, FollowerSnapshot, Platform } from '../lib/types'
+import type { AppState, AudienceReport, Experiment, FollowerSnapshot } from '../lib/types'
 
 const EXP_FIELDS: [keyof Experiment, string, boolean?][] = [
   ['hypothesis', 'Hypothesis', true],
@@ -45,12 +45,12 @@ function weeklyReport(s: AppState, snaps: FollowerSnapshot[], on: string = today
   const published = s.content.filter((c) => c.status === 'published' && c.publishedAt >= start && c.publishedAt <= end)
   lines.push(`**Publishing vs plan:** ${published.length} published of ${thisWeek.length} planned (TikTok target ${s.settings.weeklyTikTokTarget})`)
 
-  for (const p of ['tiktok', 'x'] as Platform[]) {
+  for (const p of PLATFORMS) {
     const ch = periodChange(snaps, p, addDays(start, -1), end)
     lines.push(`**${PLATFORM[p]} followers:** ${ch ? `${ch.start.count} → ${ch.end.count} (net ${ch.net}, ${fmt(ch.pct)}%)${ch.verified ? '' : ' · includes unverified data'}` : 'Unavailable: needs two snapshots this week'}`)
   }
 
-  for (const p of ['tiktok', 'x'] as Platform[]) {
+  for (const p of PLATFORMS) {
     const ranked = published
       .filter((c) => c.platform === p && per1k(c.metrics.shares, c.metrics.views) != null)
       .sort((a, b) => per1k(b.metrics.shares, b.metrics.views)! - per1k(a.metrics.shares, a.metrics.views)!)

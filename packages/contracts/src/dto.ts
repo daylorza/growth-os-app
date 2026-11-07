@@ -277,7 +277,7 @@ export class CreateSnapshotDto {
 }
 
 export class LatestQuery {
-  @IsIn(PLATFORMS, { message: 'platform must be tiktok or x. Platforms are reported separately and never combined.' }) platform: Platform
+  @IsIn(PLATFORMS, { message: 'platform must be tiktok, x or threads. Platforms are reported separately and never combined.' }) platform: Platform
 }
 
 export class SnapshotQuery {
@@ -302,12 +302,12 @@ export const METRICS = ['followers', 'following', 'posts', 'views7d', 'views14d'
 export type MetricName = (typeof METRICS)[number]
 
 export class SeriesQuery {
-  @IsIn(PLATFORMS, { message: 'platform must be tiktok or x. Platforms are never combined.' }) platform: Platform
+  @IsIn(PLATFORMS, { message: 'platform must be tiktok, x or threads. Platforms are never combined.' }) platform: Platform
   @IsIn(METRICS) metric: MetricName
 }
 
 export class SummaryQuery {
-  @IsIn(PLATFORMS, { message: 'platform must be tiktok or x. Platforms are never combined.' }) platform: Platform
+  @IsIn(PLATFORMS, { message: 'platform must be tiktok, x or threads. Platforms are never combined.' }) platform: Platform
   @IsOptional() @Matches(ISO_DATE) from?: string
   @IsOptional() @Matches(ISO_DATE) to?: string
 }

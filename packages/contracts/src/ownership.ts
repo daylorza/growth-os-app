@@ -5,7 +5,8 @@ import type { Role } from './domain'
  * The creator may write anything (she approves and corrects). A write outside this table returns 403.
  */
 export const WRITE_ACCESS = {
-  audience_snapshots: ['creator', 'analyst'],
+  /** The creative agent only for its own platforms (CREATIVE_PLATFORMS), checked in the audience service. */
+  audience_snapshots: ['creator', 'analyst', 'creative'],
   engagement_queue: ['creator', 'analyst'],
   experiments: ['creator', 'analyst'],
   reports: ['creator', 'analyst'],

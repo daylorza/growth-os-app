@@ -39,6 +39,13 @@ export const CONNECTORS: ConnectorDef[] = [
     oauth: { api: 'X API v2 (OAuth 2.0 with PKCE)', scopes: ['tweet.read', 'users.read', 'offline.access'], note: 'Requires an X developer app; API access tiers and limits apply.' },
   },
   {
+    id: 'threads',
+    name: 'Threads',
+    handlePlaceholder: '@yourhandle',
+    exportFiles: { status: 'needs-sample', steps: ['The creative agent records a weekly Threads snapshot after the Sunday refresh request.', 'Send one sample insights export to add a Threads parser.'] },
+    oauth: { api: 'Threads API (Meta)', scopes: ['threads_basic', 'threads_manage_insights'], note: 'Requires a Meta app with Threads API access.' },
+  },
+  {
     id: 'instagram',
     name: 'Instagram',
     handlePlaceholder: '@yourhandle',

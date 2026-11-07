@@ -5,8 +5,10 @@
  */
 import type { Metric } from './unknown'
 
-export const PLATFORMS = ['tiktok', 'x'] as const
+export const PLATFORMS = ['tiktok', 'x', 'threads'] as const
 export type Platform = (typeof PLATFORMS)[number]
+/** Platforms the creative agent reads and records itself (weekly). X stays with the analyst. */
+export const CREATIVE_PLATFORMS = ['tiktok', 'threads'] as const satisfies readonly Platform[]
 export const OWNERS = ['creator', 'analyst', 'creative'] as const
 export type Owner = (typeof OWNERS)[number]
 /** Credential roles: the three authors plus the scheduler, which can only dispatch events. */
@@ -154,7 +156,7 @@ export interface Lead extends BaseDoc {
   createdAt: string
 }
 
-export const SNAPSHOT_SOURCE_TYPES = ['platform_export', 'analyst_agent', 'manual'] as const
+export const SNAPSHOT_SOURCE_TYPES = ['platform_export', 'analyst_agent', 'creative_agent', 'manual'] as const
 export interface AudienceMetrics {
   followers: Metric
   following: Metric
@@ -282,7 +284,7 @@ export interface Caption extends CreativeDoc {
   hashtags: string
 }
 
-export const EVENTS = ['daily_audit', 'brief_created', 'analysis_created', 'post_published', 'measure_request', 'x_refresh', 'experiment_logged', 'approval_given'] as const
+export const EVENTS = ['daily_audit', 'brief_created', 'analysis_created', 'post_published', 'measure_request', 'x_refresh', 'weekly_refresh', 'experiment_logged', 'approval_given'] as const
 export type EventName = (typeof EVENTS)[number]
 
 /** Body of every webhook POST. `handoffId` is the idempotency key. */

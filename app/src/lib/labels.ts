@@ -11,7 +11,9 @@ import type {
   ReplyStatus,
 } from './types'
 
-export const PLATFORM: Record<Platform, string> = { tiktok: 'TikTok', x: 'X' }
+export const PLATFORM: Record<Platform, string> = { tiktok: 'TikTok', x: 'X', threads: 'Threads' }
+/** Every platform, in display order. Each is reported on its own and never added to another. */
+export const PLATFORMS = Object.keys(PLATFORM) as Platform[]
 
 export const PILLARS: Record<Pillar, { label: string; target: number; note: string }> = {
   build: { label: 'Building AI in public', target: 40, note: 'Project demos, architecture, agent workflows, lessons' },

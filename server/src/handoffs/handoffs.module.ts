@@ -138,6 +138,16 @@ export class HandoffsService extends CollectionService<Handoff> {
     return this.system(ctx, `H-XREFRESH-${date}-${window}`, { contentItemId: `AUDIT-${date}`, from: 'creator', to: 'analyst', type: 'question', body, refs: [] }, 'x_refresh')
   }
 
+  /** The weekly TikTok and Threads refresh for the creative agent, after Sunday's stats. Idempotent per ISO week. */
+  async weeklyRefresh(ctx: WriteContext, now = Date.now()) {
+    const date = new Date(now).toISOString().slice(0, 10)
+    const weekStart = new Date(now - ((new Date(now).getUTCDay() + 6) % 7) * DAY_MS).toISOString().slice(0, 10)
+    const p = await this.store.collection<{ id: string; value: { handles?: Record<string, string> } }>('profiles').get('main')
+    const handle = (k: string) => p?.value.handles?.[k] || `the ${k} account in the profile`
+    const body = `Weekly refresh, sent ${date} (week starting ${weekStart}). Read TikTok (${handle('tiktok')}) and Threads (${handle('threads')}), read-only.\n\nFor each platform write one snapshot (POST /api/audience/snapshots: platform tiktok or threads, date ${date}, sourceType creative_agent, source = where you read it) with the followers, following, posts, views and engagement you can see. Anything you cannot see stays "UNKNOWN", never 0. Platforms are never added together. Then ack this handoff and send the analyst a question handoff on AUDIT-${date} citing both snapshot ids. Everything stays a draft.`
+    return this.system(ctx, `H-WEEKLY-${weekStart}`, { contentItemId: `AUDIT-${date}`, from: 'creator', to: 'creative', type: 'question', body, refs: [] }, 'weekly_refresh')
+  }
+
   /** measure_request 24h and 72h after a post was published. Idempotent per item and window. */
   async measureRequests(ctx: WriteContext, now = Date.now()) {
     const items = await this.store.collection<ContentItem>('content_items').list({ status: 'published' })
@@ -190,6 +200,11 @@ export class DispatchController {
   @Post('measure-requests')
   measure(@Writer() w: WriteContext) {
     return this.handoffs.measureRequests(w)
+  }
+
+  @Post('weekly-refresh')
+  weekly(@Writer() w: WriteContext) {
+    return this.handoffs.weeklyRefresh(w)
   }
 
   @Post('x-refresh')

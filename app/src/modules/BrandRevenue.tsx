@@ -5,7 +5,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Badge, Button, Card, CardTitle, Drawer, Empty, Field, Input, Mono, Notice, PageHeader, Select, Stat, Textarea } from '../components/ui'
 import { today } from '../lib/dates'
-import { LEAD_STATUS, LEAD_TYPE, UNKNOWN } from '../lib/labels'
+import { LEAD_STATUS, LEAD_TYPE, PLATFORM, UNKNOWN } from '../lib/labels'
 import { nextId } from '../lib/rules'
 import { patch, remove, upsert, useAppState } from '../lib/store'
 import type { Lead, LeadStatus } from '../lib/types'
@@ -99,7 +99,7 @@ function LeadDrawer({ lead: l, onClose }: { lead: Lead; onClose: () => void }) {
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Public handle">{(id) => <Input id={id} value={l.handle} onChange={(e) => set({ handle: e.target.value })} />}</Field>
-        <Field label="Platform">{(id) => <Select id={id} options={{ tiktok: 'TikTok', x: 'X', other: 'Other' }} value={l.platform} onChange={(platform) => set({ platform })} />}</Field>
+        <Field label="Platform">{(id) => <Select id={id} options={{ ...PLATFORM, other: 'Other' }} value={l.platform} onChange={(platform) => set({ platform })} />}</Field>
         <Field label="Type">{(id) => <Select id={id} options={LEAD_TYPE} value={l.type} onChange={(type) => set({ type })} />}</Field>
         <Field label="Stage">{(id) => <Select id={id} options={LEAD_STATUS} value={l.status} onChange={(status) => set({ status })} />}</Field>
         <Field label="What they need" className="sm:col-span-2">{(id) => <Textarea id={id} value={l.summary} onChange={(e) => set({ summary: e.target.value })} />}</Field>
