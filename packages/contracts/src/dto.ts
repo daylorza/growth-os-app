@@ -378,7 +378,8 @@ export class CreateKeywordDto {
   @OptionalText() cta?: string
   @OptionalText() replyTemplate?: string
   @IsOptional() @IsBoolean() active?: boolean
-  @IsOptional() @Matches(ID_PATTERN) resourceId?: string
+  /** A resource id, or empty for none (the dashboard clears it with ''). */
+  @IsOptional() @Matches(/^(|[A-Za-z0-9][A-Za-z0-9_.:-]{0,63})$/) resourceId?: string
   @IsOptional() @IsArray() @ArrayMaxSize(50) @IsString({ each: true }) @Matches(/^https?:\/\/\S+$/, { each: true, message: 'postUrls must be links' }) @MaxLength(500, { each: true }) postUrls?: string[]
   @IsOptional() @IsBoolean() demo?: boolean
 }

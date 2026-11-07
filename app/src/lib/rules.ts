@@ -26,6 +26,16 @@ export const postMatches = (r: KeywordRule, sourcePost: string) =>
 export const matchKeywords = (comment: string, rules: KeywordRule[], sourcePost = '') =>
   rules.filter((r) => keywordMatches(comment, r.keyword) && postMatches(r, sourcePost))
 
+/** The active DM campaign an engagement item belongs to: its keyword, on one of the campaign's posts. */
+export const campaignFor = (e: Pick<Engagement, 'keyword' | 'sourcePost'>, rules: KeywordRule[]) =>
+  rules.find((r) => r.active && /\bdm\b/i.test(r.deliveryMethod) && e.keyword.trim() && keywordMatches(e.keyword, r.keyword) && postMatches(r, e.sourcePost))
+
+const person = (s: string) => s.trim().replace(/^@/, '').toLowerCase()
+
+/** Other queue items for the same person on the same platform: a DM already queued, approved or sent. Dismissed items do not count. */
+export const sameRecipient = (e: Engagement, all: Engagement[]) =>
+  person(e.author) ? all.filter((o) => o.id !== e.id && o.platform === e.platform && person(o.author) === person(e.author) && o.status !== 'dismissed') : []
+
 /** A campaign's starting reply for one person: {name} becomes their name or handle. */
 export const fillTemplate = (template: string, name: string) => template.replaceAll('{name}', name.replace(/^@/, '').trim() || 'there')
 

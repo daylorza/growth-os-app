@@ -65,6 +65,11 @@ describe('collection ownership', () => {
     const k = await day.post('/api/keywords', { keyword: 'GUIDE', resourceId: r.body.id, postUrls: ['https://www.tiktok.com/@a/video/1'] })
     expect(k.body).toMatchObject({ resourceId: r.body.id, postUrls: ['https://www.tiktok.com/@a/video/1'] })
     expect((await day.post('/api/keywords', { keyword: 'BAD', postUrls: ['not a link'] })).status).toBe(400)
+    // The dashboard creates keywords and clears the resource with an empty id.
+    const blank = await day.post('/api/keywords', { keyword: 'NEW', resourceId: '', postUrls: [] })
+    expect(blank.status).toBe(201)
+    expect((await day.patch(`/api/keywords/${k.body.id}`, { resourceId: '', approvedResource: '' })).status).toBe(200)
+    expect((await day.post('/api/keywords', { keyword: 'BAD', resourceId: 'not an id!' })).status).toBe(400)
     expect((await as(app, basic).get('/api/state')).body.resources.map((x: { id: string }) => x.id)).toContain(r.body.id)
   })
 

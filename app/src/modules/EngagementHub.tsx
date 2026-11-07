@@ -7,7 +7,7 @@ import { Badge, Button, Card, CardTitle, CopyButton, Empty, Field, Input, Mono, 
 import { cx } from '../lib/cx'
 import { nowStamp, today } from '../lib/dates'
 import { CATEGORY, ENGAGEMENT_PLATFORM, NEEDS_ACTION, REPLY_STATUS } from '../lib/labels'
-import { fillTemplate, isRepeatReply, keywordActivationError, matchKeywords, nextId, replyApproveError, replyRiskWarnings } from '../lib/rules'
+import { campaignFor, fillTemplate, isRepeatReply, keywordActivationError, matchKeywords, nextId, replyApproveError, replyRiskWarnings, sameRecipient } from '../lib/rules'
 import { patch, remove, upsert, useAppState } from '../lib/store'
 import type { CommentCategory, Engagement, EngagementPlatform, KeywordRule, LeadType, ReplyStatus, Resource } from '../lib/types'
 
@@ -127,8 +127,13 @@ function EngagementCard({ e }: { e: Engagement }) {
     patch('engagements', e.id, { ...changes, updatedAt: nowStamp() })
     setError(null)
   }
-  const warnings = replyRiskWarnings(e.draftReply, s.profile.creatorName)
-  const repeat = isRepeatReply(e.draftReply, s.engagements, e.id)
+  // A DM from an active campaign is the approved delivery, and its text is meant to repeat.
+  const campaign = campaignFor(e, s.keywords)
+  const resource = campaign && s.resources.find((r) => r.id === campaign.resourceId)
+  const warnings = replyRiskWarnings(e.draftReply, s.profile.creatorName).filter((w) => !(campaign && w.startsWith('Mentions a DM')))
+  const repeat = !campaign && isRepeatReply(e.draftReply, s.engagements, e.id)
+  const already = sameRecipient(e, s.engagements)
+  const sent = already.filter((o) => o.status === 'posted_by_day' || /sent by/i.test(o.note))
   const locked = e.status === 'posted_by_day' || e.status === 'dismissed'
   const link = /^https?:\/\/\S+$/.test(e.sourcePost.trim()) ? e.sourcePost.trim() : null
   const creative = s.profile.agents.creative.name
@@ -208,6 +213,16 @@ function EngagementCard({ e }: { e: Engagement }) {
           )}
         </Field>
       </div>
+      {campaign && (
+        <p className="mt-2 text-xs text-muted">
+          Campaign DM: <Mono>{campaign.keyword}</Mono>{resource ? ` → ${resource.name}` : ''}
+        </p>
+      )}
+      {already.length > 0 && (
+        <Notice tone={sent.length ? 'danger' : 'neutral'}>
+          {sent.length ? 'Already sent to' : 'Already in the queue for'} @{e.author.replace(/^@/, '')}: {already.map((o) => `${o.id} (${REPLY_STATUS[o.status]}${/sent by/i.test(o.note) ? ', sent' : ''})`).join(', ')}. Don't DM them twice.
+        </Notice>
+      )}
       {(warnings.length > 0 || repeat || error) && (
         <div className="mt-2 flex flex-col gap-1">
           {error && <Notice tone="danger">{error}</Notice>}
@@ -307,6 +322,29 @@ function Resources({ resources, keywords }: { resources: Resource[]; keywords: K
   )
 }
 
+/** One link per line. Typing stays free; the list is saved when the box loses focus. */
+function PostUrls({ id, urls, onChange }: { id: string; urls: string[]; onChange: (urls: string[]) => void }) {
+  const [text, setText] = useState(urls.join('\n'))
+  const parsed = text.split(/\s+/).map((u) => u.trim()).filter(Boolean)
+  const bad = parsed.filter((u) => !/^https?:\/\/\S+$/.test(u))
+  return (
+    <>
+      <Textarea
+        id={id}
+        rows={3}
+        value={text}
+        placeholder={'https://www.tiktok.com/@you/video/…\nhttps://www.tiktok.com/@you/video/…'}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={() => {
+          const next = parsed.filter((u) => /^https?:\/\/\S+$/.test(u))
+          if (next.join('\n') !== urls.join('\n')) onChange(next)
+        }}
+      />
+      {bad.length > 0 && <span className="text-xs text-warn">Not a link, will be skipped: {bad.join(', ')}</span>}
+    </>
+  )
+}
+
 function KeywordRules({ rules, resources }: { rules: KeywordRule[]; resources: Resource[] }) {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [newKw, setNewKw] = useState('')
@@ -344,16 +382,16 @@ function KeywordRules({ rules, resources }: { rules: KeywordRule[]; resources: R
                 )}
               </Field>
               <Field label="Delivery method" hint="e.g. Link in bio, pinned comment">{(id) => <Input id={id} value={r.deliveryMethod} onChange={(e) => set(r, { deliveryMethod: e.target.value })} />}</Field>
-              <Field label="Exact CTA" className="sm:col-span-2">{(id) => <Input id={id} value={r.cta} onChange={(e) => set(r, { cta: e.target.value })} />}</Field>
-              <Field label="Only on these posts" hint="One link per line. Empty: any post." className="sm:col-span-2">
+              <Field label="Exact CTA" className="sm:col-span-2">
                 {(id) => (
-                  <Textarea
-                    id={id}
-                    rows={3}
-                    value={(r.postUrls ?? []).join('\n')}
-                    onChange={(e) => set(r, { postUrls: e.target.value.split(/\s+/).map((u) => u.trim()).filter((u) => /^https?:\/\//.test(u)) })}
-                  />
+                  <>
+                    <p className="text-xs text-faint">What you say in the video. New CTA per line.</p>
+                    <Textarea id={id} rows={3} value={r.cta} onChange={(e) => set(r, { cta: e.target.value })} />
+                  </>
                 )}
+              </Field>
+              <Field label="Only on these posts" hint="One link per line. Empty: any post." className="sm:col-span-2">
+                {(id) => <PostUrls id={id} urls={r.postUrls ?? []} onChange={(postUrls) => set(r, { postUrls })} />}
               </Field>
               <Field label="Starting reply (edit per comment)" hint="{name} becomes the person's name or handle." className="sm:col-span-2">
                 {(id) => <Textarea id={id} value={r.replyTemplate} onChange={(e) => set(r, { replyTemplate: e.target.value })} />}
