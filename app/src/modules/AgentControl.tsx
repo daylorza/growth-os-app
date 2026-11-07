@@ -204,7 +204,6 @@ function Handoffline({ h }: { h: Handoff }): ReactNode {
         <span>{p.owner(h.from)} → {p.owner(h.to)}</span>
         {h.itemId && <Badge tone="accent">{h.itemId}</Badge>}
         {h.type && h.type !== 'question' && <Badge>{h.type}</Badge>}
-        {h.demo && <Badge>Demo</Badge>}
         {isOverdue(h) && <Badge tone="warn">Unread 24h+</Badge>}
         {h._meta && <span className="text-faint">by {h._meta.createdBy}</span>}
       </span>

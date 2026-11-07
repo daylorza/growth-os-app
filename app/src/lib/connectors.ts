@@ -14,6 +14,8 @@ export interface ConnectorDef {
   handlePlaceholder: string
   /** The agent that reads this platform with its own access, and how. Names come from the profile. */
   reader?: { role: 'analyst' | 'creative'; via: string }
+  /** A host connector that pulls this platform's counts itself; its snapshots have ids starting with idPrefix. */
+  api?: { label: string; idPrefix: string; schedule: string }
   /** More of the creator's accounts on this platform, e.g. a brand account. */
   extraHandles?: { key: HandleKey; label: string }[]
   exportFiles: { status: 'available' | 'needs-sample'; steps: string[] }
@@ -25,7 +27,8 @@ export const CONNECTORS: ConnectorDef[] = [
     id: 'tiktok',
     name: 'TikTok',
     handlePlaceholder: '@yourhandle',
-    reader: { role: 'creative', via: 'signed-in browser: TikTok Studio analytics, comments and notifications' },
+    reader: { role: 'creative', via: 'its signed-in browser: comments, notifications and TikTok Studio views' },
+    api: { label: 'TikTok API', idPrefix: 'S-TT-API-', schedule: 'daily at 07:30 UTC' },
     exportFiles: {
       status: 'available',
       steps: [

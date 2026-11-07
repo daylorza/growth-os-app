@@ -175,7 +175,6 @@ function SnapshotForm({ snaps }: { snaps: FollowerSnapshot[] }) {
               <span className="w-14">{PLATFORM[x.platform]}</span>
               <span className="w-16 tabular-nums">{x.count.toLocaleString()}</span>
               <span className="min-w-0 flex-1 truncate text-muted">{x.source}</span>
-              {x.demo && <Badge>Demo</Badge>}
               <Badge tone={x.verified ? 'ok' : 'warn'}>{x.verified ? 'Verified' : 'Unverified'}</Badge>
               <Button variant="ghost" size="sm" aria-label="Delete snapshot" onClick={() => confirm('Delete this snapshot?') && remove('snapshots', x.id)}>
                 <Trash2 size={14} />

@@ -153,7 +153,6 @@ export default function ContentStudio() {
                       <span className="w-12 text-xs">{PLATFORM[c.platform]}</span>
                       <span className="min-w-0 flex-1 truncate text-sm">{c.title || 'Untitled'}</span>
                       <span className="text-xs text-muted">{PILLARS[c.pillar].label}</span>
-                      {c.demo && <Badge>Demo</Badge>}
                       <Badge tone={statusTone[c.status]}>{CONTENT_STATUS[c.status]}</Badge>
                     </button>
                   </li>

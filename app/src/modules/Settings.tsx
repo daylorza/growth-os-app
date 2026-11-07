@@ -5,7 +5,7 @@ import { useRef, useState } from 'react'
 import { Badge, Button, Card, CardTitle, Checkbox, Field, Input, Notice, PageHeader, Textarea } from '../components/ui'
 import { BRIEF_FIELDS, UNKNOWN, withProject } from '../lib/labels'
 import { hasPrivateWorkspace } from '../lib/private'
-import { clearDemoData, demoRecords, exportJSON, importJSON, resetAll, update, useAppState, useSyncStatus } from '../lib/store'
+import { exportJSON, importJSON, resetAll, update, useAppState, useSyncStatus } from '../lib/store'
 import type { BriefKey, Profile, Settings as SettingsT } from '../lib/types'
 import ConnectorsCard from './Connectors'
 import { ProfileFields } from './Setup'
@@ -32,7 +32,6 @@ export default function Settings() {
   const setSettings = (c: Partial<SettingsT>) => update((st) => ({ ...st, settings: { ...st.settings, ...c } }))
   const groups = [...new Set(BRIEF_FIELDS.map((f) => f.group))]
   const unknown = BRIEF_FIELDS.filter((f) => s.brief[f.key].value.trim() === UNKNOWN).length
-  const demo = demoRecords(s)
   const live = sync.mode === 'endpoint' || sync.mode === 'offline'
 
   return (
@@ -146,11 +145,6 @@ export default function Settings() {
               e.target.value = ''
             }}
           />
-          {demo.length > 0 && (
-            <Button onClick={() => confirm(`Remove these ${demo.length} example records? ${demo.map((r) => r.id).join(', ')}. Your own records, the handoff log and anything the agents are using stay.`) && clearDemoData()}>
-              Clear demo data ({demo.length})
-            </Button>
-          )}
           {!live && (
             <Button variant="danger" className="ml-auto" onClick={() => confirm('Erase everything and start over? This cannot be undone. Export a backup first.') && resetAll()}>
               Reset everything
@@ -158,7 +152,6 @@ export default function Settings() {
           )}
         </div>
         {live && <p className="mt-3 text-xs text-faint">Import and reset are off on the live endpoint: they would overwrite the workspace your agents use. Export still works.</p>}
-        {demo.length > 0 && <p className="mt-2 text-xs text-faint">Example records: {demo.map((r) => r.id).join(', ')}.</p>}
         {importMsg && <p className="mt-3 text-xs text-muted">{importMsg}</p>}
       </Card>
     </>

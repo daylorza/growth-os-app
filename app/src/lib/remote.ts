@@ -111,7 +111,7 @@ const strip = (item: object) => {
 const createBody = (key: CollectionKey, item: object) => {
   if (key === 'handoffs') {
     const h = item as Handoff
-    return { id: h.id, contentItemId: h.itemId, from: h.from, to: h.to, type: h.type ?? 'question', body: h.message, refs: [], createdAt: h.createdAt, ...(h.demo ? { demo: true } : {}) }
+    return { id: h.id, contentItemId: h.itemId, from: h.from, to: h.to, type: h.type ?? 'question', body: h.message, refs: h.refs ?? [], createdAt: h.createdAt, ...(h.demo ? { demo: true } : {}) }
   }
   if (key !== 'snapshots') return strip(item)
   const s = item as FollowerSnapshot
