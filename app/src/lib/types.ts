@@ -184,6 +184,8 @@ export interface Handoff {
   acknowledged: boolean
   /** Endpoint handoff type (analysis, brief, result, question, approval). */
   type?: 'analysis' | 'brief' | 'result' | 'question' | 'approval'
+  /** Records this handoff cites, e.g. the engagement item a send request is about. */
+  refs?: { collection: string; id: string }[]
   demo?: boolean
   /** Set by the endpoint: who wrote it, when and from where. */
   _meta?: { createdBy: string; createdAt: string; updatedBy: string; updatedAt: string }

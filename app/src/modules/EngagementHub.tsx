@@ -129,6 +129,24 @@ function EngagementCard({ e }: { e: Engagement }) {
   const warnings = replyRiskWarnings(e.draftReply, s.profile.creatorName)
   const repeat = isRepeatReply(e.draftReply, s.engagements, e.id)
   const locked = e.status === 'posted_by_day' || e.status === 'dismissed'
+  const link = /^https?:\/\/\S+$/.test(e.sourcePost.trim()) ? e.sourcePost.trim() : null
+  const creative = s.profile.agents.creative.name
+  const creativeLane = (['tiktok', 'threads', 'instagram'] as const).includes(e.platform as 'tiktok')
+  const sendRequested = s.handoffs.some((h) => h.to === 'creative' && h.refs?.some((r) => r.collection === 'engagement_queue' && r.id === e.id))
+  const askToSend = () => {
+    const where = [ENGAGEMENT_PLATFORM[e.platform], e.account, e.author && `@${e.author.replace(/^@/, '')}`].filter(Boolean).join(' · ')
+    upsert('handoffs', {
+      id: nextId('H', s.handoffs),
+      from: 'creator',
+      to: 'creative',
+      itemId: `AUDIT-${today()}`,
+      type: 'question',
+      message: `Send the approved reply on ${e.id} (${where}${link ? `, ${link}` : ''}). Send exactly this text, once:\n\n${e.draftReply}\n\nThen add "Sent by the creative agent, <time>" to the note of ${e.id}. ${s.profile.creatorName} marks it posted.`,
+      refs: [{ collection: 'engagement_queue', id: e.id }],
+      createdAt: nowStamp(),
+      acknowledged: false,
+    })
+  }
 
   const flagLead = (type: LeadType) => {
     const id = nextId('L', s.leads)
@@ -153,11 +171,18 @@ function EngagementCard({ e }: { e: Engagement }) {
         <Mono>{e.id}</Mono>
         <span className="text-muted">{ENGAGEMENT_PLATFORM[e.platform]}{e.account ? ` · ${e.account}` : ''}</span>
         {e.author && <span className="text-muted">@{e.author.replace(/^@/, '')}</span>}
-        {e.sourcePost && <span className="truncate text-faint">on {e.sourcePost}</span>}
+        {link ? (
+          <a href={link} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
+            Open on {ENGAGEMENT_PLATFORM[e.platform]} ↗
+          </a>
+        ) : (
+          e.sourcePost && <span className="truncate text-faint">on {e.sourcePost}</span>
+        )}
         {e.keyword && <Badge tone="accent">{e.keyword}</Badge>}
         <span className="ml-auto"><Badge tone={e.status === 'escalated' ? 'danger' : e.status === 'approved' ? 'ok' : 'neutral'}>{REPLY_STATUS[e.status]}</Badge></span>
       </header>
       <p className="mt-3 text-sm">“{e.comment}”</p>
+      {e.note && <p className="mt-1 text-xs text-muted">Note: {e.note}</p>}
 
       <div className="mt-3 grid gap-3 sm:grid-cols-[14rem_1fr]">
         <Field label="Category">
@@ -206,6 +231,16 @@ function EngagementCard({ e }: { e: Engagement }) {
           ) : (
             <>
               <CopyButton text={e.draftReply} label="Copy reply" />
+              {link && (
+                <a href={link} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-ink-600 px-3 py-1.5 text-sm hover:bg-ink-800">
+                  Open to reply ↗
+                </a>
+              )}
+              {creativeLane && (
+                <Button size="sm" disabled={sendRequested} onClick={() => confirm(`Ask ${creative} to send this exact reply on ${ENGAGEMENT_PLATFORM[e.platform]}?`) && askToSend()} title={sendRequested ? `Already asked ${creative}` : `${creative} sends it on its next run`}>
+                  {sendRequested ? `Asked ${creative} to send` : `Send via ${creative}`}
+                </Button>
+              )}
               <Button size="sm" variant="primary" onClick={() => set({ status: 'posted_by_day' })}>I posted it</Button>
               <Button size="sm" variant="ghost" onClick={() => set({ status: 'drafted' })}>Edit again</Button>
             </>
