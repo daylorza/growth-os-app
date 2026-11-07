@@ -1,6 +1,7 @@
 import 'server-only'
 import { NextResponse, type NextRequest } from 'next/server'
 import { connectorAuth, KEY_SOURCE_HEADER } from './connectorAuth'
+import { SESSION_COOKIE, unseal } from './session.server'
 import { apiBase } from './workspace.server'
 
 const PASS_REQUEST = ['authorization', 'content-type', 'accept', 'x-growth-client', 'x-growth-source', 'mcp-protocol-version', 'mcp-session-id', 'last-event-id']
@@ -13,7 +14,10 @@ const PASS_RESPONSE = ['content-type', 'www-authenticate', 'allow', 'mcp-session
 export async function forward(req: NextRequest, { queryKey = false } = {}): Promise<Response> {
   const base = apiBase()
   if (!base) return NextResponse.json({ message: 'No endpoint configured (GROWTH_OS_API). This dashboard is in local mode.' }, { status: 404 })
-  const auth = connectorAuth(req.nextUrl.search, req.headers.get('authorization'), queryKey)
+  const own = req.headers.get('authorization')
+  const auth = connectorAuth(req.nextUrl.search, own || unseal(req.cookies.get(SESSION_COOKIE)?.value), queryKey)
+  // A dashboard call (cookie or nothing) never gets a Basic challenge back: it would open the browser's login prompt.
+  const passResponse = own || queryKey ? PASS_RESPONSE : PASS_RESPONSE.filter((h) => h !== 'www-authenticate')
   const url = `${base}${req.nextUrl.pathname}${auth.search}`
   const headers = new Headers()
   for (const h of PASS_REQUEST) {
@@ -26,7 +30,7 @@ export async function forward(req: NextRequest, { queryKey = false } = {}): Prom
   try {
     const res = await fetch(url, { method: req.method, headers, body, cache: 'no-store', redirect: 'manual' })
     const out = new Headers()
-    for (const h of PASS_RESPONSE) {
+    for (const h of passResponse) {
       const v = res.headers.get(h)
       if (v) out.set(h, v)
     }

@@ -1,4 +1,4 @@
-import BrandRevenue from '../../modules/BrandRevenue'
+import BrandRevenue from '../../../modules/BrandRevenue'
 
 export default function Page() {
   return <BrandRevenue />

@@ -1,4 +1,4 @@
-import Settings from '../../modules/Settings'
+import Settings from '../../../modules/Settings'
 
 export default function Page() {
   return <Settings />

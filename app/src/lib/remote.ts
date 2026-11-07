@@ -153,12 +153,20 @@ export function diff(prev: AppState, next: AppState): Op[] {
   return ops
 }
 
+/** The login expired or was revoked: go to the in-app sign-in page, then come back here. */
+export function signInAgainIf401(res: Response) {
+  if (res.status !== 401 || typeof window === 'undefined') return
+  const here = `${window.location.pathname}${window.location.search}`
+  window.location.assign(here === '/' ? '/login' : `/login?next=${encodeURIComponent(here)}`)
+}
+
 export async function send(op: Op): Promise<void> {
   const res = await fetch(op.path, {
     method: op.method,
     headers: { 'content-type': 'application/json', 'x-growth-client': 'dashboard', 'x-growth-source': 'dashboard' },
     body: op.body === undefined ? undefined : JSON.stringify(op.body),
   })
+  signInAgainIf401(res)
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as { message?: string | string[] } | null
     const msg = Array.isArray(body?.message) ? body.message.join('; ') : body?.message
@@ -168,6 +176,7 @@ export async function send(op: Op): Promise<void> {
 
 export async function fetchState(): Promise<EndpointState> {
   const res = await fetch('/api/state', { headers: { 'x-growth-client': 'dashboard' }, cache: 'no-store' })
+  signInAgainIf401(res)
   if (!res.ok) throw new Error(`Could not load from the endpoint (${res.status}).`)
   return (await res.json()) as EndpointState
 }

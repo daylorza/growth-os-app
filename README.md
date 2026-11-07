@@ -67,14 +67,14 @@ A test fails if any tracked file contains a name or handle from `private/workspa
 Without it, the dashboard, the creative agent and the analyst agent share nothing, and you copy text between them. The endpoint fixes that: everyone reads and writes the same store over one authenticated REST API. Agents never talk to each other directly; they talk through the endpoint, and the endpoint wakes them.
 
 ```
-browser ──Basic auth──▶ Next.js dashboard :8766 ──(same header)──▶ NestJS API 127.0.0.1:8767 ──▶ MongoDB 127.0.0.1:27017
+browser ──/login cookie──▶ Next.js dashboard :8766 ──(creator Basic header)──▶ NestJS API 127.0.0.1:8767 ──▶ MongoDB 127.0.0.1:27017
 analyst agent  ──analyst key──▶ :8766/api/*  ◀── webhook (brief_created, daily_audit, post_published, measure_request, x_refresh)
 creative agent ──creative key─▶ :8766/api/*      reads handoffs (analysis_created, experiment_logged, approval_given, weekly_refresh, engagement_sweep)
 scheduler (systemd timers) ──worker key──▶ /api/dispatch/*   (no LLM call, no platform call)
 ```
 
 - **Draft-only, enforced on the server.** No route posts, publishes, replies, likes, follows or messages anywhere, and there are no platform write calls in the codebase (`ci/no-platform-writes.sh` fails CI otherwise). The one platform client is the read-only TikTok connector, limited to the OAuth token endpoint and Display API reads. Agents write drafts; only the creator approves, schedules, kills or logs something as published (with approval and a live URL). An agent may send one reply through its own connection only after the creator approved that exact queue item and told it to; it notes that it sent it, and the creator marks it posted. Revenue needs evidence.
-- **Auth on every call.** `GET /health` is the only public route and returns no data. The creator uses HTTP Basic; each role has its own bearer key. Every write records who wrote it, when and from where (`_meta`), and an append-only audit log keeps the history.
+- **Auth on every call.** `GET /health` is the only public route and returns no data. The creator uses HTTP Basic; each role has its own bearer key. The dashboard never shows the browser's Basic prompt: `/login` checks the creator login with the API and keeps it in an encrypted HttpOnly cookie (key from `GROWTH_OS_SESSION_SECRET`, or a 0600 file created at `GROWTH_OS_SESSION_KEY_FILE`, default `~/.config/growth-os/session.key`). Every write records who wrote it, when and from where (`_meta`), and an append-only audit log keeps the history.
 - **Collection ownership.** A write to another agent's collection returns 403 (`packages/contracts/src/ownership.ts`):
 
   | Collection | Writes |
