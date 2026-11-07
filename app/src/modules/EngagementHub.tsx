@@ -139,7 +139,8 @@ function EngagementCard({ e }: { e: Engagement }) {
   const link = /^https?:\/\/\S+$/.test(e.sourcePost.trim()) ? e.sourcePost.trim() : null
   const creative = s.profile.agents.creative.name
   const creativeLane = (['tiktok', 'threads', 'instagram'] as const).includes(e.platform as 'tiktok')
-  const sendRequested = s.handoffs.some((h) => h.to === 'creative' && h.refs?.some((r) => r.collection === 'engagement_queue' && r.id === e.id))
+  // A send request counts only for the text it carried: after the reply is edited and re-approved, it can be sent again.
+  const sendRequested = !!e.draftReply.trim() && s.handoffs.some((h) => h.to === 'creative' && h.refs?.some((r) => r.collection === 'engagement_queue' && r.id === e.id) && h.message.includes(e.draftReply))
   const askToSend = () => {
     const where = [ENGAGEMENT_PLATFORM[e.platform], e.account, e.author && `@${e.author.replace(/^@/, '')}`].filter(Boolean).join(' · ')
     upsert('handoffs', {
@@ -268,7 +269,15 @@ function EngagementCard({ e }: { e: Engagement }) {
             <Button size="sm" onClick={() => flagLead(e.category === 'collaboration' ? 'collaboration' : 'client_inquiry')}>Flag as lead</Button>
           )}
           {e.leadId && <Link href="/revenue" className="text-xs text-accent">Lead {e.leadId}</Link>}
-          <Button size="sm" variant="ghost" className="ml-auto" onClick={() => set({ status: 'dismissed' })}>Dismiss</Button>
+          <Button
+            size="sm"
+            className="ml-auto"
+            title="You already answered this in the app. Marks it done so nobody answers again."
+            onClick={() => set({ status: 'posted_by_day', note: [e.note.trim(), `Manually replied by ${s.profile.creatorName}, ${nowStamp()}`].filter(Boolean).join(' · ') })}
+          >
+            Manually replied
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => set({ status: 'dismissed' })}>Dismiss</Button>
         </footer>
       )}
     </article>
