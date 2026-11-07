@@ -39,7 +39,10 @@ main() {
   if [ "$ci" = red ]; then echo "CI failed for ${sha:0:7}; not deploying."; echo "$sha" > "$state/failed-sha"; exit 0; fi
 
   echo "Deploying ${sha:0:7} (was ${deployed:0:7})."
-  if ! as_app "git switch -q main 2>/dev/null || git switch -q -c main --track origin/main; git merge -q --ff-only $sha && corepack pnpm install --frozen-lockfile && GROWTH_OS_IGNORE_PRIVATE=1 corepack pnpm -r build" \
+  # Same pnpm as CI: the version pinned in the workflow, never corepack's latest.
+  local pnpm
+  pnpm="COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm@\$(sed -n 's/^ *version: *//p' .github/workflows/ci.yml | head -n1)"
+  if ! as_app "git switch -q main 2>/dev/null || git switch -q -c main --track origin/main; git merge -q --ff-only $sha && $pnpm install --frozen-lockfile && GROWTH_OS_IGNORE_PRIVATE=1 $pnpm -r build" \
     || ! bash "$APP_DIR/deploy/install-atlas.sh"; then
     echo "$sha" > "$state/failed-sha"
     echo "Deploy of ${sha:0:7} failed. The previous build may still be serving; check the log above." >&2
