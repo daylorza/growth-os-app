@@ -1,6 +1,8 @@
 import type { TikTokSnapshot } from './tiktok'
 
-export type Platform = 'tiktok' | 'x'
+export type Platform = 'tiktok' | 'x' | 'threads'
+/** Where engagement comes from: every platform plus Instagram (queue only). */
+export type EngagementPlatform = Platform | 'instagram'
 /** Workspace roles. Display names come from the profile (e.g. creator "Sam", analyst "Scout"). */
 export type Owner = 'creator' | 'analyst' | 'creative'
 export type Pillar = 'build' | 'commentary' | 'founder' | 'travel' | 'business'
@@ -68,7 +70,9 @@ export type ReplyStatus = 'new' | 'drafted' | 'approved' | 'posted_by_day' | 'es
 
 export interface Engagement {
   id: string
-  platform: Platform
+  platform: EngagementPlatform
+  /** The creator's account it came in on (e.g. personal or brand). Older items have none. */
+  account?: string
   sourcePost: string
   author: string
   comment: string
@@ -141,7 +145,7 @@ export type LeadStatus = 'new' | 'day_reviewing' | 'discovery_call' | 'won' | 'p
 export interface Lead {
   id: string
   handle: string
-  platform: Platform | 'other'
+  platform: EngagementPlatform | 'other'
   type: LeadType
   status: LeadStatus
   summary: string
@@ -217,7 +221,9 @@ export interface Settings {
   planChecks: Record<string, boolean>
 }
 
-export type ConnectorId = 'tiktok' | 'x' | 'instagram' | 'youtube' | 'linkedin'
+export type ConnectorId = 'tiktok' | 'x' | 'threads' | 'instagram' | 'youtube' | 'linkedin'
+/** Profile handle keys: one per platform, plus extra accounts such as a brand Instagram. */
+export type HandleKey = ConnectorId | 'instagram_brand'
 
 export interface AgentProfile {
   name: string
@@ -230,7 +236,7 @@ export interface Profile {
   brandName: string
   company: string
   projectName: string
-  handles: Partial<Record<ConnectorId, string>>
+  handles: Partial<Record<HandleKey, string>>
   agents: { analyst: AgentProfile; creative: AgentProfile }
   /** True for the fictional sample creator shown in the public demo. */
   sample: boolean

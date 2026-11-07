@@ -73,6 +73,23 @@ describe('draft-only', () => {
     expect((await as(app, basic).patch(`/api/engagement-queue/${s.body.id}`, { status: 'approved' })).status).toBe(400)
   })
 
+  it('the creative agent queues TikTok and Threads comments only, and cannot approve or log a reply', async () => {
+    const creative = as(app, bearer('creative'))
+    const t = await creative.post('/api/engagement-queue', { platform: 'threads', author: 'someone', comment: 'How?', draftReply: 'Thanks!' })
+    expect(t.status).toBe(201)
+    expect(t.body.status).toBe('new')
+    expect((await creative.post('/api/engagement-queue', { platform: 'tiktok', comment: 'Nice' })).status).toBe(201)
+    const ig = await creative.post('/api/engagement-queue', { platform: 'instagram', account: '@brand', author: 'someone', comment: 'Link?' })
+    expect(ig.status).toBe(201)
+    expect(ig.body).toMatchObject({ platform: 'instagram', account: '@brand' })
+    expect((await creative.post('/api/audience/snapshots', { platform: 'instagram', date: '2026-01-01', source: 'x', metrics: {} })).status).toBe(400)
+    expect((await creative.post('/api/engagement-queue', { platform: 'x', comment: 'Nice' })).status).toBe(403)
+    expect((await creative.patch(`/api/engagement-queue/${t.body.id}`, { platform: 'x' })).status).toBe(403)
+    expect((await creative.patch(`/api/engagement-queue/${t.body.id}`, { status: 'drafted' })).status).toBe(200)
+    expect((await creative.patch(`/api/engagement-queue/${t.body.id}`, { status: 'approved' })).status).toBe(403)
+    expect((await creative.patch(`/api/engagement-queue/${t.body.id}`, { status: 'posted_by_day' })).status).toBe(403)
+  })
+
   it('agent drafts stay drafts until the creator decides', async () => {
     const id = await contentItem(app)
     const creative = as(app, bearer('creative'))

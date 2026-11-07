@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, ForbiddenException, Get, Injectable, Module, NotFoundException, Param, Post, Put, Query } from '@nestjs/common'
-import { CreateSnapshotDto, LatestQuery, METRICS, SnapshotQuery, TikTokVaultDto, toMetric, type AudienceMetrics, type AudienceSnapshot, type Platform, type Singleton } from '@growth-os/contracts'
+import { CREATIVE_PLATFORMS, CreateSnapshotDto, LatestQuery, METRICS, SnapshotQuery, TikTokVaultDto, toMetric, type AudienceMetrics, type AudienceSnapshot, type Platform, type Singleton } from '@growth-os/contracts'
 import { isCreator, Writer, type WriteContext } from '../common/actor'
 import { CollectionService, stamp } from '../common/collection.service'
 import { checkVerified } from '../common/draft-only'
@@ -50,6 +50,8 @@ export class AudienceService extends CollectionService<AudienceSnapshot> {
   }
 
   protected checkWrite(ctx: WriteContext, prev: AudienceSnapshot | null, next: AudienceSnapshot) {
+    if (ctx.actor.role === 'creative' && ![prev?.platform ?? next.platform, next.platform].every((p) => (CREATIVE_PLATFORMS as readonly string[]).includes(p)))
+      throw new ForbiddenException(`The creative agent records ${CREATIVE_PLATFORMS.join(' and ')} snapshots only.`)
     checkVerified(ctx.actor, prev?.verified, next.verified)
   }
 

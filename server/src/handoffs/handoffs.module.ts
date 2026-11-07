@@ -138,6 +138,27 @@ export class HandoffsService extends CollectionService<Handoff> {
     return this.system(ctx, `H-XREFRESH-${date}-${window}`, { contentItemId: `AUDIT-${date}`, from: 'creator', to: 'analyst', type: 'question', body, refs: [] }, 'x_refresh')
   }
 
+  /** The weekly TikTok and Threads refresh for the creative agent, after Sunday's stats. Idempotent per ISO week. */
+  async weeklyRefresh(ctx: WriteContext, now = Date.now()) {
+    const date = new Date(now).toISOString().slice(0, 10)
+    const weekStart = new Date(now - ((new Date(now).getUTCDay() + 6) % 7) * DAY_MS).toISOString().slice(0, 10)
+    const p = await this.store.collection<{ id: string; value: { handles?: Record<string, string> } }>('profiles').get('main')
+    const handle = (k: string) => p?.value.handles?.[k] || `the ${k} account in the profile`
+    const body = `Weekly refresh, sent ${date} (week starting ${weekStart}). Read TikTok (${handle('tiktok')}) in TikTok Studio → Analytics and Threads (${handle('threads')}) in Threads Insights, read-only.\n\nUse a browser session that is already signed in. Never type a password or a two-factor code; if a sign-in is needed, stop and ask the creator. Only open and read pages: do not post, reply, like, follow, message or change any setting.\n\nFor each platform write one snapshot (POST /api/audience/snapshots: platform tiktok or threads, date ${date}, sourceType creative_agent, source = the page you read, e.g. "TikTok Studio Analytics, last 7 days") with metrics followers, following, posts, views7d, views28d and engagementRate (percent) as shown. Anything you cannot see stays "UNKNOWN", never 0. Platforms are never added together. Then ack this handoff and send the analyst a question handoff on AUDIT-${date} citing both snapshot ids. Everything stays a draft.`
+    return this.system(ctx, `H-WEEKLY-${weekStart}`, { contentItemId: `AUDIT-${date}`, from: 'creator', to: 'creative', type: 'question', body, refs: [] }, 'weekly_refresh')
+  }
+
+  /** New TikTok, Threads and Instagram engagement into the queue, for the creative agent. Idempotent per 4-hour UTC window. */
+  async engagementSweep(ctx: WriteContext, now = Date.now()) {
+    const date = new Date(now).toISOString().slice(0, 10)
+    const window = String(Math.floor(new Date(now).getUTCHours() / 4) * 4).padStart(2, '0')
+    const p = await this.store.collection<{ id: string; value: { handles?: Record<string, string> } }>('profiles').get('main')
+    const instagram = Object.entries(p?.value.handles ?? {}).filter(([k, v]) => k.startsWith('instagram') && v.trim()).map(([, v]) => v)
+    const ig = instagram.length ? instagram.join(' and ') : 'the Instagram accounts in the profile'
+    const body = `Engagement sweep for ${date}, ${window}:00 UTC window. Read new comments, replies, mentions and messages on TikTok (TikTok Studio → Comments and notifications), Threads (replies, mentions and messages) and Instagram (${ig}: comments, DMs and message requests), read-only.\n\nUse a browser session or connection that is already signed in. Never type a password or a two-factor code; if a sign-in is needed, stop and ask the creator. During a sweep only read: do not reply, like, follow, message or change any setting.\n\nFor each person who needs an answer, add one engagement item (POST /api/engagement-queue: platform tiktok, threads or instagram, account = the creator's handle it came in on, author, comment, sourcePost = link to the post, comment or thread, category, draftReply in the creator's voice). Skip anyone already in the queue for the same post or thread (GET /api/engagement-queue). Sensitive items get category sensitive and no draft. Spam gets category spam. If several sweep requests are waiting, do one sweep and ack them all.\n\nSending is never part of a sweep. Send a reply only when the creator has approved that exact item (status approved) and told you to send it; then add "Sent by the creative agent, <time>" to its note and leave marking it posted to the creator.`
+    return this.system(ctx, `H-SWEEP-${date}-${window}`, { contentItemId: `AUDIT-${date}`, from: 'creator', to: 'creative', type: 'question', body, refs: [] }, 'engagement_sweep')
+  }
+
   /** measure_request 24h and 72h after a post was published. Idempotent per item and window. */
   async measureRequests(ctx: WriteContext, now = Date.now()) {
     const items = await this.store.collection<ContentItem>('content_items').list({ status: 'published' })
@@ -190,6 +211,16 @@ export class DispatchController {
   @Post('measure-requests')
   measure(@Writer() w: WriteContext) {
     return this.handoffs.measureRequests(w)
+  }
+
+  @Post('weekly-refresh')
+  weekly(@Writer() w: WriteContext) {
+    return this.handoffs.weeklyRefresh(w)
+  }
+
+  @Post('engagement-sweep')
+  sweep(@Writer() w: WriteContext) {
+    return this.handoffs.engagementSweep(w)
   }
 
   @Post('x-refresh')

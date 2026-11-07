@@ -5,7 +5,7 @@ import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Badge, Button, Card, CardTitle, Checkbox, Empty, Field, Input, Mono, PageHeader, Select } from '../components/ui'
 import { addDays, shortDate, today } from '../lib/dates'
-import { PLATFORM } from '../lib/labels'
+import { PLATFORM, PLATFORMS } from '../lib/labels'
 import { fmt, latestSnapshot, per1k, periodChange, profileToFollow, sortedSnapshots } from '../lib/metrics'
 import { nextId } from '../lib/rules'
 import { remove, upsert, useAppState } from '../lib/store'
@@ -34,11 +34,11 @@ export default function AudienceGrowth() {
           <Select aria-label="Reporting period" options={PERIODS} value={period} onChange={setPeriod} className="w-auto!" />
         }
       >
-        Numbers come only from TikTok Studio exports and snapshots you record. TikTok and X are tracked separately and never added together.
+        Numbers come only from TikTok Studio exports and snapshots you record. TikTok, X and Threads are tracked separately and never added together.
       </PageHeader>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {(['tiktok', 'x'] as Platform[]).map((p) => (
+      <div className="grid gap-4 md:grid-cols-3">
+        {PLATFORMS.map((p) => (
           <PlatformPanel key={p} platform={p} snaps={snaps} from={from} to={to} />
         ))}
       </div>

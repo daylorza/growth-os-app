@@ -19,7 +19,9 @@ import {
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState, type ReactNode } from 'react'
+import { NEEDS_ACTION } from '../lib/labels'
 import { useProfile } from '../lib/profile'
+import { useAppState } from '../lib/store'
 import { useDropDemoTikTokBaseline } from '../lib/tiktokData'
 import { cx } from '../lib/cx'
 import { SetupDrawer } from '../modules/Setup'
@@ -35,7 +37,7 @@ interface Route {
 
 const ROUTES: Route[] = [
   { slug: 'overview', href: '/', label: 'Overview', description: 'Mission control and daily priorities', icon: LayoutGrid },
-  { slug: 'audience', href: '/audience', label: 'Audience Growth', description: 'TikTok and X performance', icon: TrendingUp },
+  { slug: 'audience', href: '/audience', label: 'Audience Growth', description: 'TikTok, X and Threads performance', icon: TrendingUp },
   { slug: 'studio', href: '/studio', label: 'Content Studio', description: '30-day calendar and script creation', icon: CalendarDays },
   { slug: 'engagement', href: '/engagement', label: 'Engagement Hub', description: 'Comments, keywords and conversations', icon: MessageCircle },
   { slug: 'agents', href: '/agents', label: 'Agent Control', description: 'Analyst and creative agents', icon: Bot },
@@ -53,6 +55,7 @@ export default function Shell({ children }: { children: ReactNode }) {
   const profile = useProfile()
   const brand = profile.brandName.trim() || 'GROWTH OS'
   const route = ROUTES.find((r) => r.href === pathname) ?? ROUTES[0]
+  const needsReply = useAppState().engagements.filter((e) => NEEDS_ACTION.includes(e.status) && !e.demo).length
 
   useEffect(() => {
     document.title = `${route.label} · ${brand} Growth OS`
@@ -106,6 +109,11 @@ export default function Shell({ children }: { children: ReactNode }) {
                         : r.description}
                   </span>
                 </span>
+                {r.slug === 'engagement' && needsReply > 0 && (
+                  <span className="rounded-full bg-accent px-2 py-0.5 font-mono text-xs font-medium text-ink-950" aria-label={`${needsReply} need a reply`} title={`${needsReply} need a reply`}>
+                    {needsReply}
+                  </span>
+                )}
                 {active && <ChevronRight size={16} className="text-accent" />}
               </Link>
             )

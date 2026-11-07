@@ -124,7 +124,8 @@
             "type": "string",
             "enum": [
               "tiktok",
-              "x"
+              "x",
+              "threads"
             ]
           },
           "text": {
@@ -201,7 +202,8 @@
             "type": "string",
             "enum": [
               "tiktok",
-              "x"
+              "x",
+              "threads"
             ]
           },
           "plannedDate": {
@@ -376,8 +378,14 @@
             "type": "string",
             "enum": [
               "tiktok",
-              "x"
+              "x",
+              "threads",
+              "instagram"
             ]
+          },
+          "account": {
+            "type": "string",
+            "maxLength": 100
           },
           "sourcePost": {
             "type": "string",
@@ -670,6 +678,8 @@
             "enum": [
               "tiktok",
               "x",
+              "threads",
+              "instagram",
               "other"
             ]
           },
@@ -807,7 +817,8 @@
             "type": "string",
             "enum": [
               "tiktok",
-              "x"
+              "x",
+              "threads"
             ]
           },
           "date": {
@@ -823,6 +834,7 @@
             "enum": [
               "platform_export",
               "analyst_agent",
+              "creative_agent",
               "manual"
             ]
           },
@@ -995,7 +1007,8 @@
             "type": "string",
             "enum": [
               "tiktok",
-              "x"
+              "x",
+              "threads"
             ]
           }
         },
@@ -1130,7 +1143,8 @@
             "type": "string",
             "enum": [
               "tiktok",
-              "x"
+              "x",
+              "threads"
             ]
           },
           "text": {
@@ -1202,7 +1216,8 @@
             "type": "string",
             "enum": [
               "tiktok",
-              "x"
+              "x",
+              "threads"
             ]
           },
           "plannedDate": {
@@ -1373,8 +1388,14 @@
             "type": "string",
             "enum": [
               "tiktok",
-              "x"
+              "x",
+              "threads",
+              "instagram"
             ]
+          },
+          "account": {
+            "type": "string",
+            "maxLength": 100
           },
           "sourcePost": {
             "type": "string",
@@ -1591,6 +1612,8 @@
             "enum": [
               "tiktok",
               "x",
+              "threads",
+              "instagram",
               "other"
             ]
           },
@@ -1871,7 +1894,8 @@
             "type": "string",
             "enum": [
               "tiktok",
-              "x"
+              "x",
+              "threads"
             ]
           },
           "metric": {
@@ -1923,7 +1947,8 @@
             "type": "string",
             "enum": [
               "tiktok",
-              "x"
+              "x",
+              "threads"
             ]
           },
           "since": {
@@ -1939,7 +1964,8 @@
             "type": "string",
             "enum": [
               "tiktok",
-              "x"
+              "x",
+              "threads"
             ]
           },
           "from": {
@@ -2244,7 +2270,8 @@
               "type": "string",
               "enum": [
                 "tiktok",
-                "x"
+                "x",
+                "threads"
               ]
             }
           }
@@ -2283,7 +2310,8 @@
               "type": "string",
               "enum": [
                 "tiktok",
-                "x"
+                "x",
+                "threads"
               ]
             }
           },
@@ -2488,7 +2516,8 @@
               "type": "string",
               "enum": [
                 "tiktok",
-                "x"
+                "x",
+                "threads"
               ]
             }
           },
@@ -2544,7 +2573,8 @@
               "type": "string",
               "enum": [
                 "tiktok",
-                "x"
+                "x",
+                "threads"
               ]
             }
           },
@@ -4745,6 +4775,54 @@
         ],
         "summary": "Send measure_request for posts published 24h or 72h ago (scheduler)",
         "operationId": "postApiDispatchMeasureRequests",
+        "x-roles": [
+          "creator",
+          "worker"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/dispatch/weekly-refresh": {
+      "post": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Send weekly_refresh to the creative agent: TikTok and Threads snapshots for the week (scheduler)",
+        "operationId": "postApiDispatchWeeklyRefresh",
+        "x-roles": [
+          "creator",
+          "worker"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/dispatch/engagement-sweep": {
+      "post": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Send engagement_sweep to the creative agent: new TikTok, Threads and Instagram engagement into the queue, one per 4-hour UTC window (scheduler)",
+        "operationId": "postApiDispatchEngagementSweep",
         "x-roles": [
           "creator",
           "worker"

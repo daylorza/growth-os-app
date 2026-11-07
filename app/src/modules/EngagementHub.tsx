@@ -6,13 +6,13 @@ import { useState } from 'react'
 import { Badge, Button, Card, CardTitle, CopyButton, Empty, Field, Input, Mono, Notice, PageHeader, Select, Textarea } from '../components/ui'
 import { cx } from '../lib/cx'
 import { nowStamp, today } from '../lib/dates'
-import { CATEGORY, PLATFORM, REPLY_STATUS } from '../lib/labels'
+import { CATEGORY, ENGAGEMENT_PLATFORM, NEEDS_ACTION, REPLY_STATUS } from '../lib/labels'
 import { isRepeatReply, keywordActivationError, matchKeywords, nextId, replyApproveError, replyRiskWarnings } from '../lib/rules'
 import { patch, remove, upsert, useAppState } from '../lib/store'
-import type { CommentCategory, Engagement, KeywordRule, LeadType, Platform, ReplyStatus } from '../lib/types'
+import type { CommentCategory, Engagement, EngagementPlatform, KeywordRule, LeadType, ReplyStatus } from '../lib/types'
 
 const TABS: Record<string, { label: string; statuses: ReplyStatus[] }> = {
-  todo: { label: 'Needs action', statuses: ['new', 'drafted', 'escalated'] },
+  todo: { label: 'Needs action', statuses: NEEDS_ACTION },
   approved: { label: 'Approved to post', statuses: ['approved'] },
   done: { label: 'Done', statuses: ['posted_by_day', 'dismissed'] },
 }
@@ -67,7 +67,7 @@ export default function EngagementHub() {
 
 function CommentForm() {
   const s = useAppState()
-  const empty = { platform: 'tiktok' as Platform, sourcePost: '', author: '', comment: '' }
+  const empty = { platform: 'tiktok' as EngagementPlatform, sourcePost: '', author: '', comment: '' }
   const [f, setF] = useState(empty)
   const matches = f.comment ? matchKeywords(f.comment, s.keywords) : []
   return (
@@ -96,7 +96,7 @@ function CommentForm() {
         }}
       >
         <div className="grid gap-3 sm:grid-cols-[8rem_1fr_1fr]">
-          <Field label="Platform">{(id) => <Select id={id} options={PLATFORM} value={f.platform} onChange={(platform) => setF({ ...f, platform })} />}</Field>
+          <Field label="Platform">{(id) => <Select id={id} options={ENGAGEMENT_PLATFORM} value={f.platform} onChange={(platform) => setF({ ...f, platform })} />}</Field>
           <Field label="Source post (ID or URL)">{(id) => <Input id={id} value={f.sourcePost} onChange={(e) => setF({ ...f, sourcePost: e.target.value })} />}</Field>
           <Field label="Handle" hint="Public handle only. No personal details.">
             {(id) => <Input id={id} value={f.author} onChange={(e) => setF({ ...f, author: e.target.value })} />}
@@ -151,7 +151,7 @@ function EngagementCard({ e }: { e: Engagement }) {
     <article className={cx('rounded-xl border bg-ink-900 p-4', e.status === 'escalated' ? 'border-danger/40' : 'border-ink-600')}>
       <header className="flex flex-wrap items-center gap-2 text-xs">
         <Mono>{e.id}</Mono>
-        <span className="text-muted">{PLATFORM[e.platform]}</span>
+        <span className="text-muted">{ENGAGEMENT_PLATFORM[e.platform]}{e.account ? ` · ${e.account}` : ''}</span>
         {e.author && <span className="text-muted">@{e.author.replace(/^@/, '')}</span>}
         {e.sourcePost && <span className="truncate text-faint">on {e.sourcePost}</span>}
         {e.keyword && <Badge tone="accent">{e.keyword}</Badge>}

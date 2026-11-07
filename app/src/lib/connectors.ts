@@ -6,12 +6,16 @@
  * 2. OAuth: a "Connect" button that goes through a connector server (see `oauth.ts`).
  *    Tokens live on that server only, never in the browser or this repo.
  */
-import type { ConnectorId } from './types'
+import type { ConnectorId, HandleKey } from './types'
 
 export interface ConnectorDef {
   id: ConnectorId
   name: string
   handlePlaceholder: string
+  /** The agent that reads this platform with its own access, and how. Names come from the profile. */
+  reader?: { role: 'analyst' | 'creative'; via: string }
+  /** More of the creator's accounts on this platform, e.g. a brand account. */
+  extraHandles?: { key: HandleKey; label: string }[]
   exportFiles: { status: 'available' | 'needs-sample'; steps: string[] }
   oauth: { api: string; scopes: string[]; note: string }
 }
@@ -21,6 +25,7 @@ export const CONNECTORS: ConnectorDef[] = [
     id: 'tiktok',
     name: 'TikTok',
     handlePlaceholder: '@yourhandle',
+    reader: { role: 'creative', via: 'signed-in browser: TikTok Studio analytics, comments and notifications' },
     exportFiles: {
       status: 'available',
       steps: [
@@ -35,13 +40,24 @@ export const CONNECTORS: ConnectorDef[] = [
     id: 'x',
     name: 'X',
     handlePlaceholder: '@yourhandle',
+    reader: { role: 'analyst', via: 'its own X access: profile, posts and mentions' },
     exportFiles: { status: 'needs-sample', steps: ['Export your account analytics CSV from X.', 'Send one sample export to add the X parser.'] },
     oauth: { api: 'X API v2 (OAuth 2.0 with PKCE)', scopes: ['tweet.read', 'users.read', 'offline.access'], note: 'Requires an X developer app; API access tiers and limits apply.' },
+  },
+  {
+    id: 'threads',
+    name: 'Threads',
+    handlePlaceholder: '@yourhandle',
+    reader: { role: 'creative', via: 'its Threads connection: profile, insights, replies and messages' },
+    exportFiles: { status: 'needs-sample', steps: ['The creative agent records a weekly Threads snapshot after the Sunday refresh request.', 'Send one sample insights export to add a Threads parser.'] },
+    oauth: { api: 'Threads API (Meta)', scopes: ['threads_basic', 'threads_manage_insights'], note: 'Requires a Meta app with Threads API access.' },
   },
   {
     id: 'instagram',
     name: 'Instagram',
     handlePlaceholder: '@yourhandle',
+    reader: { role: 'creative', via: 'its Instagram connection: comments, DMs and message requests (queue only for now)' },
+    extraHandles: [{ key: 'instagram_brand', label: 'Brand handle' }],
     exportFiles: { status: 'needs-sample', steps: ['Export insights from your professional account.', 'Send one sample export to add the Instagram parser.'] },
     oauth: { api: 'Instagram API (professional accounts)', scopes: [], note: 'Read-only insights. Exact scopes depend on the Meta app type.' },
   },
