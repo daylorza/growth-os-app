@@ -29,6 +29,7 @@ import {
   CONTENT_STATUSES,
   DECISIONS,
   DRAFT_STATUSES,
+  ENGAGEMENT_PLATFORMS,
   EXPERIMENT_STATUSES,
   HANDOFF_TYPES,
   HOOK_KINDS,
@@ -220,7 +221,8 @@ export class UpdateExperimentDto extends PartialType(CreateExperimentDto) {}
 
 export class CreateEngagementDto {
   @IsOptional() @Matches(ID_PATTERN) id?: string
-  @IsOptional() @IsIn(PLATFORMS) platform?: Engagement['platform']
+  @IsOptional() @IsIn(ENGAGEMENT_PLATFORMS) platform?: Engagement['platform']
+  @OptionalText(100) account?: string
   @OptionalText() sourcePost?: string
   @OptionalText() author?: string
   @OptionalText() comment?: string
@@ -239,7 +241,7 @@ export class UpdateEngagementDto extends PartialType(CreateEngagementDto) {}
 export class CreateLeadDto {
   @IsOptional() @Matches(ID_PATTERN) id?: string
   @OptionalText() handle?: string
-  @IsOptional() @IsIn([...PLATFORMS, 'other']) platform?: Lead['platform']
+  @IsOptional() @IsIn([...ENGAGEMENT_PLATFORMS, 'other']) platform?: Lead['platform']
   @IsOptional() @IsIn(LEAD_TYPES) type?: Lead['type']
   @IsOptional() @IsIn(LEAD_STATUSES) status?: Lead['status']
   @OptionalText() summary?: string

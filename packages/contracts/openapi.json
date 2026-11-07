@@ -379,8 +379,13 @@
             "enum": [
               "tiktok",
               "x",
-              "threads"
+              "threads",
+              "instagram"
             ]
+          },
+          "account": {
+            "type": "string",
+            "maxLength": 100
           },
           "sourcePost": {
             "type": "string",
@@ -674,6 +679,7 @@
               "tiktok",
               "x",
               "threads",
+              "instagram",
               "other"
             ]
           },
@@ -1383,8 +1389,13 @@
             "enum": [
               "tiktok",
               "x",
-              "threads"
+              "threads",
+              "instagram"
             ]
+          },
+          "account": {
+            "type": "string",
+            "maxLength": 100
           },
           "sourcePost": {
             "type": "string",
@@ -1602,6 +1613,7 @@
               "tiktok",
               "x",
               "threads",
+              "instagram",
               "other"
             ]
           },
@@ -4809,7 +4821,7 @@
         "tags": [
           "events"
         ],
-        "summary": "Send engagement_sweep to the creative agent: new TikTok and Threads comments into the queue, one per 4-hour UTC window (scheduler)",
+        "summary": "Send engagement_sweep to the creative agent: new TikTok, Threads and Instagram engagement into the queue, one per 4-hour UTC window (scheduler)",
         "operationId": "postApiDispatchEngagementSweep",
         "x-roles": [
           "creator",

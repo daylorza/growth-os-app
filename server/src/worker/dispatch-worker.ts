@@ -6,7 +6,7 @@
  *   node dist/worker/dispatch-worker.js measure   measure_request 24h and 72h after a post is published
  *   node dist/worker/dispatch-worker.js x         x_refresh to the analyst (idempotent per 4-hour UTC window)
  *   node dist/worker/dispatch-worker.js weekly    weekly_refresh to the creative agent: TikTok and Threads (idempotent per week)
- *   node dist/worker/dispatch-worker.js sweep     engagement_sweep to the creative agent: new comments into the queue (per 4-hour UTC window)
+ *   node dist/worker/dispatch-worker.js sweep     engagement_sweep to the creative agent: TikTok, Threads and Instagram into the queue (per 4-hour UTC window)
  *
  * Env: GROWTH_OS_API (default http://127.0.0.1:8767), GROWTH_OS_WORKER_KEY (scheduler key: dispatch routes only).
  */

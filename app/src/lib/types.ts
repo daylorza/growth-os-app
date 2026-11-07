@@ -1,6 +1,8 @@
 import type { TikTokSnapshot } from './tiktok'
 
 export type Platform = 'tiktok' | 'x' | 'threads'
+/** Where engagement comes from: every platform plus Instagram (queue only). */
+export type EngagementPlatform = Platform | 'instagram'
 /** Workspace roles. Display names come from the profile (e.g. creator "Sam", analyst "Scout"). */
 export type Owner = 'creator' | 'analyst' | 'creative'
 export type Pillar = 'build' | 'commentary' | 'founder' | 'travel' | 'business'
@@ -68,7 +70,9 @@ export type ReplyStatus = 'new' | 'drafted' | 'approved' | 'posted_by_day' | 'es
 
 export interface Engagement {
   id: string
-  platform: Platform
+  platform: EngagementPlatform
+  /** The creator's account it came in on (e.g. personal or brand). Older items have none. */
+  account?: string
   sourcePost: string
   author: string
   comment: string
@@ -141,7 +145,7 @@ export type LeadStatus = 'new' | 'day_reviewing' | 'discovery_call' | 'won' | 'p
 export interface Lead {
   id: string
   handle: string
-  platform: Platform | 'other'
+  platform: EngagementPlatform | 'other'
   type: LeadType
   status: LeadStatus
   summary: string

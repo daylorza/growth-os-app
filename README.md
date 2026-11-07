@@ -24,7 +24,7 @@ Requires Node 22.18+ and [pnpm](https://pnpm.io). Without an endpoint the dashbo
 | Overview | Followers, growth target, weekly cadence, campaign week, today's priorities, what's waiting on you |
 | Audience Growth | TikTok, X and Threads follower history, 7/14/28-day views and engagement, audience signals, per-video table |
 | Content Studio | 30-day calendar and creative briefs: three hooks, script, visuals, caption, CTA, native X version |
-| Engagement Hub | One queue for everyone who needs an answer (the agents add X, TikTok and Threads comments as drafts), keyword campaigns and reply drafts that warn on prices, DM promises and repeats. The nav shows how many need action |
+| Engagement Hub | One queue for everyone who needs an answer (the agents add X, TikTok, Threads and Instagram comments and messages as drafts, with the account they came in on), keyword campaigns and reply drafts that warn on prices, DM promises and repeats. The nav shows how many need action |
 | Agent Control | Copyable system prompts for the analyst and creative agents, handoff chain, weekly loop, handoff log |
 | Content Intelligence | Content mix vs targets, experiment log, weekly audience report, auto-drafted weekly report |
 | Brand & Revenue | Lead pipeline. Revenue only counts with evidence |
@@ -73,13 +73,14 @@ creative agent ──creative key─▶ :8766/api/*      reads handoffs (analysi
 scheduler (systemd timers) ──worker key──▶ /api/dispatch/*   (no LLM call, no platform call)
 ```
 
-- **Draft-only, enforced on the server.** No route posts, publishes, replies, likes, follows or messages anywhere, and there are no platform write calls in the codebase (`ci/no-platform-writes.sh` fails CI otherwise). Agents write drafts; only the creator approves, schedules, kills or logs something as published (with approval and a live URL). Revenue needs evidence.
+- **Draft-only, enforced on the server.** No route posts, publishes, replies, likes, follows or messages anywhere, and there are no platform write calls in the codebase (`ci/no-platform-writes.sh` fails CI otherwise). Agents write drafts; only the creator approves, schedules, kills or logs something as published (with approval and a live URL). An agent may send one reply through its own connection only after the creator approved that exact queue item and told it to; it notes that it sent it, and the creator marks it posted. Revenue needs evidence.
 - **Auth on every call.** `GET /health` is the only public route and returns no data. The creator uses HTTP Basic; each role has its own bearer key. Every write records who wrote it, when and from where (`_meta`), and an append-only audit log keeps the history.
 - **Collection ownership.** A write to another agent's collection returns 403 (`packages/contracts/src/ownership.ts`):
 
   | Collection | Writes |
   |---|---|
-  | `audience_snapshots`, `engagement_queue` | analyst, creator; creative for TikTok and Threads only |
+  | `audience_snapshots` | analyst, creator; creative for TikTok and Threads only |
+  | `engagement_queue` | analyst, creator; creative for TikTok, Threads and Instagram only (Instagram is queue-only for now) |
   | `experiments`, `reports`, `leads` | analyst, creator |
   | `briefs`, `hooks`, `scripts`, `captions` | creative, creator |
   | `handoffs` | everyone, only as themselves; only the recipient acknowledges |
@@ -183,7 +184,7 @@ Pushes `private/workspace.json`, `private/endpoint-seed.json` (extra verified re
 
 ### Scheduler and analyst
 
-- **Scheduler** (`server/src/worker/dispatch-worker.ts`): `dispatch-worker.js daily` sends today's `daily_audit` to the analyst (idempotent per day); `dispatch-worker.js measure` sends `measure_request` 24h and 72h after a post is published; `dispatch-worker.js x` sends `x_refresh` (one X snapshot request on today's audit thread, idempotent per 4-hour UTC window); `dispatch-worker.js weekly` sends `weekly_refresh` to the creative agent (TikTok and Threads snapshots after Sunday's stats, idempotent per week); `dispatch-worker.js sweep` sends `engagement_sweep` to the creative agent (new TikTok and Threads comments into the engagement queue as drafts, idempotent per 4-hour UTC window). It contains no LLM call and no platform call, and its key can only call `/api/dispatch/*`. The analyst agent reads X and the creative agent reads TikTok and Threads, each through its own connection; the creative agent has no webhook, so it picks the request up on its own scheduled run.
+- **Scheduler** (`server/src/worker/dispatch-worker.ts`): `dispatch-worker.js daily` sends today's `daily_audit` to the analyst (idempotent per day); `dispatch-worker.js measure` sends `measure_request` 24h and 72h after a post is published; `dispatch-worker.js x` sends `x_refresh` (one X snapshot request on today's audit thread, idempotent per 4-hour UTC window); `dispatch-worker.js weekly` sends `weekly_refresh` to the creative agent (TikTok and Threads snapshots after Sunday's stats, idempotent per week); `dispatch-worker.js sweep` sends `engagement_sweep` to the creative agent (new TikTok, Threads and Instagram engagement into the queue as drafts, idempotent per 4-hour UTC window). It contains no LLM call and no platform call, and its key can only call `/api/dispatch/*`. The analyst agent reads X and the creative agent reads TikTok and Threads, each through its own connection; the creative agent has no webhook, so it picks the request up on its own scheduled run.
 - **Schedule:** TBD, to be filled in by the analyst agent once approved. The timers ship disabled (placeholder 08:00 daily, measurement hourly, X refresh every 4h plus a random 0-2h delay, TikTok and Threads refresh Sunday 8 PM US Eastern, engagement sweep every 4h plus a random 0-2h delay). Enable only after approval: `sudo systemctl enable --now growth-os-dispatch-daily.timer growth-os-dispatch-measure.timer growth-os-dispatch-x.timer growth-os-dispatch-weekly.timer growth-os-dispatch-sweep.timer`.
 - **Paste-in mode:** Agent Control → "Paste reply" stores the analyst's reply as an analysis handoff for `AUDIT-<date>`.
 

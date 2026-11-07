@@ -9,6 +9,11 @@ export const PLATFORMS = ['tiktok', 'x', 'threads'] as const
 export type Platform = (typeof PLATFORMS)[number]
 /** Platforms the creative agent reads and records itself (weekly). X stays with the analyst. */
 export const CREATIVE_PLATFORMS = ['tiktok', 'threads'] as const satisfies readonly Platform[]
+/** Where engagement comes from. Instagram is queue-only until snapshots track more than one account per platform. */
+export const ENGAGEMENT_PLATFORMS = [...PLATFORMS, 'instagram'] as const
+export type EngagementPlatform = (typeof ENGAGEMENT_PLATFORMS)[number]
+/** Engagement platforms the creative agent queues. */
+export const CREATIVE_ENGAGEMENT_PLATFORMS = [...CREATIVE_PLATFORMS, 'instagram'] as const satisfies readonly EngagementPlatform[]
 export const OWNERS = ['creator', 'analyst', 'creative'] as const
 export type Owner = (typeof OWNERS)[number]
 /** Credential roles: the three authors plus the scheduler, which can only dispatch events. */
@@ -87,7 +92,9 @@ export const REPLY_STATUSES = ['new', 'drafted', 'approved', 'posted_by_day', 'e
 export type ReplyStatus = (typeof REPLY_STATUSES)[number]
 
 export interface Engagement extends BaseDoc {
-  platform: Platform
+  platform: EngagementPlatform
+  /** The creator's account it came in on, e.g. a personal or a brand handle. Empty when there is only one. */
+  account: string
   sourcePost: string
   author: string
   comment: string
@@ -145,7 +152,7 @@ export const LEAD_TYPES = ['client_inquiry', 'collaboration', 'partnership', 'sp
 export const LEAD_STATUSES = ['new', 'day_reviewing', 'discovery_call', 'won', 'parked', 'lost'] as const
 export interface Lead extends BaseDoc {
   handle: string
-  platform: Platform | 'other'
+  platform: EngagementPlatform | 'other'
   type: (typeof LEAD_TYPES)[number]
   status: (typeof LEAD_STATUSES)[number]
   summary: string
