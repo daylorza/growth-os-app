@@ -30,15 +30,15 @@ describe('draft-only', () => {
   it('only the webhook outbox and the workers make outbound calls, and nothing calls a social platform', () => {
     const files = sourceFiles(srcDir)
     const outbound = files.filter((f) => /\bfetch\(|from 'node:https?'|axios|undici/.test(readFileSync(f, 'utf8'))).map((f) => f.slice(srcDir.length + 1))
-    expect(outbound.sort()).toEqual(['events/events.module.ts', 'worker/dispatch-worker.ts', 'worker/xai-fallback.ts'])
+    expect(outbound.sort()).toEqual(['events/events.module.ts', 'worker/dispatch-worker.ts'])
     expect(files.filter((f) => PLATFORM_HOSTS.test(readFileSync(f, 'utf8')))).toEqual([])
   })
 
-  it('the workers only call this endpoint and, in the disabled fallback, xAI', () => {
+  it('the workers only call this endpoint: no model or platform API', () => {
     const worker = sourceFiles(join(srcDir, 'worker')).map((f) => readFileSync(f, 'utf8')).join('\n')
     const hosts = [...worker.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1])
-    expect(new Set(hosts)).toEqual(new Set(['api.x.ai', '127.0.0.1']))
-    expect(readFileSync(join(srcDir, 'worker', 'dispatch-worker.ts'), 'utf8')).not.toMatch(/x\.ai|openai|anthropic/)
+    expect(new Set(hosts)).toEqual(new Set(['127.0.0.1']))
+    expect(worker).not.toMatch(/x\.ai|openai|anthropic/)
   })
 
   it('agents cannot approve, schedule, kill or log content as published', async () => {

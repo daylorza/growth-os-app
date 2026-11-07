@@ -11,9 +11,8 @@
 #   growth-os-dispatch-daily.timer   daily_audit to the analyst       (installed, NOT enabled)
 #   growth-os-dispatch-measure.timer measure_request at 24h / 72h     (installed, NOT enabled)
 #   growth-os-dispatch-x.timer       x_refresh every 4 to 6 hours     (installed, NOT enabled)
-#   growth-os-xai-fallback.service   disabled fallback, needs XAI_API_KEY (no timer)
 # Secrets (passwords, per-role keys) are generated on first run, written only into the root-owned unit
-# files (chmod 600) and never printed. Re-running keeps existing secrets and any webhook / xAI values
+# files (chmod 600) and never printed. Re-running keeps existing secrets and any webhook values
 # added on the host.
 set -euo pipefail
 
@@ -58,8 +57,6 @@ ANALYST_WEBHOOK_URL="$(keep growth-os-api.service ANALYST_WEBHOOK_URL)"
 ANALYST_WEBHOOK_KEY="$(keep growth-os-api.service ANALYST_WEBHOOK_KEY)"
 CREATIVE_WEBHOOK_URL="$(keep growth-os-api.service CREATIVE_WEBHOOK_URL)"
 CREATIVE_WEBHOOK_KEY="$(keep growth-os-api.service CREATIVE_WEBHOOK_KEY)"
-XAI_API_KEY="$(keep growth-os-xai-fallback.service XAI_API_KEY)"
-XAI_MODEL="$(keep growth-os-xai-fallback.service XAI_MODEL)"
 NODE="$(command -v node)"
 
 mkdir -p "$DATA"
@@ -198,21 +195,8 @@ RandomizedDelaySec=2h
 WantedBy=timers.target
 EOF
 
-cat > "$UNITS/growth-os-xai-fallback.service" <<EOF
-[Unit]
-Description=Growth OS xAI fallback audit (disabled; needs the creator's XAI_API_KEY on this host)
-After=network-online.target growth-os-api.service
-
-[Service]
-Type=oneshot
-User=$APP_USER
-WorkingDirectory=$APP_DIR/server
-Environment=GROWTH_OS_API=http://127.0.0.1:$API_PORT
-Environment=GROWTH_OS_ANALYST_KEY=$ANALYST_KEY
-Environment=XAI_API_KEY=$XAI_API_KEY
-Environment=XAI_MODEL=$XAI_MODEL
-ExecStart=$NODE dist/worker/xai-fallback.js
-EOF
+# The xAI fallback was removed: the analyst agent is the only path that reads X.
+rm -f "$UNITS/growth-os-xai-fallback.service"
 
 chown root:root "$UNITS"/growth-os-*
 chmod 600 "$UNITS"/growth-os-*

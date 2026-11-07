@@ -10,8 +10,7 @@
     "test": "vitest run",
     "lint": "oxlint src test scripts",
     "migrate": "node scripts/migrate.mts",
-    "worker:dispatch": "node dist/worker/dispatch-worker.js",
-    "worker:xai-fallback": "node dist/worker/xai-fallback.js"
+    "worker:dispatch": "node dist/worker/dispatch-worker.js"
   },
   "dependencies": {
     "@growth-os/contracts": "workspace:^",
