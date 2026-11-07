@@ -4762,6 +4762,30 @@
         }
       }
     },
+    "/api/dispatch/x-refresh": {
+      "post": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Send x_refresh to the analyst: one X snapshot per 4-hour UTC window (scheduler)",
+        "operationId": "postApiDispatchXRefresh",
+        "x-roles": [
+          "creator",
+          "worker"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
     "/mcp": {
       "post": {
         "tags": [

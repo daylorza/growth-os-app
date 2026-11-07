@@ -120,6 +120,19 @@ describe('the agent loop: no human step between a brief and an analysis', () => 
     expect(a.body.handoff._meta.createdBy).toBe('scheduler')
   })
 
+  it('x_refresh is idempotent per 4-hour UTC window and wakes the analyst', async () => {
+    const worker = as(app, bearer('worker'))
+    const a = await worker.post('/api/dispatch/x-refresh', {})
+    const b = await worker.post('/api/dispatch/x-refresh', {})
+    expect(a.status).toBe(201)
+    expect(a.body.handoff.id).toMatch(/^H-XREFRESH-\d{4}-\d{2}-\d{2}-(00|04|08|12|16|20)$/)
+    expect(b.body).toMatchObject({ created: false, handoff: { id: a.body.handoff.id } })
+    expect(a.body.handoff).toMatchObject({ to: 'analyst', type: 'question', contentItemId: expect.stringMatching(/^AUDIT-/) })
+    await idle()
+    expect(hooks.got.filter((g) => g.body.event === 'x_refresh').map((g) => g.body.handoffId)).toEqual([a.body.handoff.id])
+    expect((await as(app, bearer('analyst')).post('/api/dispatch/x-refresh', {})).status).toBe(403)
+  })
+
   it('records every event in the outbox with its delivery status', async () => {
     const outbox = (await as(app, basic).get('/api/events')).body as { id: string; status: string; to: string }[]
     expect(outbox.length).toBeGreaterThan(5)

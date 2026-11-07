@@ -129,6 +129,15 @@ export class HandoffsService extends CollectionService<Handoff> {
     return this.system(ctx, `H-AUDIT-${date}`, { contentItemId: `AUDIT-${date}`, from: 'creator', to: 'analyst', type: 'question', body, refs: [] }, 'daily_audit')
   }
 
+  /** An X refresh request for the analyst, on today's audit thread. Idempotent per 4-hour UTC window. */
+  async xRefresh(ctx: WriteContext, now = Date.now()) {
+    const at = new Date(now).toISOString()
+    const date = at.slice(0, 10)
+    const window = String(Math.floor(new Date(now).getUTCHours() / 4) * 4).padStart(2, '0')
+    const body = `X refresh for ${date}, ${window}:00 UTC window. Read ${await this.xHandle()} on X, read-only.\n\nWrite one snapshot (platform x, date ${date}, sourceType analyst_agent) with the followers, following and post counts you can see. Anything you cannot see stays "UNKNOWN", never 0. No analysis handoff unless something changed notably; if it did, cite the snapshots you compared. Everything stays a draft.`
+    return this.system(ctx, `H-XREFRESH-${date}-${window}`, { contentItemId: `AUDIT-${date}`, from: 'creator', to: 'analyst', type: 'question', body, refs: [] }, 'x_refresh')
+  }
+
   /** measure_request 24h and 72h after a post was published. Idempotent per item and window. */
   async measureRequests(ctx: WriteContext, now = Date.now()) {
     const items = await this.store.collection<ContentItem>('content_items').list({ status: 'published' })
@@ -181,6 +190,11 @@ export class DispatchController {
   @Post('measure-requests')
   measure(@Writer() w: WriteContext) {
     return this.handoffs.measureRequests(w)
+  }
+
+  @Post('x-refresh')
+  xRefresh(@Writer() w: WriteContext) {
+    return this.handoffs.xRefresh(w)
   }
 }
 
