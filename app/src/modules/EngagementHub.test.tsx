@@ -63,4 +63,18 @@ describe('engagement links and sending through the creative agent', () => {
     expect(getState().keywords[0].postUrls).toEqual(['https://www.tiktok.com/@a/video/1', 'https://www.tiktok.com/@a/video/2'])
     expect(screen.getByLabelText(/Exact CTA/).tagName).toBe('TEXTAREA')
   })
+
+  it('offers Send again once the approved text differs from what was already requested', () => {
+    render(<EngagementHub />)
+    fireEvent.click(screen.getByRole('button', { name: /Approved to post/ }))
+    const creative = getState().profile.agents.creative.name
+    fireEvent.click(screen.getByRole('button', { name: `Send via ${creative}` }))
+    expect(screen.getByRole('button', { name: `Asked ${creative} to send` })).toHaveProperty('disabled', true)
+    cleanup()
+    const st = getState()
+    resetAll({ ...st, engagements: st.engagements.map((x) => (x.id === 'E-9' ? { ...x, draftReply: 'A better, new reply.' } : x)) })
+    render(<EngagementHub />)
+    fireEvent.click(screen.getByRole('button', { name: /Approved to post/ }))
+    expect(screen.getByRole('button', { name: `Send via ${creative}` })).toHaveProperty('disabled', false)
+  })
 })

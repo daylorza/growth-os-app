@@ -139,7 +139,8 @@ function EngagementCard({ e }: { e: Engagement }) {
   const link = /^https?:\/\/\S+$/.test(e.sourcePost.trim()) ? e.sourcePost.trim() : null
   const creative = s.profile.agents.creative.name
   const creativeLane = (['tiktok', 'threads', 'instagram'] as const).includes(e.platform as 'tiktok')
-  const sendRequested = s.handoffs.some((h) => h.to === 'creative' && h.refs?.some((r) => r.collection === 'engagement_queue' && r.id === e.id))
+  // A send request counts only for the text it carried: after the reply is edited and re-approved, it can be sent again.
+  const sendRequested = !!e.draftReply.trim() && s.handoffs.some((h) => h.to === 'creative' && h.refs?.some((r) => r.collection === 'engagement_queue' && r.id === e.id) && h.message.includes(e.draftReply))
   const askToSend = () => {
     const where = [ENGAGEMENT_PLATFORM[e.platform], e.account, e.author && `@${e.author.replace(/^@/, '')}`].filter(Boolean).join(' · ')
     upsert('handoffs', {
