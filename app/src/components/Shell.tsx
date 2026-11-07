@@ -75,7 +75,7 @@ export default function Shell({ children }: { children: ReactNode }) {
             <div className="font-semibold tracking-wide">{brand}</div>
             <div className="text-[11px] tracking-widest text-muted uppercase">Growth Operating System</div>
           </div>
-          <button className="ml-auto text-muted lg:hidden" onClick={() => setNavOpen(false)} aria-label="Close menu">
+          <button className="ml-auto flex size-11 items-center justify-center text-muted lg:hidden" onClick={() => setNavOpen(false)} aria-label="Close menu">
             <X size={18} />
           </button>
         </div>
@@ -93,7 +93,7 @@ export default function Shell({ children }: { children: ReactNode }) {
                 aria-current={active ? 'page' : undefined}
                 className={cx(
                   'group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors',
-                  active ? 'bg-ink-700' : 'hover:bg-ink-800',
+                  active ? 'bg-ink-700 ring-1 ring-accent/40' : 'hover:bg-ink-800',
                 )}
               >
                 <r.icon size={18} className={active ? 'text-accent' : 'text-muted group-hover:text-fg'} />
@@ -127,7 +127,7 @@ export default function Shell({ children }: { children: ReactNode }) {
 
       <div className="min-w-0">
         <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-ink-600 bg-ink-950/90 px-4 py-3 backdrop-blur lg:hidden">
-          <button onClick={() => setNavOpen(true)} aria-label="Open menu" className="text-muted">
+          <button onClick={() => setNavOpen(true)} aria-label="Open menu" className="flex size-11 items-center justify-center text-muted">
             <Menu size={20} />
           </button>
           <span className="text-sm font-medium">{route.label}</span>

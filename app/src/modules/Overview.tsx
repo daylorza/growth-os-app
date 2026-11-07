@@ -45,9 +45,9 @@ export default function Overview() {
 
   return (
     <>
-      <PageHeader eyebrow="Overview" title="Mission Control" />
+      <PageHeader eyebrow="Overview" title="Mission Control">Your performance, priorities and reviews in one place.</PageHeader>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat
           label="TikTok Followers"
           icon={<Users size={20} />}

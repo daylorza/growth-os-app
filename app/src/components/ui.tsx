@@ -14,7 +14,7 @@ import {
 import { cx } from '../lib/cx'
 
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <section className={cx('rounded-2xl border border-ink-600 bg-ink-800 p-5', className)}>{children}</section>
+  return <section className={cx('rounded-2xl border border-ink-600 bg-ink-800 p-5 shadow-sm shadow-black/10', className)}>{children}</section>
 }
 
 export function CardTitle({ icon, children, right }: { icon?: ReactNode; children: ReactNode; right?: ReactNode }) {
@@ -186,8 +186,8 @@ export function Stat({ label, value, icon, note }: { label: string; value: React
         <span>{label}</span>
         {icon && <span className="text-accent">{icon}</span>}
       </div>
-      <div className="mt-4 text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl">{value}</div>
-      {note && <div className="mt-2 text-xs text-faint">{note}</div>}
+      <div className="mt-4 text-3xl font-semibold tracking-tight tabular-nums">{value}</div>
+      {note && <div className="mt-2 text-sm leading-relaxed text-muted">{note}</div>}
     </Card>
   )
 }
