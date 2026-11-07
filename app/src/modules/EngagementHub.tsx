@@ -27,7 +27,7 @@ export default function EngagementHub() {
   return (
     <>
       <PageHeader eyebrow="Engagement Hub" title="Comments, keywords and conversations">
-        Paste comments in, classify them and draft replies in your voice. Nothing is sent from here: copy an approved reply and post it yourself.
+        Everyone who needs an answer, with a draft reply in your voice. Approve a reply, then post it yourself or send it via {s.profile.agents.creative.name}. Nothing is sent without your approval.
       </PageHeader>
 
       <CommentForm />

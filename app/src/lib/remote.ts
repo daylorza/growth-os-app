@@ -56,6 +56,7 @@ export const toDashboardHandoff = (h: ApiHandoff): Handoff => ({
   createdAt: h.createdAt,
   acknowledged: !!h.acknowledgedAt,
   type: h.type,
+  ...(h.refs?.length ? { refs: h.refs.map((r) => ({ collection: r.collection, id: r.id })) } : {}),
   ...(h.demo ? { demo: true } : {}),
   ...(h._meta ? { _meta: h._meta } : {}),
 })

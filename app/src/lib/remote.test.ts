@@ -57,6 +57,8 @@ describe('handoffs over the endpoint', () => {
     const h = toDashboardHandoff(api)
     expect(h).toMatchObject({ itemId: 'C-001', message: 'Data', acknowledged: false, type: 'analysis' })
     expect(toDashboardHandoff({ ...api, acknowledgedAt: '2026-01-02T00:00:00Z', acknowledgedBy: 'creator' }).acknowledged).toBe(true)
+    // Refs survive a reload, so the dashboard still knows which item a send request was for.
+    expect(toDashboardHandoff({ ...api, refs: [{ collection: 'engagement_queue', id: 'E-1' }] }).refs).toEqual([{ collection: 'engagement_queue', id: 'E-1' }])
     const a = { ...createSampleSeed('2026-01-01'), handoffs: [h] }
     expect(diff(a, { ...a, handoffs: [{ ...h, acknowledged: true }] })).toEqual([{ method: 'POST', path: '/api/handoffs/H-1/ack' }])
     expect(diff(a, { ...a, handoffs: [{ ...h, message: 'edited' }] })).toEqual([])
