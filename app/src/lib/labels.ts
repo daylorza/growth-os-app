@@ -14,6 +14,8 @@ import type {
 export const PLATFORM: Record<Platform, string> = { tiktok: 'TikTok', x: 'X', threads: 'Threads' }
 /** Every platform, in display order. Each is reported on its own and never added to another. */
 export const PLATFORMS = Object.keys(PLATFORM) as Platform[]
+/** Engagement items waiting on the creator: the Engagement Hub "Needs action" tab and the nav badge. */
+export const NEEDS_ACTION: ReplyStatus[] = ['new', 'drafted', 'escalated']
 
 export const PILLARS: Record<Pillar, { label: string; target: number; note: string }> = {
   build: { label: 'Building AI in public', target: 40, note: 'Project demos, architecture, agent workflows, lessons' },

@@ -84,6 +84,7 @@ export const ROUTES: RouteSpec[] = [
   { method: 'POST', path: '/api/dispatch/daily-audit', tag: 'events', summary: "Send today's daily_audit to the analyst (scheduler)", roles: DISPATCH },
   { method: 'POST', path: '/api/dispatch/measure-requests', tag: 'events', summary: 'Send measure_request for posts published 24h or 72h ago (scheduler)', roles: DISPATCH },
   { method: 'POST', path: '/api/dispatch/weekly-refresh', tag: 'events', summary: 'Send weekly_refresh to the creative agent: TikTok and Threads snapshots for the week (scheduler)', roles: DISPATCH },
+  { method: 'POST', path: '/api/dispatch/engagement-sweep', tag: 'events', summary: 'Send engagement_sweep to the creative agent: new TikTok and Threads comments into the queue, one per 4-hour UTC window (scheduler)', roles: DISPATCH },
   { method: 'POST', path: '/api/dispatch/x-refresh', tag: 'events', summary: 'Send x_refresh to the analyst: one X snapshot per 4-hour UTC window (scheduler)', roles: DISPATCH },
 
   { method: 'POST', path: '/mcp', tag: 'mcp', summary: 'MCP server for the analyst (streamable HTTP, stateless). Tools wrap the routes above', roles: ['analyst'] },

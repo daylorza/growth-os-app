@@ -6,13 +6,13 @@ import { useState } from 'react'
 import { Badge, Button, Card, CardTitle, CopyButton, Empty, Field, Input, Mono, Notice, PageHeader, Select, Textarea } from '../components/ui'
 import { cx } from '../lib/cx'
 import { nowStamp, today } from '../lib/dates'
-import { CATEGORY, PLATFORM, REPLY_STATUS } from '../lib/labels'
+import { CATEGORY, NEEDS_ACTION, PLATFORM, REPLY_STATUS } from '../lib/labels'
 import { isRepeatReply, keywordActivationError, matchKeywords, nextId, replyApproveError, replyRiskWarnings } from '../lib/rules'
 import { patch, remove, upsert, useAppState } from '../lib/store'
 import type { CommentCategory, Engagement, KeywordRule, LeadType, Platform, ReplyStatus } from '../lib/types'
 
 const TABS: Record<string, { label: string; statuses: ReplyStatus[] }> = {
-  todo: { label: 'Needs action', statuses: ['new', 'drafted', 'escalated'] },
+  todo: { label: 'Needs action', statuses: NEEDS_ACTION },
   approved: { label: 'Approved to post', statuses: ['approved'] },
   done: { label: 'Done', statuses: ['posted_by_day', 'dismissed'] },
 }

@@ -147,6 +147,18 @@ describe('the agent loop: no human step between a brief and an analysis', () => 
     expect((await as(app, bearer('creative')).post('/api/dispatch/weekly-refresh', {})).status).toBe(403)
   })
 
+  it('engagement_sweep asks the creative agent to queue new comments, once per 4-hour window', async () => {
+    const worker = as(app, bearer('worker'))
+    const a = await worker.post('/api/dispatch/engagement-sweep', {})
+    const b = await worker.post('/api/dispatch/engagement-sweep', {})
+    expect(a.body.handoff.id).toMatch(/^H-SWEEP-\d{4}-\d{2}-\d{2}-(00|04|08|12|16|20)$/)
+    expect(b.body).toMatchObject({ created: false, handoff: { id: a.body.handoff.id } })
+    expect(a.body.handoff).toMatchObject({ to: 'creative', type: 'question' })
+    await idle()
+    expect(hooks.got.filter((g) => g.body.event === 'engagement_sweep')).toHaveLength(1)
+    expect((await as(app, bearer('analyst')).post('/api/dispatch/engagement-sweep', {})).status).toBe(403)
+  })
+
   it('records every event in the outbox with its delivery status', async () => {
     const outbox = (await as(app, basic).get('/api/events')).body as { id: string; status: string; to: string }[]
     expect(outbox.length).toBeGreaterThan(5)

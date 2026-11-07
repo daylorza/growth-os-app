@@ -12,6 +12,7 @@
 #   growth-os-dispatch-measure.timer measure_request at 24h / 72h     (installed, NOT enabled)
 #   growth-os-dispatch-x.timer       x_refresh every 4 to 6 hours     (installed, NOT enabled)
 #   growth-os-dispatch-weekly.timer  weekly_refresh Sun 8 PM ET       (installed, NOT enabled)
+#   growth-os-dispatch-sweep.timer   engagement_sweep every 4 to 6 hours (installed, NOT enabled)
 #   growth-os-deploy.timer           deploy/update-atlas.sh every 5 min: CI-green origin/main only (installed, NOT enabled)
 # Secrets (passwords, per-role keys) are generated on first run, written only into the root-owned unit
 # files (chmod 600) and never printed. Re-running keeps existing secrets and any webhook values
@@ -143,7 +144,7 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-for mode in daily measure x weekly; do
+for mode in daily measure x weekly sweep; do
 cat > "$UNITS/growth-os-dispatch-$mode.service" <<EOF
 [Unit]
 Description=Growth OS scheduler: dispatch $mode events (no LLM call, no platform call)
@@ -209,6 +210,19 @@ Persistent=true
 WantedBy=timers.target
 EOF
 
+cat > "$UNITS/growth-os-dispatch-sweep.timer" <<EOF
+[Unit]
+Description=Growth OS engagement_sweep to the creative agent, every 4 to 6 hours
+
+[Timer]
+OnBootSec=15min
+OnUnitActiveSec=4h
+RandomizedDelaySec=2h
+
+[Install]
+WantedBy=timers.target
+EOF
+
 cat > "$UNITS/growth-os-deploy.service" <<EOF
 [Unit]
 Description=Growth OS deploy: pull origin/main once its CI passed, rebuild, re-run the installer
@@ -248,5 +262,5 @@ systemctl daemon-reload
 systemctl enable --now growth-os-mongo.service growth-os-api.service growth-os-web.service
 systemctl restart growth-os-api.service growth-os-web.service
 echo "Installed. Web: http://$BIND_HOST:$WEB_PORT  API (local): 127.0.0.1:$API_PORT"
-echo "Timers installed, not enabled: growth-os-dispatch-daily.timer, growth-os-dispatch-measure.timer, growth-os-dispatch-x.timer, growth-os-dispatch-weekly.timer, growth-os-deploy.timer"
+echo "Timers installed, not enabled: growth-os-dispatch-daily.timer, growth-os-dispatch-measure.timer, growth-os-dispatch-x.timer, growth-os-dispatch-weekly.timer, growth-os-dispatch-sweep.timer, growth-os-deploy.timer"
 echo "Creator login: user $CREATOR_USER. Password and per-role keys are in $UNITS/growth-os-api.service (root only)."

@@ -103,9 +103,9 @@ describe('contracts: UNKNOWN', () => {
 describe('contracts: ownership and spec', () => {
   it('agents write only their own collections', () => {
     for (const c of ['briefs', 'hooks', 'scripts', 'captions'] as const) expect([canWrite('creative', c), canWrite('analyst', c)]).toEqual([true, false])
-    for (const c of ['engagement_queue', 'experiments'] as const) expect([canWrite('analyst', c), canWrite('creative', c)]).toEqual([true, false])
-    // Snapshots: both agents, the creative agent for CREATIVE_PLATFORMS only (enforced by the audience service).
-    expect([canWrite('analyst', 'audience_snapshots'), canWrite('creative', 'audience_snapshots')]).toEqual([true, true])
+    for (const c of ['experiments', 'reports', 'leads'] as const) expect([canWrite('analyst', c), canWrite('creative', c)]).toEqual([true, false])
+    // Snapshots and the engagement queue: both agents, the creative agent for CREATIVE_PLATFORMS only (enforced by the services).
+    for (const c of ['audience_snapshots', 'engagement_queue'] as const) expect([canWrite('analyst', c), canWrite('creative', c)]).toEqual([true, true])
     expect(CREATIVE_PLATFORMS).toEqual(['tiktok', 'threads'])
     for (const c of Object.keys(WRITE_ACCESS) as (keyof typeof WRITE_ACCESS)[]) {
       expect(canWrite('creator', c)).toBe(true)

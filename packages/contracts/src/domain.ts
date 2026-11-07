@@ -284,7 +284,7 @@ export interface Caption extends CreativeDoc {
   hashtags: string
 }
 
-export const EVENTS = ['daily_audit', 'brief_created', 'analysis_created', 'post_published', 'measure_request', 'x_refresh', 'weekly_refresh', 'experiment_logged', 'approval_given'] as const
+export const EVENTS = ['daily_audit', 'brief_created', 'analysis_created', 'post_published', 'measure_request', 'x_refresh', 'weekly_refresh', 'engagement_sweep', 'experiment_logged', 'approval_given'] as const
 export type EventName = (typeof EVENTS)[number]
 
 /** Body of every webhook POST. `handoffId` is the idempotency key. */

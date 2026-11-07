@@ -24,7 +24,7 @@ Requires Node 22.18+ and [pnpm](https://pnpm.io). Without an endpoint the dashbo
 | Overview | Followers, growth target, weekly cadence, campaign week, today's priorities, what's waiting on you |
 | Audience Growth | TikTok, X and Threads follower history, 7/14/28-day views and engagement, audience signals, per-video table |
 | Content Studio | 30-day calendar and creative briefs: three hooks, script, visuals, caption, CTA, native X version |
-| Engagement Hub | Comment queue with categories, keyword campaigns and reply drafts that warn on prices, DM promises and repeats |
+| Engagement Hub | One queue for everyone who needs an answer (the agents add X, TikTok and Threads comments as drafts), keyword campaigns and reply drafts that warn on prices, DM promises and repeats. The nav shows how many need action |
 | Agent Control | Copyable system prompts for the analyst and creative agents, handoff chain, weekly loop, handoff log |
 | Content Intelligence | Content mix vs targets, experiment log, weekly audience report, auto-drafted weekly report |
 | Brand & Revenue | Lead pipeline. Revenue only counts with evidence |
@@ -69,7 +69,7 @@ Without it, the dashboard, the creative agent and the analyst agent share nothin
 ```
 browser ──Basic auth──▶ Next.js dashboard :8766 ──(same header)──▶ NestJS API 127.0.0.1:8767 ──▶ MongoDB 127.0.0.1:27017
 analyst agent  ──analyst key──▶ :8766/api/*  ◀── webhook (brief_created, daily_audit, post_published, measure_request, x_refresh)
-creative agent ──creative key─▶ :8766/api/*      reads handoffs (analysis_created, experiment_logged, approval_given, weekly_refresh)
+creative agent ──creative key─▶ :8766/api/*      reads handoffs (analysis_created, experiment_logged, approval_given, weekly_refresh, engagement_sweep)
 scheduler (systemd timers) ──worker key──▶ /api/dispatch/*   (no LLM call, no platform call)
 ```
 
@@ -79,8 +79,8 @@ scheduler (systemd timers) ──worker key──▶ /api/dispatch/*   (no LLM c
 
   | Collection | Writes |
   |---|---|
-  | `audience_snapshots` | analyst, creator; creative for TikTok and Threads only |
-  | `engagement_queue`, `experiments`, `reports`, `leads` | analyst, creator |
+  | `audience_snapshots`, `engagement_queue` | analyst, creator; creative for TikTok and Threads only |
+  | `experiments`, `reports`, `leads` | analyst, creator |
   | `briefs`, `hooks`, `scripts`, `captions` | creative, creator |
   | `handoffs` | everyone, only as themselves; only the recipient acknowledges |
   | `content_items` | everyone creates; the API owns ids and status rules |
@@ -108,7 +108,7 @@ The loop, with no human step between a brief and an analysis:
 
 Each event is stored in an outbox (`GET /api/events`, id `<event>:<handoffId>:<recipient>`, so a repeat never duplicates work) and POSTed to the recipient's webhook: `{ "event", "contentItemId", "handoffId", "from", "at" }`, with `Idempotency-Key: <handoffId>`, `Authorization: Bearer <listener key>`, 3 retries with exponential backoff. A recipient without a webhook (the creator, or an agent that reads the API) is recorded as `no_listener`. Configure with `ANALYST_WEBHOOK_URL` / `ANALYST_WEBHOOK_KEY` (and `CREATIVE_…`) on the host only.
 
-Events: `daily_audit`, `brief_created`, `analysis_created`, `post_published`, `measure_request`, `x_refresh`, `weekly_refresh`, `experiment_logged`, `approval_given`.
+Events: `daily_audit`, `brief_created`, `analysis_created`, `post_published`, `measure_request`, `x_refresh`, `weekly_refresh`, `engagement_sweep`, `experiment_logged`, `approval_given`.
 
 ### MCP server (analyst)
 
@@ -140,7 +140,7 @@ All routes need a credential except `/health`. See `packages/contracts/openapi.j
 | `/api/briefs`, `/api/hooks`, `/api/scripts`, `/api/captions` | Creative drafts (GET, POST, PATCH, DELETE) |
 | `/api/experiments`, `/api/engagement-queue`, `/api/leads` | Analyst data |
 | `/api/keywords`, `/api/tasks`, `/api/checkins`, `/api/reports`, `/api/settings` | The dashboard's planning data |
-| `GET /api/events`, `POST /api/dispatch/daily-audit`, `POST /api/dispatch/measure-requests`, `POST /api/dispatch/x-refresh`, `POST /api/dispatch/weekly-refresh` | Outbox; scheduler entry points |
+| `GET /api/events`, `POST /api/dispatch/daily-audit`, `POST /api/dispatch/measure-requests`, `POST /api/dispatch/x-refresh`, `POST /api/dispatch/weekly-refresh`, `POST /api/dispatch/engagement-sweep` | Outbox; scheduler entry points |
 | `POST /api/migrations/import`, `GET /api/migrations` | One-time import with a receipt |
 
 Example, as an agent:
@@ -183,8 +183,8 @@ Pushes `private/workspace.json`, `private/endpoint-seed.json` (extra verified re
 
 ### Scheduler and analyst
 
-- **Scheduler** (`server/src/worker/dispatch-worker.ts`): `dispatch-worker.js daily` sends today's `daily_audit` to the analyst (idempotent per day); `dispatch-worker.js measure` sends `measure_request` 24h and 72h after a post is published; `dispatch-worker.js x` sends `x_refresh` (one X snapshot request on today's audit thread, idempotent per 4-hour UTC window); `dispatch-worker.js weekly` sends `weekly_refresh` to the creative agent (TikTok and Threads snapshots after Sunday's stats, idempotent per week). It contains no LLM call and no platform call, and its key can only call `/api/dispatch/*`. The analyst agent reads X and the creative agent reads TikTok and Threads, each through its own connection; the creative agent has no webhook, so it picks the request up on its own scheduled run.
-- **Schedule:** TBD, to be filled in by the analyst agent once approved. The timers ship disabled (placeholder 08:00 daily, measurement hourly, X refresh every 4h plus a random 0-2h delay, TikTok and Threads refresh Sunday 8 PM US Eastern). Enable only after approval: `sudo systemctl enable --now growth-os-dispatch-daily.timer growth-os-dispatch-measure.timer growth-os-dispatch-x.timer growth-os-dispatch-weekly.timer`.
+- **Scheduler** (`server/src/worker/dispatch-worker.ts`): `dispatch-worker.js daily` sends today's `daily_audit` to the analyst (idempotent per day); `dispatch-worker.js measure` sends `measure_request` 24h and 72h after a post is published; `dispatch-worker.js x` sends `x_refresh` (one X snapshot request on today's audit thread, idempotent per 4-hour UTC window); `dispatch-worker.js weekly` sends `weekly_refresh` to the creative agent (TikTok and Threads snapshots after Sunday's stats, idempotent per week); `dispatch-worker.js sweep` sends `engagement_sweep` to the creative agent (new TikTok and Threads comments into the engagement queue as drafts, idempotent per 4-hour UTC window). It contains no LLM call and no platform call, and its key can only call `/api/dispatch/*`. The analyst agent reads X and the creative agent reads TikTok and Threads, each through its own connection; the creative agent has no webhook, so it picks the request up on its own scheduled run.
+- **Schedule:** TBD, to be filled in by the analyst agent once approved. The timers ship disabled (placeholder 08:00 daily, measurement hourly, X refresh every 4h plus a random 0-2h delay, TikTok and Threads refresh Sunday 8 PM US Eastern, engagement sweep every 4h plus a random 0-2h delay). Enable only after approval: `sudo systemctl enable --now growth-os-dispatch-daily.timer growth-os-dispatch-measure.timer growth-os-dispatch-x.timer growth-os-dispatch-weekly.timer growth-os-dispatch-sweep.timer`.
 - **Paste-in mode:** Agent Control → "Paste reply" stores the analyst's reply as an analysis handoff for `AUDIT-<date>`.
 
 ### Deploy (tailnet host)

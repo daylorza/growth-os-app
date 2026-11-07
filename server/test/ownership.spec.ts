@@ -23,7 +23,7 @@ describe('collection ownership', () => {
   ] as const
   const analystWrites = (cid: string) => [
     ['/api/audience/snapshots', { platform: 'x', date: '2026-01-02', source: 'export', metrics: { followers: 1 } }],
-    ['/api/engagement-queue', { comment: 'Nice' }],
+    ['/api/engagement-queue', { platform: 'x', comment: 'Nice' }],
     ['/api/experiments', { contentItemId: cid, hypothesis: 'x' }],
   ] as const
 

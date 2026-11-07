@@ -148,6 +148,14 @@ export class HandoffsService extends CollectionService<Handoff> {
     return this.system(ctx, `H-WEEKLY-${weekStart}`, { contentItemId: `AUDIT-${date}`, from: 'creator', to: 'creative', type: 'question', body, refs: [] }, 'weekly_refresh')
   }
 
+  /** New TikTok and Threads comments into the engagement queue, for the creative agent. Idempotent per 4-hour UTC window. */
+  async engagementSweep(ctx: WriteContext, now = Date.now()) {
+    const date = new Date(now).toISOString().slice(0, 10)
+    const window = String(Math.floor(new Date(now).getUTCHours() / 4) * 4).padStart(2, '0')
+    const body = `Engagement sweep for ${date}, ${window}:00 UTC window. Read new comments, replies and mentions on TikTok (TikTok Studio → Comments and notifications) and Threads (replies and mentions), read-only.\n\nUse a browser session that is already signed in. Never type a password or a two-factor code; if a sign-in is needed, stop and ask the creator. Only open and read pages: do not reply, like, follow, message or change any setting.\n\nFor each person who needs an answer, add one engagement item (POST /api/engagement-queue: platform tiktok or threads, author, comment, sourcePost = link to the post or comment, category, draftReply in the creator's voice). Skip anyone already in the queue for the same post (GET /api/engagement-queue). Sensitive items get category sensitive and no draft. Spam gets category spam. Nothing is sent: the creator replies herself. If several sweep requests are waiting, do one sweep and ack them all.`
+    return this.system(ctx, `H-SWEEP-${date}-${window}`, { contentItemId: `AUDIT-${date}`, from: 'creator', to: 'creative', type: 'question', body, refs: [] }, 'engagement_sweep')
+  }
+
   /** measure_request 24h and 72h after a post was published. Idempotent per item and window. */
   async measureRequests(ctx: WriteContext, now = Date.now()) {
     const items = await this.store.collection<ContentItem>('content_items').list({ status: 'published' })
@@ -205,6 +213,11 @@ export class DispatchController {
   @Post('weekly-refresh')
   weekly(@Writer() w: WriteContext) {
     return this.handoffs.weeklyRefresh(w)
+  }
+
+  @Post('engagement-sweep')
+  sweep(@Writer() w: WriteContext) {
+    return this.handoffs.engagementSweep(w)
   }
 
   @Post('x-refresh')

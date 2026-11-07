@@ -6,14 +6,15 @@
  *   node dist/worker/dispatch-worker.js measure   measure_request 24h and 72h after a post is published
  *   node dist/worker/dispatch-worker.js x         x_refresh to the analyst (idempotent per 4-hour UTC window)
  *   node dist/worker/dispatch-worker.js weekly    weekly_refresh to the creative agent: TikTok and Threads (idempotent per week)
+ *   node dist/worker/dispatch-worker.js sweep     engagement_sweep to the creative agent: new comments into the queue (per 4-hour UTC window)
  *
  * Env: GROWTH_OS_API (default http://127.0.0.1:8767), GROWTH_OS_WORKER_KEY (scheduler key: dispatch routes only).
  */
-const ROUTES = { daily: '/api/dispatch/daily-audit', measure: '/api/dispatch/measure-requests', x: '/api/dispatch/x-refresh', weekly: '/api/dispatch/weekly-refresh' } as const
+const ROUTES = { daily: '/api/dispatch/daily-audit', measure: '/api/dispatch/measure-requests', x: '/api/dispatch/x-refresh', weekly: '/api/dispatch/weekly-refresh', sweep: '/api/dispatch/engagement-sweep' } as const
 
 async function main() {
   const mode = process.argv[2] as keyof typeof ROUTES
-  if (!ROUTES[mode]) throw new Error('Usage: dispatch-worker daily|measure|x|weekly')
+  if (!ROUTES[mode]) throw new Error('Usage: dispatch-worker daily|measure|x|weekly|sweep')
   const key = process.env.GROWTH_OS_WORKER_KEY
   if (!key) throw new Error('GROWTH_OS_WORKER_KEY is required.')
   const api = (process.env.GROWTH_OS_API ?? 'http://127.0.0.1:8767').replace(/\/$/, '')

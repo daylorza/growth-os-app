@@ -1,8 +1,8 @@
-import { Body, Controller, Get, Injectable, Module, Param, Patch, Post } from '@nestjs/common'
+import { Body, Controller, ForbiddenException, Get, Injectable, Module, Param, Patch, Post } from '@nestjs/common'
 import { Writer, type WriteContext } from '../common/actor'
 import { CollectionService } from '../common/collection.service'
 import { checkEngagement } from '../common/draft-only'
-import { CreateEngagementDto, UpdateEngagementDto, type Engagement } from '@growth-os/contracts'
+import { CREATIVE_PLATFORMS, CreateEngagementDto, UpdateEngagementDto, type Engagement } from '@growth-os/contracts'
 
 /** Comment queue with draft replies. Nothing here sends a reply; the creator posts it herself. */
 @Injectable()
@@ -16,6 +16,8 @@ export class EngagementService extends CollectionService<Engagement> {
   }
 
   protected checkWrite(ctx: WriteContext, prev: Engagement | null, next: Engagement) {
+    if (ctx.actor.role === 'creative' && ![prev?.platform ?? next.platform, next.platform].every((p) => (CREATIVE_PLATFORMS as readonly string[]).includes(p)))
+      throw new ForbiddenException(`The creative agent queues ${CREATIVE_PLATFORMS.join(' and ')} comments only.`)
     checkEngagement(ctx.actor, prev, next)
   }
 }
