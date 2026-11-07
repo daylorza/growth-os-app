@@ -7,7 +7,7 @@ import { Badge, Button, Card, CardTitle, CopyButton, Empty, Field, Input, Mono, 
 import { cx } from '../lib/cx'
 import { nowStamp, today } from '../lib/dates'
 import { CATEGORY, ENGAGEMENT_PLATFORM, NEEDS_ACTION, REPLY_STATUS } from '../lib/labels'
-import { fillTemplate, isRepeatReply, keywordActivationError, matchKeywords, nextId, replyApproveError, replyRiskWarnings } from '../lib/rules'
+import { campaignFor, fillTemplate, isRepeatReply, keywordActivationError, matchKeywords, nextId, replyApproveError, replyRiskWarnings, sameRecipient } from '../lib/rules'
 import { patch, remove, upsert, useAppState } from '../lib/store'
 import type { CommentCategory, Engagement, EngagementPlatform, KeywordRule, LeadType, ReplyStatus, Resource } from '../lib/types'
 
@@ -127,8 +127,13 @@ function EngagementCard({ e }: { e: Engagement }) {
     patch('engagements', e.id, { ...changes, updatedAt: nowStamp() })
     setError(null)
   }
-  const warnings = replyRiskWarnings(e.draftReply, s.profile.creatorName)
-  const repeat = isRepeatReply(e.draftReply, s.engagements, e.id)
+  // A DM from an active campaign is the approved delivery, and its text is meant to repeat.
+  const campaign = campaignFor(e, s.keywords)
+  const resource = campaign && s.resources.find((r) => r.id === campaign.resourceId)
+  const warnings = replyRiskWarnings(e.draftReply, s.profile.creatorName).filter((w) => !(campaign && w.startsWith('Mentions a DM')))
+  const repeat = !campaign && isRepeatReply(e.draftReply, s.engagements, e.id)
+  const already = sameRecipient(e, s.engagements)
+  const sent = already.filter((o) => o.status === 'posted_by_day' || /sent by/i.test(o.note))
   const locked = e.status === 'posted_by_day' || e.status === 'dismissed'
   const link = /^https?:\/\/\S+$/.test(e.sourcePost.trim()) ? e.sourcePost.trim() : null
   const creative = s.profile.agents.creative.name
@@ -208,6 +213,16 @@ function EngagementCard({ e }: { e: Engagement }) {
           )}
         </Field>
       </div>
+      {campaign && (
+        <p className="mt-2 text-xs text-muted">
+          Campaign DM: <Mono>{campaign.keyword}</Mono>{resource ? ` → ${resource.name}` : ''}
+        </p>
+      )}
+      {already.length > 0 && (
+        <Notice tone={sent.length ? 'danger' : 'neutral'}>
+          {sent.length ? 'Already sent to' : 'Already in the queue for'} @{e.author.replace(/^@/, '')}: {already.map((o) => `${o.id} (${REPLY_STATUS[o.status]}${/sent by/i.test(o.note) ? ', sent' : ''})`).join(', ')}. Don't DM them twice.
+        </Notice>
+      )}
       {(warnings.length > 0 || repeat || error) && (
         <div className="mt-2 flex flex-col gap-1">
           {error && <Notice tone="danger">{error}</Notice>}

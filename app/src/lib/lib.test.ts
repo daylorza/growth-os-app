@@ -7,6 +7,7 @@ import type { AppState } from './types'
 import { campaignPosition, weekRange } from './dates'
 import { growthPct, milestoneProgress, netFollowers, per1k, periodChange, profileToFollow } from './metrics'
 import {
+  campaignFor,
   fillTemplate,
   isRepeatReply,
   keywordActivationError,
@@ -18,6 +19,7 @@ import {
   publishLogError,
   replyApproveError,
   replyRiskWarnings,
+  sameRecipient,
 } from './rules'
 import { createSampleSeed, migrateState } from './seed'
 import type { Engagement, FollowerSnapshot } from './types'
@@ -84,6 +86,19 @@ describe('keyword matching', () => {
     expect(matchKeywords('agent pls', [r], 'https://www.tiktok.com/@me/video/222')).toHaveLength(0)
     expect(matchKeywords('agent pls', [r], '')).toHaveLength(0)
     expect(matchKeywords('agent pls', [{ ...r, postUrls: [] }], '')).toHaveLength(1)
+  })
+  it('recognises an active DM campaign item and other items for the same person', () => {
+    const r = { ...createSampleSeed().keywords[0], keyword: 'AGENT', active: true, deliveryMethod: 'TikTok DM', postUrls: ['https://www.tiktok.com/@me/video/111'] }
+    const base = { platform: 'tiktok' as const, comment: 'agent', category: 'question' as const, draftReply: 'Hi', leadId: '', note: '', createdAt: '', updatedAt: '', keyword: 'agent', sourcePost: 'https://www.tiktok.com/@me/video/111' }
+    const a: Engagement = { ...base, id: 'E-1', author: '@Sam', status: 'new' }
+    const b: Engagement = { ...base, id: 'E-2', author: 'sam', status: 'approved', note: 'Sent by the creative agent, 10:00' }
+    const c: Engagement = { ...base, id: 'E-3', author: 'sam', status: 'dismissed' }
+    expect(campaignFor(a, [r])?.keyword).toBe('AGENT')
+    expect(campaignFor({ ...a, sourcePost: 'https://www.tiktok.com/@me/video/222' }, [r])).toBeUndefined()
+    expect(campaignFor(a, [{ ...r, active: false }])).toBeUndefined()
+    expect(campaignFor(a, [{ ...r, deliveryMethod: 'Link in bio' }])).toBeUndefined()
+    expect(sameRecipient(a, [a, b, c]).map((x) => x.id)).toEqual(['E-2'])
+    expect(sameRecipient({ ...a, author: '' }, [a, b])).toEqual([])
   })
   it('fills {name} in a campaign reply', () => {
     expect(fillTemplate('Hey {name}! Here it is.', '@sam')).toBe('Hey sam! Here it is.')
