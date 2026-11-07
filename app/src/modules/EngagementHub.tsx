@@ -7,7 +7,7 @@ import { Badge, Button, Card, CardTitle, CopyButton, Empty, Field, Input, Mono, 
 import { cx } from '../lib/cx'
 import { nowStamp, today } from '../lib/dates'
 import { CATEGORY, ENGAGEMENT_PLATFORM, NEEDS_ACTION, REPLY_STATUS } from '../lib/labels'
-import { campaignFor, fillTemplate, isRepeatReply, keywordActivationError, matchKeywords, nextId, replyApproveError, replyRiskWarnings, sameRecipient } from '../lib/rules'
+import { alreadyHandled, campaignFor, fillTemplate, isRepeatReply, keywordActivationError, matchKeywords, nextId, replyApproveError, replyRiskWarnings, sameRecipient } from '../lib/rules'
 import { patch, remove, upsert, useAppState } from '../lib/store'
 import type { CommentCategory, Engagement, EngagementPlatform, KeywordRule, LeadType, ReplyStatus, Resource } from '../lib/types'
 
@@ -133,7 +133,8 @@ function EngagementCard({ e }: { e: Engagement }) {
   const warnings = replyRiskWarnings(e.draftReply, s.profile.creatorName).filter((w) => !(campaign && w.startsWith('Mentions a DM')))
   const repeat = !campaign && isRepeatReply(e.draftReply, s.engagements, e.id)
   const already = sameRecipient(e, s.engagements)
-  const sent = already.filter((o) => o.status === 'posted_by_day' || /sent by/i.test(o.note))
+  const sent = already.filter(alreadyHandled)
+  const answered = e.status !== 'posted_by_day' && alreadyHandled(e)
   const locked = e.status === 'posted_by_day' || e.status === 'dismissed'
   const link = /^https?:\/\/\S+$/.test(e.sourcePost.trim()) ? e.sourcePost.trim() : null
   const creative = s.profile.agents.creative.name
@@ -147,7 +148,7 @@ function EngagementCard({ e }: { e: Engagement }) {
       to: 'creative',
       itemId: `AUDIT-${today()}`,
       type: 'question',
-      message: `Send the approved reply on ${e.id} (${where}${link ? `, ${link}` : ''}). Send exactly this text, once:\n\n${e.draftReply}\n\nThen add "Sent by the creative agent, <time>" to the note of ${e.id}. ${s.profile.creatorName} marks it posted.`,
+      message: `Send the approved reply on ${e.id} (${where}${link ? `, ${link}` : ''}). First open your conversation with them and the comment's replies: if ${s.profile.creatorName} already messaged them this link or answered there, do not send; add "Not sent: already DM'd by the creator, <date>" (or "already replied") to the note of ${e.id} instead. Otherwise send exactly this text, once:\n\n${e.draftReply}\n\nThen add "Sent by the creative agent, <time>" to the note of ${e.id}. ${s.profile.creatorName} marks it posted.`,
       refs: [{ collection: 'engagement_queue', id: e.id }],
       createdAt: nowStamp(),
       acknowledged: false,
@@ -218,9 +219,10 @@ function EngagementCard({ e }: { e: Engagement }) {
           Campaign DM: <Mono>{campaign.keyword}</Mono>{resource ? ` → ${resource.name}` : ''}
         </p>
       )}
+      {answered && <Notice tone="danger">Already answered: {e.note}. Don't send this again.</Notice>}
       {already.length > 0 && (
         <Notice tone={sent.length ? 'danger' : 'neutral'}>
-          {sent.length ? 'Already sent to' : 'Already in the queue for'} @{e.author.replace(/^@/, '')}: {already.map((o) => `${o.id} (${REPLY_STATUS[o.status]}${/sent by/i.test(o.note) ? ', sent' : ''})`).join(', ')}. Don't DM them twice.
+          {sent.length ? 'Already sent to' : 'Already in the queue for'} @{e.author.replace(/^@/, '')}: {already.map((o) => `${o.id} (${REPLY_STATUS[o.status]}${alreadyHandled(o) ? ', answered' : ''})`).join(', ')}. Don't DM them twice.
         </Notice>
       )}
       {(warnings.length > 0 || repeat || error) && (
@@ -253,7 +255,7 @@ function EngagementCard({ e }: { e: Engagement }) {
                 </a>
               )}
               {creativeLane && (
-                <Button size="sm" disabled={sendRequested} onClick={() => confirm(`Ask ${creative} to send this exact reply on ${ENGAGEMENT_PLATFORM[e.platform]}?`) && askToSend()} title={sendRequested ? `Already asked ${creative}` : `${creative} sends it on its next run`}>
+                <Button size="sm" disabled={sendRequested || answered || sent.length > 0} onClick={() => confirm(`Ask ${creative} to send this exact reply on ${ENGAGEMENT_PLATFORM[e.platform]}?`) && askToSend()} title={sendRequested ? `Already asked ${creative}` : `${creative} sends it on its next run`}>
                   {sendRequested ? `Asked ${creative} to send` : `Send via ${creative}`}
                 </Button>
               )}

@@ -7,6 +7,7 @@ import type { AppState } from './types'
 import { campaignPosition, weekRange } from './dates'
 import { growthPct, milestoneProgress, netFollowers, per1k, periodChange, profileToFollow } from './metrics'
 import {
+  alreadyHandled,
   campaignFor,
   fillTemplate,
   isRepeatReply,
@@ -98,6 +99,11 @@ describe('keyword matching', () => {
     expect(campaignFor(a, [{ ...r, active: false }])).toBeUndefined()
     expect(campaignFor(a, [{ ...r, deliveryMethod: 'Link in bio' }])).toBeUndefined()
     expect(sameRecipient(a, [a, b, c]).map((x) => x.id)).toEqual(['E-2'])
+    const d: Engagement = { ...base, id: 'E-4', author: 'SAM', status: 'dismissed', note: "Already DM'd by the creator, 2026-11-05" }
+    expect(sameRecipient(a, [a, d]).map((x) => x.id)).toEqual(['E-4'])
+    expect(alreadyHandled(d)).toBe(true)
+    expect(alreadyHandled({ status: 'new', note: 'Already replied by the creator, 2026-11-05' })).toBe(true)
+    expect(alreadyHandled({ status: 'drafted', note: '' })).toBe(false)
     expect(sameRecipient({ ...a, author: '' }, [a, b])).toEqual([])
   })
   it('fills {name} in a campaign reply', () => {
