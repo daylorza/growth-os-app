@@ -77,4 +77,14 @@ describe('engagement links and sending through the creative agent', () => {
     fireEvent.click(screen.getByRole('button', { name: /Approved to post/ }))
     expect(screen.getByRole('button', { name: `Send via ${creative}` })).toHaveProperty('disabled', false)
   })
+
+  it('Manually replied marks an open item done and keeps a note, without approving it first', () => {
+    const st = getState()
+    resetAll({ ...st, engagements: [{ id: 'E-20', platform: 'tiktok', sourcePost: URL_, author: 'fan', comment: 'Love it', keyword: '', category: 'appreciation', draftReply: '', status: 'new', leadId: '', note: '', createdAt: '2026-01-01', updatedAt: '2026-01-01' }] })
+    render(<EngagementHub />)
+    fireEvent.click(screen.getByRole('button', { name: 'Manually replied' }))
+    const e = getState().engagements[0]
+    expect(e.status).toBe('posted_by_day')
+    expect(e.note).toMatch(/^Manually replied by /)
+  })
 })

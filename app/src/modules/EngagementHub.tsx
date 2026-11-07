@@ -269,7 +269,15 @@ function EngagementCard({ e }: { e: Engagement }) {
             <Button size="sm" onClick={() => flagLead(e.category === 'collaboration' ? 'collaboration' : 'client_inquiry')}>Flag as lead</Button>
           )}
           {e.leadId && <Link href="/revenue" className="text-xs text-accent">Lead {e.leadId}</Link>}
-          <Button size="sm" variant="ghost" className="ml-auto" onClick={() => set({ status: 'dismissed' })}>Dismiss</Button>
+          <Button
+            size="sm"
+            className="ml-auto"
+            title="You already answered this in the app. Marks it done so nobody answers again."
+            onClick={() => set({ status: 'posted_by_day', note: [e.note.trim(), `Manually replied by ${s.profile.creatorName}, ${nowStamp()}`].filter(Boolean).join(' · ') })}
+          >
+            Manually replied
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => set({ status: 'dismissed' })}>Dismiss</Button>
         </footer>
       )}
     </article>
