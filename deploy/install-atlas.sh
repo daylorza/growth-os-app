@@ -10,6 +10,7 @@
 #   growth-os-web.service            Next.js dashboard + /api pass-through, BIND_HOST:8766 (tailnet only)
 #   growth-os-dispatch-daily.timer   daily_audit to the analyst       (installed, NOT enabled)
 #   growth-os-dispatch-measure.timer measure_request at 24h / 72h     (installed, NOT enabled)
+#   growth-os-dispatch-x.timer       x_refresh every 4 to 6 hours     (installed, NOT enabled)
 #   growth-os-xai-fallback.service   disabled fallback, needs XAI_API_KEY (no timer)
 # Secrets (passwords, per-role keys) are generated on first run, written only into the root-owned unit
 # files (chmod 600) and never printed. Re-running keeps existing secrets and any webhook / xAI values
@@ -143,7 +144,7 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-for mode in daily measure; do
+for mode in daily measure x; do
 cat > "$UNITS/growth-os-dispatch-$mode.service" <<EOF
 [Unit]
 Description=Growth OS scheduler: dispatch $mode events (no LLM call, no platform call)
@@ -184,6 +185,19 @@ Persistent=true
 WantedBy=timers.target
 EOF
 
+cat > "$UNITS/growth-os-dispatch-x.timer" <<EOF
+[Unit]
+Description=Growth OS x_refresh to the analyst, every 4 to 6 hours
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=4h
+RandomizedDelaySec=2h
+
+[Install]
+WantedBy=timers.target
+EOF
+
 cat > "$UNITS/growth-os-xai-fallback.service" <<EOF
 [Unit]
 Description=Growth OS xAI fallback audit (disabled; needs the creator's XAI_API_KEY on this host)
@@ -206,5 +220,5 @@ systemctl daemon-reload
 systemctl enable --now growth-os-mongo.service growth-os-api.service growth-os-web.service
 systemctl restart growth-os-api.service growth-os-web.service
 echo "Installed. Web: http://$BIND_HOST:$WEB_PORT  API (local): 127.0.0.1:$API_PORT"
-echo "Timers installed, not enabled: growth-os-dispatch-daily.timer, growth-os-dispatch-measure.timer"
+echo "Timers installed, not enabled: growth-os-dispatch-daily.timer, growth-os-dispatch-measure.timer, growth-os-dispatch-x.timer"
 echo "Creator login: user $CREATOR_USER. Password and per-role keys are in $UNITS/growth-os-api.service (root only)."
