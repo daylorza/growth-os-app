@@ -185,11 +185,10 @@ Pushes `private/workspace.json`, `private/endpoint-seed.json` (extra verified re
 - **Scheduler** (`server/src/worker/dispatch-worker.ts`): `dispatch-worker.js daily` sends today's `daily_audit` to the analyst (idempotent per day); `dispatch-worker.js measure` sends `measure_request` 24h and 72h after a post is published. It contains no LLM call and no platform call, and its key can only call `/api/dispatch/*`. The analyst agent reads X through its own connection when woken.
 - **Schedule:** TBD, to be filled in by the analyst agent once approved. Both timers ship disabled (placeholder 08:00 daily, measurement hourly). Enable only after approval: `sudo systemctl enable --now growth-os-dispatch-daily.timer growth-os-dispatch-measure.timer`.
 - **Paste-in mode:** Agent Control → "Paste reply" stores the analyst's reply as an analysis handoff for `AUDIT-<date>`.
-- **xAI fallback (disabled, step 2):** `server/src/worker/xai-fallback.ts` asks xAI's model to audit the X account with the built-in `x_search` tool (read-only) and writes the analysis, draft replies and an unverified snapshot as the analyst. It runs only if the creator adds `XAI_API_KEY` and `XAI_MODEL` to `growth-os-xai-fallback.service` on the host. xAI bills X search per fetched post.
 
 ### Deploy (tailnet host)
 
-`deploy/install-atlas.sh` installs the systemd units (`growth-os-mongo`, `growth-os-api`, `growth-os-web`, the two scheduler services and timers, and the disabled xAI fallback). It is additive: no reverse-proxy changes, no other services touched. Secrets are generated on the host, stored only in the root-owned unit files (chmod 600), and never printed.
+`deploy/install-atlas.sh` installs the systemd units (`growth-os-mongo`, `growth-os-api`, `growth-os-web`, the scheduler services and timers). It is additive: no reverse-proxy changes, no other services touched. Secrets are generated on the host, stored only in the root-owned unit files (chmod 600), and never printed.
 
 | Port | Bound to | Service |
 |---|---|---|

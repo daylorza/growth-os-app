@@ -53,4 +53,4 @@ DTOs, domain types, the collection ownership table and the route table. Change a
 - Lone `0` follower days in TikTok's FollowerHistory are export glitches and are dropped.
 
 - Private files are read by the Next.js server at request time in local mode only; they are never bundled. Deployed dashboards run in endpoint mode with `GROWTH_OS_IGNORE_PRIVATE=1`.
-- Agent and xAI names, handles and model names never go in tracked files: they come from the profile or the host environment.
+- Agent names, handles and model names never go in tracked files: they come from the profile or the host environment.
