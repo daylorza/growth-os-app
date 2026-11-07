@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { NEEDS_ACTION } from '../lib/labels'
 import { useProfile } from '../lib/profile'
 import { useAppState } from '../lib/store'
@@ -51,6 +51,8 @@ export default function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const [navOpen, setNavOpen] = useState(false)
   const [setupOpen, setSetupOpen] = useState(false)
+  const menuButton = useRef<HTMLButtonElement>(null)
+  const closeMenuButton = useRef<HTMLButtonElement>(null)
   useDropDemoTikTokBaseline()
   const profile = useProfile()
   const brand = profile.brandName.trim() || 'GROWTH OS'
@@ -61,12 +63,26 @@ export default function Shell({ children }: { children: ReactNode }) {
     document.title = `${route.label} · ${brand} Growth OS`
   }, [route, brand])
 
+  useEffect(() => {
+    if (!navOpen) return
+    closeMenuButton.current?.focus()
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setNavOpen(false)
+        menuButton.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [navOpen])
+
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[19rem_1fr]">
       <aside
+        id="main-navigation"
         className={cx(
-          'fixed inset-y-0 left-0 z-40 w-[19rem] overflow-y-auto border-r border-ink-600 bg-ink-900 p-4 transition-transform lg:sticky lg:top-0 lg:h-dvh lg:translate-x-0',
-          navOpen ? 'translate-x-0' : '-translate-x-full',
+          'fixed inset-y-0 left-0 z-40 w-[min(19rem,100vw)] overflow-y-auto border-r border-ink-600 bg-ink-900 p-4 lg:sticky lg:top-0 lg:block lg:h-dvh lg:w-[19rem]',
+          navOpen ? 'block' : 'hidden',
         )}
       >
         <div className="flex items-center gap-3 px-2 pt-2 pb-5">
@@ -75,7 +91,7 @@ export default function Shell({ children }: { children: ReactNode }) {
             <div className="font-semibold tracking-wide">{brand}</div>
             <div className="text-[11px] tracking-widest text-muted uppercase">Growth Operating System</div>
           </div>
-          <button className="ml-auto flex size-11 items-center justify-center text-muted lg:hidden" onClick={() => setNavOpen(false)} aria-label="Close menu">
+          <button ref={closeMenuButton} className="ml-auto flex size-11 items-center justify-center text-muted lg:hidden" onClick={() => { setNavOpen(false); menuButton.current?.focus() }} aria-label="Close menu">
             <X size={18} />
           </button>
         </div>
@@ -127,7 +143,7 @@ export default function Shell({ children }: { children: ReactNode }) {
 
       <div className="min-w-0">
         <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-ink-600 bg-ink-950/90 px-4 py-3 backdrop-blur lg:hidden">
-          <button onClick={() => setNavOpen(true)} aria-label="Open menu" className="flex size-11 items-center justify-center text-muted">
+          <button ref={menuButton} onClick={() => setNavOpen(true)} aria-label="Open menu" aria-expanded={navOpen} aria-controls="main-navigation" className="flex size-11 items-center justify-center text-muted">
             <Menu size={20} />
           </button>
           <span className="text-sm font-medium">{route.label}</span>

@@ -91,50 +91,55 @@ export default function ContentStudio() {
 
       {view === 'calendar' ? (
         <Card className="p-3 sm:p-5">
-          <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
-              <div key={d} className="pb-2">{d}</div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-1">
-            {days.map((d) => {
-              const inCampaign = d >= start && d <= campaignEnd
-              const items = s.content.filter((c) => c.plannedDate === d)
-              return (
-                <div
-                  key={d}
-                  className={cx(
-                    'group flex min-h-24 flex-col gap-1 rounded-lg border p-1.5 text-left',
-                    inCampaign ? 'bg-ink-900' : 'opacity-40',
-                    d === today() ? 'border-accent/60' : inCampaign ? 'border-ink-600' : 'border-transparent',
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs tabular-nums text-muted">{parseDate(d).getDate()}</span>
-                    <button
-                      aria-label={`New brief on ${d}`}
-                      onClick={() => create(d)}
-                      className="rounded text-faint hover:text-accent sm:opacity-0 sm:focus:opacity-100 sm:group-hover:opacity-100"
-                    >
-                      <Plus size={14} />
-                    </button>
-                  </div>
-                  {items.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => setOpenId(c.id)}
+          <p className="mb-2 text-xs text-muted md:hidden">Scroll sideways to see the full week.</p>
+          <div className="overflow-x-auto" role="region" aria-label="Content calendar, scroll horizontally to see the full week" tabIndex={0}>
+            <div className="min-w-[42rem]">
+              <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted">
+                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
+                  <div key={d} className="pb-2">{d}</div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {days.map((d) => {
+                  const inCampaign = d >= start && d <= campaignEnd
+                  const items = s.content.filter((c) => c.plannedDate === d)
+                  return (
+                    <div
+                      key={d}
                       className={cx(
-                        'truncate rounded px-1.5 py-1 text-left text-xs leading-tight',
-                        c.status === 'published' ? 'bg-ok/10 text-ok' : c.approval === 'approved' ? 'bg-accent/15 text-accent' : 'bg-ink-700',
+                        'group flex min-h-24 flex-col gap-1 rounded-lg border p-1.5 text-left',
+                        inCampaign ? 'bg-ink-900' : 'bg-ink-800',
+                        d === today() ? 'border-accent/60' : inCampaign ? 'border-ink-600' : 'border-transparent',
                       )}
-                      title={`${c.id} · ${c.title}`}
                     >
-                      <span className="font-mono opacity-70">{PLATFORM[c.platform]}</span> {c.title || 'Untitled'}
-                    </button>
-                  ))}
-                </div>
-              )
-            })}
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs tabular-nums text-muted">{parseDate(d).getDate()}</span>
+                        <button
+                          aria-label={`New brief on ${d}`}
+                          onClick={() => create(d)}
+                          className="rounded text-faint hover:text-accent"
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
+                      {items.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => setOpenId(c.id)}
+                          className={cx(
+                            'truncate rounded px-1.5 py-1 text-left text-xs leading-tight',
+                            c.status === 'published' ? 'bg-ok/10 text-ok' : c.approval === 'approved' ? 'bg-accent/15 text-accent' : 'bg-ink-700',
+                          )}
+                          title={`${c.id} · ${c.title}`}
+                        >
+                          <span className="font-mono opacity-70">{PLATFORM[c.platform]}</span> {c.title || 'Untitled'}
+                        </button>
+                      ))}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           </div>
         </Card>
       ) : (
