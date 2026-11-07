@@ -68,7 +68,7 @@ Without it, the dashboard, the creative agent and the analyst agent share nothin
 
 ```
 browser ──Basic auth──▶ Next.js dashboard :8766 ──(same header)──▶ NestJS API 127.0.0.1:8767 ──▶ MongoDB 127.0.0.1:27017
-analyst agent  ──analyst key──▶ :8766/api/*  ◀── webhook (brief_created, daily_audit, post_published, measure_request)
+analyst agent  ──analyst key──▶ :8766/api/*  ◀── webhook (brief_created, daily_audit, post_published, measure_request, x_refresh)
 creative agent ──creative key─▶ :8766/api/*      reads handoffs (analysis_created, experiment_logged, approval_given)
 scheduler (systemd timers) ──worker key──▶ /api/dispatch/*   (no LLM call, no platform call)
 ```
@@ -107,7 +107,7 @@ The loop, with no human step between a brief and an analysis:
 
 Each event is stored in an outbox (`GET /api/events`, id `<event>:<handoffId>:<recipient>`, so a repeat never duplicates work) and POSTed to the recipient's webhook: `{ "event", "contentItemId", "handoffId", "from", "at" }`, with `Idempotency-Key: <handoffId>`, `Authorization: Bearer <listener key>`, 3 retries with exponential backoff. A recipient without a webhook (the creator, or an agent that reads the API) is recorded as `no_listener`. Configure with `ANALYST_WEBHOOK_URL` / `ANALYST_WEBHOOK_KEY` (and `CREATIVE_…`) on the host only.
 
-Events: `daily_audit`, `brief_created`, `analysis_created`, `post_published`, `measure_request`, `experiment_logged`, `approval_given`.
+Events: `daily_audit`, `brief_created`, `analysis_created`, `post_published`, `measure_request`, `x_refresh`, `experiment_logged`, `approval_given`.
 
 ### MCP server (analyst)
 
@@ -139,7 +139,7 @@ All routes need a credential except `/health`. See `packages/contracts/openapi.j
 | `/api/briefs`, `/api/hooks`, `/api/scripts`, `/api/captions` | Creative drafts (GET, POST, PATCH, DELETE) |
 | `/api/experiments`, `/api/engagement-queue`, `/api/leads` | Analyst data |
 | `/api/keywords`, `/api/tasks`, `/api/checkins`, `/api/reports`, `/api/settings` | The dashboard's planning data |
-| `GET /api/events`, `POST /api/dispatch/daily-audit`, `POST /api/dispatch/measure-requests` | Outbox; scheduler entry points |
+| `GET /api/events`, `POST /api/dispatch/daily-audit`, `POST /api/dispatch/measure-requests`, `POST /api/dispatch/x-refresh` | Outbox; scheduler entry points |
 | `POST /api/migrations/import`, `GET /api/migrations` | One-time import with a receipt |
 
 Example, as an agent:
@@ -182,8 +182,8 @@ Pushes `private/workspace.json`, `private/endpoint-seed.json` (extra verified re
 
 ### Scheduler and analyst
 
-- **Scheduler** (`server/src/worker/dispatch-worker.ts`): `dispatch-worker.js daily` sends today's `daily_audit` to the analyst (idempotent per day); `dispatch-worker.js measure` sends `measure_request` 24h and 72h after a post is published. It contains no LLM call and no platform call, and its key can only call `/api/dispatch/*`. The analyst agent reads X through its own connection when woken.
-- **Schedule:** TBD, to be filled in by the analyst agent once approved. Both timers ship disabled (placeholder 08:00 daily, measurement hourly). Enable only after approval: `sudo systemctl enable --now growth-os-dispatch-daily.timer growth-os-dispatch-measure.timer`.
+- **Scheduler** (`server/src/worker/dispatch-worker.ts`): `dispatch-worker.js daily` sends today's `daily_audit` to the analyst (idempotent per day); `dispatch-worker.js measure` sends `measure_request` 24h and 72h after a post is published; `dispatch-worker.js x` sends `x_refresh` (one X snapshot request on today's audit thread, idempotent per 4-hour UTC window). It contains no LLM call and no platform call, and its key can only call `/api/dispatch/*`. The analyst agent reads X through its own connection when woken.
+- **Schedule:** TBD, to be filled in by the analyst agent once approved. The timers ship disabled (placeholder 08:00 daily, measurement hourly, X refresh every 4h plus a random 0-2h delay). Enable only after approval: `sudo systemctl enable --now growth-os-dispatch-daily.timer growth-os-dispatch-measure.timer growth-os-dispatch-x.timer`.
 - **Paste-in mode:** Agent Control → "Paste reply" stores the analyst's reply as an analysis handoff for `AUDIT-<date>`.
 
 ### Deploy (tailnet host)
