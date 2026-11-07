@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { CalendarDays, ChartNoAxesColumnIncreasing, ListChecks, Sparkles, SquareCheck, Target, Users, Video } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
-import { Badge, Button, Card, CardTitle, Checkbox, Empty, Input, PageHeader, ProgressBar, Stat } from '../components/ui'
+import { Badge, Button, Card, CardTitle, Checkbox, Empty, Input, ProgressBar, Stat } from '../components/ui'
 import { campaignPosition, parseDate, today, weekRange } from '../lib/dates'
 import { BRIEF_FIELDS, UNKNOWN, withProject } from '../lib/labels'
 import type { Profile } from '../lib/types'
@@ -45,9 +45,19 @@ export default function Overview() {
 
   return (
     <>
-      <PageHeader eyebrow="Overview" title="Mission Control" />
+      <header className="overview-stage mb-6 rounded-2xl border border-ink-600 px-6 py-7 shadow-[0_18px_55px_rgb(0_0_0/0.2)] sm:px-8 sm:py-8">
+        <div className="max-w-xl">
+          <p className="text-xs font-medium tracking-[0.18em] text-accent uppercase">Overview / Your workspace</p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Mission Control</h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted sm:text-base">Your performance, priorities and reviews in one place.</p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Link href="/studio" className="rounded-lg bg-fg px-4 py-2 text-sm font-medium text-ink-950 transition-colors hover:bg-white">Open Content Studio</Link>
+            <Link href="/audience" className="rounded-lg border border-ink-600 bg-ink-700/80 px-4 py-2 text-sm font-medium text-fg transition-colors hover:bg-ink-700">View performance</Link>
+          </div>
+        </div>
+      </header>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat
           label="TikTok Followers"
           icon={<Users size={20} />}

@@ -33,13 +33,14 @@ export default function EngagementHub() {
       <CommentForm />
 
       <Card className="mt-4">
-        <div className="mb-4 flex flex-wrap gap-1">
+        <div className="mb-4 flex flex-wrap gap-1" role="group" aria-label="Filter engagement queue">
           {Object.entries(TABS).map(([k, t]) => {
             const n = s.engagements.filter((e) => t.statuses.includes(e.status)).length
             return (
               <button
                 key={k}
                 onClick={() => setTab(k)}
+                aria-pressed={tab === k}
                 className={cx('rounded-lg px-3 py-1.5 text-sm', tab === k ? 'bg-ink-700 text-fg' : 'text-muted hover:text-fg')}
               >
                 {t.label} <span className="ml-1 text-xs text-faint tabular-nums">{n}</span>

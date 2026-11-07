@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { NEEDS_ACTION } from '../lib/labels'
 import { useProfile } from '../lib/profile'
 import { useAppState } from '../lib/store'
@@ -51,6 +51,8 @@ export default function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const [navOpen, setNavOpen] = useState(false)
   const [setupOpen, setSetupOpen] = useState(false)
+  const menuButton = useRef<HTMLButtonElement>(null)
+  const closeMenuButton = useRef<HTMLButtonElement>(null)
   useDropDemoTikTokBaseline()
   const profile = useProfile()
   const brand = profile.brandName.trim() || 'GROWTH OS'
@@ -61,21 +63,35 @@ export default function Shell({ children }: { children: ReactNode }) {
     document.title = `${route.label} · ${brand} Growth OS`
   }, [route, brand])
 
+  useEffect(() => {
+    if (!navOpen) return
+    closeMenuButton.current?.focus()
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setNavOpen(false)
+        menuButton.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [navOpen])
+
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[19rem_1fr]">
       <aside
+        id="main-navigation"
         className={cx(
-          'fixed inset-y-0 left-0 z-40 w-[19rem] overflow-y-auto border-r border-ink-600 bg-ink-900 p-4 transition-transform lg:sticky lg:top-0 lg:h-dvh lg:translate-x-0',
-          navOpen ? 'translate-x-0' : '-translate-x-full',
+          'fixed inset-y-0 left-0 z-40 w-[min(19rem,100vw)] overflow-y-auto border-r border-ink-600/70 bg-ink-900 p-4 lg:sticky lg:top-0 lg:block lg:h-dvh lg:w-[19rem]',
+          navOpen ? 'block' : 'hidden',
         )}
       >
         <div className="flex items-center gap-3 px-2 pt-2 pb-5">
-          <Orbit className="text-accent" size={26} />
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-accent/30 bg-accent/10 text-accent"><Orbit size={23} /></span>
           <div>
             <div className="font-semibold tracking-wide">{brand}</div>
             <div className="text-[11px] tracking-widest text-muted uppercase">Growth Operating System</div>
           </div>
-          <button className="ml-auto text-muted lg:hidden" onClick={() => setNavOpen(false)} aria-label="Close menu">
+          <button ref={closeMenuButton} className="ml-auto flex size-11 items-center justify-center text-muted lg:hidden" onClick={() => { setNavOpen(false); menuButton.current?.focus() }} aria-label="Close menu">
             <X size={18} />
           </button>
         </div>
@@ -93,7 +109,7 @@ export default function Shell({ children }: { children: ReactNode }) {
                 aria-current={active ? 'page' : undefined}
                 className={cx(
                   'group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors',
-                  active ? 'bg-ink-700' : 'hover:bg-ink-800',
+                  active ? 'bg-ink-700 ring-1 ring-inset ring-accent/40 shadow-[inset_3px_0_0_var(--color-accent)]' : 'hover:bg-ink-800',
                 )}
               >
                 <r.icon size={18} className={active ? 'text-accent' : 'text-muted group-hover:text-fg'} />
@@ -127,12 +143,12 @@ export default function Shell({ children }: { children: ReactNode }) {
 
       <div className="min-w-0">
         <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-ink-600 bg-ink-950/90 px-4 py-3 backdrop-blur lg:hidden">
-          <button onClick={() => setNavOpen(true)} aria-label="Open menu" className="text-muted">
+          <button ref={menuButton} onClick={() => setNavOpen(true)} aria-label="Open menu" aria-expanded={navOpen} aria-controls="main-navigation" className="flex size-11 items-center justify-center text-muted">
             <Menu size={20} />
           </button>
           <span className="text-sm font-medium">{route.label}</span>
         </div>
-        <main className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-10">
+        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-10 xl:px-12">
           {profile.sample && (
             <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-accent/40 bg-accent/5 px-4 py-3 text-sm">
               <span className="min-w-0 flex-1">

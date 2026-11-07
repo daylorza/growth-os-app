@@ -4,6 +4,7 @@ import { X } from 'lucide-react'
 import {
   useEffect,
   useId,
+  useRef,
   useState,
   type ButtonHTMLAttributes,
   type InputHTMLAttributes,
@@ -14,7 +15,7 @@ import {
 import { cx } from '../lib/cx'
 
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <section className={cx('rounded-2xl border border-ink-600 bg-ink-800 p-5', className)}>{children}</section>
+  return <section className={cx('rounded-2xl border border-ink-600/80 bg-ink-800 p-5 shadow-[0_8px_28px_rgb(0_0_0/0.12)]', className)}>{children}</section>
 }
 
 export function CardTitle({ icon, children, right }: { icon?: ReactNode; children: ReactNode; right?: ReactNode }) {
@@ -73,7 +74,7 @@ export function Button({
 }
 
 const inputBase =
-  'w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-fg placeholder:text-faint focus:border-accent/60 focus:outline-none'
+  'w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-fg placeholder:text-faint focus:border-accent/60'
 
 export function Field({
   label,
@@ -140,25 +141,55 @@ export function Drawer({
   children: ReactNode
   footer?: ReactNode
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const closeRef = useRef(onClose)
+  const titleId = useId()
+  useEffect(() => { closeRef.current = onClose }, [onClose])
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const dialog = dialogRef.current
+    dialog?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        closeRef.current()
+      } else if (e.key === 'Tab' && dialog) {
+        const controls = Array.from(dialog.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'))
+          .filter((el) => !el.closest('[hidden], [inert], [aria-hidden="true"]') && getComputedStyle(el).display !== 'none' && getComputedStyle(el).visibility !== 'hidden')
+        const first = controls[0]
+        const last = controls.at(-1)
+        if (!first || !last) {
+          e.preventDefault()
+          dialog.focus()
+        } else if (e.shiftKey && (document.activeElement === first || document.activeElement === dialog || !dialog.contains(document.activeElement))) {
+          e.preventDefault()
+          last.focus()
+        } else if (!e.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) {
+          e.preventDefault()
+          first.focus()
+        }
+      }
+    }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      previous?.focus()
+    }
+  }, [open])
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden />
-      <div role="dialog" aria-modal className="relative flex h-full w-full max-w-2xl flex-col border-l border-ink-600 bg-ink-900">
-        <header className="flex items-center gap-3 border-b border-ink-600 px-6 py-4">
-          <div className="min-w-0 flex-1 text-base font-medium">{title}</div>
-          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close">
+      <div ref={dialogRef} role="dialog" aria-modal aria-labelledby={titleId} tabIndex={-1} className="relative flex h-full w-full max-w-2xl flex-col border-l border-ink-600 bg-ink-900">
+        <header className="flex items-center gap-3 border-b border-ink-600 px-4 py-4 sm:px-6">
+          <div id={titleId} className="min-w-0 flex-1 text-base font-medium">{title}</div>
+          <Button variant="ghost" size="sm" className="min-h-11 min-w-11" onClick={onClose} aria-label="Close">
             <X size={16} />
           </Button>
         </header>
-        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
-        {footer && <footer className="flex flex-wrap items-center gap-2 border-t border-ink-600 px-6 py-4">{footer}</footer>}
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">{children}</div>
+        {footer && <footer className="flex flex-wrap items-center gap-2 border-t border-ink-600 px-4 py-4 sm:px-6">{footer}</footer>}
       </div>
     </div>
   )
@@ -184,10 +215,10 @@ export function Stat({ label, value, icon, note }: { label: string; value: React
     <Card className="flex flex-col">
       <div className="flex items-start justify-between text-sm text-muted">
         <span>{label}</span>
-        {icon && <span className="text-accent">{icon}</span>}
+        {icon && <span className="rounded-xl border border-accent/20 bg-accent/10 p-2 text-accent">{icon}</span>}
       </div>
-      <div className="mt-4 text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl">{value}</div>
-      {note && <div className="mt-2 text-xs text-faint">{note}</div>}
+      <div className="mt-4 text-3xl font-semibold tracking-tight tabular-nums">{value}</div>
+      {note && <div className="mt-2 text-sm leading-relaxed text-muted">{note}</div>}
     </Card>
   )
 }

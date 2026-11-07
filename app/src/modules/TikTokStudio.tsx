@@ -90,7 +90,7 @@ export default function TikTokStudio({ tk }: { tk: TikTokSnapshot }) {
         <Empty title="No Content export yet" />
       ) : (
         <>
-          <div className="-mx-5 overflow-x-auto">
+          <div className="-mx-5 overflow-x-auto" role="region" aria-label="Video performance table, scroll horizontally for more columns" tabIndex={0}>
             <table className="w-full min-w-[760px] text-left text-sm">
               <thead className="text-xs text-muted">
                 <tr className="border-b border-ink-600">

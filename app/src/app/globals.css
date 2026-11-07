@@ -1,15 +1,15 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-ink-950: #07080b;
-  --color-ink-900: #0c0d11;
-  --color-ink-800: #16171c;
-  --color-ink-700: #1f2027;
-  --color-ink-600: #2a2b33;
-  --color-fg: #f3f3f5;
-  --color-muted: #9b9ba7;
-  --color-faint: #6b6b78;
-  --color-accent: #a78bfa;
+  --color-ink-950: #0d0a12;
+  --color-ink-900: #15121b;
+  --color-ink-800: #1c1823;
+  --color-ink-700: #302839;
+  --color-ink-600: #48404f;
+  --color-fg: #f5f2f8;
+  --color-muted: #c2bac9;
+  --color-faint: #aaa1b3;
+  --color-accent: #c39af5;
   --color-accent-strong: #8b5cf6;
   --color-ok: #6ee7b7;
   --color-warn: #f5b14c;
@@ -32,6 +32,10 @@
   ::selection {
     @apply bg-accent/30;
   }
+}
+
+.overview-stage {
+  background: #17131d;
 }
 
 @media (prefers-reduced-motion: reduce) {
