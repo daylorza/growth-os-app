@@ -382,8 +382,13 @@ function KeywordRules({ rules, resources }: { rules: KeywordRule[]; resources: R
                 )}
               </Field>
               <Field label="Delivery method" hint="e.g. Link in bio, pinned comment">{(id) => <Input id={id} value={r.deliveryMethod} onChange={(e) => set(r, { deliveryMethod: e.target.value })} />}</Field>
-              <Field label="Exact CTA" hint="What you say in the video. One per line if the posts use different wording." className="sm:col-span-2">
-                {(id) => <Textarea id={id} rows={2} value={r.cta} onChange={(e) => set(r, { cta: e.target.value })} />}
+              <Field label="Exact CTA" className="sm:col-span-2">
+                {(id) => (
+                  <>
+                    <p className="text-xs text-faint">What you say in the video. New CTA per line.</p>
+                    <Textarea id={id} rows={3} value={r.cta} onChange={(e) => set(r, { cta: e.target.value })} />
+                  </>
+                )}
               </Field>
               <Field label="Only on these posts" hint="One link per line. Empty: any post." className="sm:col-span-2">
                 {(id) => <PostUrls id={id} urls={r.postUrls ?? []} onChange={(postUrls) => set(r, { postUrls })} />}
