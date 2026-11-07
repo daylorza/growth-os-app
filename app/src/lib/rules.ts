@@ -32,9 +32,15 @@ export const campaignFor = (e: Pick<Engagement, 'keyword' | 'sourcePost'>, rules
 
 const person = (s: string) => s.trim().replace(/^@/, '').toLowerCase()
 
-/** Other queue items for the same person on the same platform: a DM already queued, approved or sent. Dismissed items do not count. */
+/** Notes that mean the person already got an answer: the agent sent it, or found the creator already replied or DM'd. */
+const HANDLED = /sent by|already (replied|dm'?d|messaged|handled)/i
+
+/** This item's person already got an answer (marked posted, or a note saying so). */
+export const alreadyHandled = (o: Pick<Engagement, 'status' | 'note'>) => o.status === 'posted_by_day' || HANDLED.test(o.note ?? '')
+
+/** Other queue items for the same person on the same platform: queued, approved or already answered. Dismissed items count only when their note says they were answered. */
 export const sameRecipient = (e: Engagement, all: Engagement[]) =>
-  person(e.author) ? all.filter((o) => o.id !== e.id && o.platform === e.platform && person(o.author) === person(e.author) && o.status !== 'dismissed') : []
+  person(e.author) ? all.filter((o) => o.id !== e.id && o.platform === e.platform && person(o.author) === person(e.author) && (o.status !== 'dismissed' || alreadyHandled(o))) : []
 
 /** A campaign's starting reply for one person: {name} becomes their name or handle. */
 export const fillTemplate = (template: string, name: string) => template.replaceAll('{name}', name.replace(/^@/, '').trim() || 'there')
