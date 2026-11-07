@@ -191,6 +191,17 @@ export interface KeywordRule extends BaseDoc {
   cta: string
   replyTemplate: string
   active: boolean
+  /** The resource the reply delivers (resources collection). */
+  resourceId: string
+  /** Only comments on these posts count. Empty: any post. */
+  postUrls: string[]
+}
+
+/** Something the creator gives out, e.g. a guide or a product link. Agents read it; only the creator edits it. */
+export interface Resource extends BaseDoc {
+  name: string
+  url: string
+  description: string
 }
 
 export interface Task extends BaseDoc {

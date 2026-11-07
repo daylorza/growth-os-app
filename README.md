@@ -24,7 +24,7 @@ Requires Node 22.18+ and [pnpm](https://pnpm.io). Without an endpoint the dashbo
 | Overview | Followers, growth target, weekly cadence, campaign week, today's priorities, what's waiting on you |
 | Audience Growth | TikTok, X and Threads follower history, 7/14/28-day views and engagement, audience signals, per-video table |
 | Content Studio | 30-day calendar and creative briefs: three hooks, script, visuals, caption, CTA, native X version |
-| Engagement Hub | One queue for everyone who needs an answer (the agents add X, TikTok, Threads and Instagram comments and messages as drafts, with the account they came in on), keyword campaigns and reply drafts that warn on prices, DM promises and repeats. The nav shows how many need action |
+| Engagement Hub | One queue for everyone who needs an answer (the agents add X, TikTok, Threads and Instagram comments and messages as drafts, with the account they came in on), a Resources list (what you give out), keyword campaigns tied to a resource and to specific posts (`{name}` fills in per person), and reply drafts that warn on prices, DM promises and repeats. The nav shows how many need action |
 | Agent Control | Copyable system prompts for the analyst and creative agents, handoff chain, weekly loop, handoff log |
 | Content Intelligence | Content mix vs targets, experiment log, weekly audience report, auto-drafted weekly report |
 | Brand & Revenue | Lead pipeline. Revenue only counts with evidence |
@@ -85,7 +85,7 @@ scheduler (systemd timers) ──worker key──▶ /api/dispatch/*   (no LLM c
   | `briefs`, `hooks`, `scripts`, `captions` | creative, creator |
   | `handoffs` | everyone, only as themselves; only the recipient acknowledges |
   | `content_items` | everyone creates; the API owns ids and status rules |
-  | profile, brief, settings, keywords, check-ins, migrations | creator |
+  | profile, brief, settings, keywords, resources, check-ins, migrations | creator |
 
 - **No invented numbers.** Metrics are `number | "UNKNOWN"`, never 0 as a stand-in. TikTok, X and Threads are never added together: every audience query takes exactly one platform.
 

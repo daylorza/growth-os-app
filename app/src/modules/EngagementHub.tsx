@@ -7,9 +7,9 @@ import { Badge, Button, Card, CardTitle, CopyButton, Empty, Field, Input, Mono, 
 import { cx } from '../lib/cx'
 import { nowStamp, today } from '../lib/dates'
 import { CATEGORY, ENGAGEMENT_PLATFORM, NEEDS_ACTION, REPLY_STATUS } from '../lib/labels'
-import { isRepeatReply, keywordActivationError, matchKeywords, nextId, replyApproveError, replyRiskWarnings } from '../lib/rules'
+import { fillTemplate, isRepeatReply, keywordActivationError, matchKeywords, nextId, replyApproveError, replyRiskWarnings } from '../lib/rules'
 import { patch, remove, upsert, useAppState } from '../lib/store'
-import type { CommentCategory, Engagement, EngagementPlatform, KeywordRule, LeadType, ReplyStatus } from '../lib/types'
+import type { CommentCategory, Engagement, EngagementPlatform, KeywordRule, LeadType, ReplyStatus, Resource } from '../lib/types'
 
 const TABS: Record<string, { label: string; statuses: ReplyStatus[] }> = {
   todo: { label: 'Needs action', statuses: NEEDS_ACTION },
@@ -60,7 +60,8 @@ export default function EngagementHub() {
         )}
       </Card>
 
-      <KeywordRules rules={s.keywords} />
+      <Resources resources={s.resources} keywords={s.keywords} />
+      <KeywordRules rules={s.keywords} resources={s.resources} />
     </>
   )
 }
@@ -69,7 +70,7 @@ function CommentForm() {
   const s = useAppState()
   const empty = { platform: 'tiktok' as EngagementPlatform, sourcePost: '', author: '', comment: '' }
   const [f, setF] = useState(empty)
-  const matches = f.comment ? matchKeywords(f.comment, s.keywords) : []
+  const matches = f.comment ? matchKeywords(f.comment, s.keywords, f.sourcePost) : []
   return (
     <Card>
       <CardTitle>Add a comment or mention</CardTitle>
@@ -79,7 +80,7 @@ function CommentForm() {
           ev.preventDefault()
           if (!f.comment.trim()) return
           const rule = matches[0]
-          const draft = rule?.replyTemplate ?? ''
+          const draft = rule ? fillTemplate(rule.replyTemplate, f.author) : ''
           upsert('engagements', {
             id: nextId('E', s.engagements),
             ...f,
@@ -257,7 +258,56 @@ function EngagementCard({ e }: { e: Engagement }) {
   )
 }
 
-function KeywordRules({ rules }: { rules: KeywordRule[] }) {
+function Resources({ resources, keywords }: { resources: Resource[]; keywords: KeywordRule[] }) {
+  const empty = { name: '', url: '', description: '' }
+  const [f, setF] = useState(empty)
+  const valid = f.name.trim() && /^https:\/\/\S+$/.test(f.url.trim())
+  return (
+    <Card className="mt-4">
+      <CardTitle>Resources</CardTitle>
+      <p className="mb-4 text-sm text-muted">What you give out: guides, templates, product links. Keyword campaigns deliver one of these, and only these.</p>
+      <div className="flex flex-col gap-2">
+        {resources.map((r) => (
+          <div key={r.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-ink-600 bg-ink-900 px-4 py-3 text-sm">
+            <Mono>{r.id}</Mono>
+            <span className="font-medium">{r.name}</span>
+            <a href={r.url} target="_blank" rel="noopener noreferrer" className="min-w-0 flex-1 truncate text-accent hover:underline">{r.url}</a>
+            {r.description && <span className="w-full text-xs text-muted">{r.description}</span>}
+            <CopyButton text={r.url} label="Copy link" />
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                if (!confirm(`Delete resource ${r.name}? Campaigns using it switch off.`)) return
+                for (const k of keywords.filter((x) => x.resourceId === r.id)) patch('keywords', k.id, { resourceId: '', approvedResource: '', active: false })
+                remove('resources', r.id)
+              }}
+            >
+              <Trash2 size={14} /> Delete
+            </Button>
+          </div>
+        ))}
+        {!resources.length && <Empty title="No resources yet" />}
+      </div>
+      <form
+        className="mt-4 grid gap-2 sm:grid-cols-[12rem_1fr_1fr_auto]"
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (!valid) return
+          upsert('resources', { id: nextId('RS', resources), name: f.name.trim(), url: f.url.trim(), description: f.description.trim() })
+          setF(empty)
+        }}
+      >
+        <Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Name" aria-label="Resource name" />
+        <Input value={f.url} onChange={(e) => setF({ ...f, url: e.target.value })} placeholder="https:// link (no tracking params)" aria-label="Resource link" />
+        <Input value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} placeholder="What it is (optional)" aria-label="Resource description" />
+        <Button type="submit" disabled={!valid}>Add resource</Button>
+      </form>
+    </Card>
+  )
+}
+
+function KeywordRules({ rules, resources }: { rules: KeywordRule[]; resources: Resource[] }) {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [newKw, setNewKw] = useState('')
   const set = (r: KeywordRule, changes: Partial<KeywordRule>) => {
@@ -280,10 +330,32 @@ function KeywordRules({ rules }: { rules: KeywordRule[] }) {
               <span className="min-w-0 flex-1 truncate text-xs text-muted">{r.approvedResource || 'No approved resource yet'}</span>
             </summary>
             <div className="grid gap-3 border-t border-ink-600 p-4 sm:grid-cols-2">
-              <Field label="Approved resource">{(id) => <Input id={id} value={r.approvedResource} onChange={(e) => set(r, { approvedResource: e.target.value })} />}</Field>
+              <Field label="Resource">
+                {(id) => (
+                  <Select
+                    id={id}
+                    options={{ '': 'Choose a resource', ...Object.fromEntries(resources.map((x) => [x.id, x.name])) }}
+                    value={r.resourceId ?? ''}
+                    onChange={(resourceId: string) => {
+                      const x = resources.find((y) => y.id === resourceId)
+                      set(r, { resourceId, approvedResource: x ? `${x.name}: ${x.url}` : '' })
+                    }}
+                  />
+                )}
+              </Field>
               <Field label="Delivery method" hint="e.g. Link in bio, pinned comment">{(id) => <Input id={id} value={r.deliveryMethod} onChange={(e) => set(r, { deliveryMethod: e.target.value })} />}</Field>
               <Field label="Exact CTA" className="sm:col-span-2">{(id) => <Input id={id} value={r.cta} onChange={(e) => set(r, { cta: e.target.value })} />}</Field>
-              <Field label="Starting reply (edit per comment)" className="sm:col-span-2">
+              <Field label="Only on these posts" hint="One link per line. Empty: any post." className="sm:col-span-2">
+                {(id) => (
+                  <Textarea
+                    id={id}
+                    rows={3}
+                    value={(r.postUrls ?? []).join('\n')}
+                    onChange={(e) => set(r, { postUrls: e.target.value.split(/\s+/).map((u) => u.trim()).filter((u) => /^https?:\/\//.test(u)) })}
+                  />
+                )}
+              </Field>
+              <Field label="Starting reply (edit per comment)" hint="{name} becomes the person's name or handle." className="sm:col-span-2">
                 {(id) => <Textarea id={id} value={r.replyTemplate} onChange={(e) => set(r, { replyTemplate: e.target.value })} />}
               </Field>
               {errors[r.id] && <div className="sm:col-span-2"><Notice tone="danger">{errors[r.id]}</Notice></div>}
@@ -313,7 +385,7 @@ function KeywordRules({ rules }: { rules: KeywordRule[] }) {
           e.preventDefault()
           const kw = newKw.trim().toUpperCase()
           if (!kw) return
-          upsert('keywords', { id: nextId('K', rules), keyword: kw, approvedResource: '', deliveryMethod: '', cta: '', replyTemplate: '', active: false })
+          upsert('keywords', { id: nextId('K', rules), keyword: kw, approvedResource: '', deliveryMethod: '', cta: '', replyTemplate: '', active: false, resourceId: '', postUrls: [] })
           setNewKw('')
         }}
       >

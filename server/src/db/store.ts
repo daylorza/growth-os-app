@@ -32,6 +32,7 @@ export const COLLECTIONS = [
   'engagement_queue',
   'leads',
   'keywords',
+  'resources',
   'tasks',
   'checkins',
   'reports',

@@ -95,6 +95,19 @@ export interface KeywordRule {
   cta: string
   replyTemplate: string
   active: boolean
+  /** The resource this campaign delivers. */
+  resourceId?: string
+  /** Only comments on these posts count. Empty or missing: any post. */
+  postUrls?: string[]
+  demo?: boolean
+}
+
+/** Something the creator gives out, e.g. a guide or a product link. */
+export interface Resource {
+  id: string
+  name: string
+  url: string
+  description: string
   demo?: boolean
 }
 
@@ -252,6 +265,7 @@ export interface AppState {
   content: ContentItem[]
   engagements: Engagement[]
   keywords: KeywordRule[]
+  resources: Resource[]
   snapshots: FollowerSnapshot[]
   experiments: Experiment[]
   reports: AudienceReport[]

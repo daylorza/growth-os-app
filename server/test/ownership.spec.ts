@@ -44,6 +44,7 @@ describe('collection ownership', () => {
       expect((await a.patch('/api/brief', { fields: [{ key: 'goals', value: 'x' }] })).status).toBe(403)
       expect((await a.put('/api/settings', { campaignStart: '2026-01-01', tiktokGoal: 1, weeklyTikTokTarget: 1, planChecks: {} })).status).toBe(403)
       expect((await a.post('/api/keywords', { keyword: 'X' })).status).toBe(403)
+      expect((await a.post('/api/resources', { name: 'Guide', url: 'https://example.com/g' })).status).toBe(403)
       expect((await a.post('/api/migrations/import', {})).status).toBe(403)
     }
   })
@@ -52,6 +53,19 @@ describe('collection ownership', () => {
     for (const [path, body] of creativeWrites(id, analysisId)) expect((await as(app, bearer('creative')).post(path, body)).status, path).toBe(201)
     for (const [path, body] of analystWrites(id)) expect((await as(app, bearer('analyst')).post(path, body)).status, path).toBe(201)
     for (const role of ['analyst', 'creative'] as const) expect((await as(app, bearer(role)).post('/api/content-items', { title: role })).status).toBe(201)
+  })
+
+  it('resources: the creator adds https links, agents read them, campaigns point at them and their posts', async () => {
+    const day = as(app, basic)
+    expect((await day.post('/api/resources', { name: 'Guide', url: 'http://example.com/g' })).status).toBe(400)
+    const r = await day.post('/api/resources', { name: 'Guide', url: 'https://example.com/g', description: 'Free guide' })
+    expect(r.status).toBe(201)
+    expect(r.body.id).toMatch(/^RS-/)
+    expect((await as(app, bearer('creative')).get('/api/resources')).body.map((x: { id: string }) => x.id)).toContain(r.body.id)
+    const k = await day.post('/api/keywords', { keyword: 'GUIDE', resourceId: r.body.id, postUrls: ['https://www.tiktok.com/@a/video/1'] })
+    expect(k.body).toMatchObject({ resourceId: r.body.id, postUrls: ['https://www.tiktok.com/@a/video/1'] })
+    expect((await day.post('/api/keywords', { keyword: 'BAD', postUrls: ['not a link'] })).status).toBe(400)
+    expect((await as(app, basic).get('/api/state')).body.resources.map((x: { id: string }) => x.id)).toContain(r.body.id)
   })
 
   it('the creator can write everything', async () => {

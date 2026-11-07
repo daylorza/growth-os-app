@@ -7,6 +7,7 @@ import {
   CreateExperimentDto,
   CreateHandoffDto,
   CreateKeywordDto,
+  CreateResourceDto,
   CreateLeadDto,
   CreateReportDto,
   CreateSnapshotDto,
@@ -33,7 +34,7 @@ import { ExperimentsModule, ExperimentsService } from '../experiments/experiment
 import { HandoffsModule, HandoffsService } from '../handoffs/handoffs.module'
 import { LeadsModule, LeadsService } from '../leads/leads.module'
 import { ProfilesModule, ProfilesService } from '../profiles/profiles.module'
-import { CheckInsService, KeywordsService, ReportsService, SettingsService, TasksService, WorkspaceModule } from '../workspace/workspace.module'
+import { CheckInsService, KeywordsService, ReportsService, ResourcesService, SettingsService, TasksService, WorkspaceModule } from '../workspace/workspace.module'
 
 interface Receipt extends BaseDoc {
   at: string
@@ -81,6 +82,7 @@ export class StateService {
     private readonly engagement: EngagementService,
     private readonly leads: LeadsService,
     private readonly keywords: KeywordsService,
+    private readonly resources: ResourcesService,
     private readonly tasks: TasksService,
     private readonly checkins: CheckInsService,
     private readonly reports: ReportsService,
@@ -88,13 +90,14 @@ export class StateService {
 
   /** Everything the dashboard needs in one read. */
   async state() {
-    const [profile, brief, settings, content, engagements, keywords, snapshots, experiments, reports, leads, tasks, checkins, handoffs, tiktokVault] = await Promise.all([
+    const [profile, brief, settings, content, engagements, keywords, resources, snapshots, experiments, reports, leads, tasks, checkins, handoffs, tiktokVault] = await Promise.all([
       this.profiles.find(),
       this.brief.get(),
       this.settings.get(),
       this.content.list(),
       this.engagement.list(),
       this.keywords.list(),
+      this.resources.list(),
       this.audience.list(),
       this.experiments.list(),
       this.reports.list(),
@@ -104,7 +107,7 @@ export class StateService {
       this.handoffs.list(),
       this.audience.getVault(),
     ])
-    return { initialized: !!profile, profile, brief, settings, content, engagements, keywords, snapshots, experiments, reports, leads, tasks, checkins, handoffs, tiktokVault }
+    return { initialized: !!profile, profile, brief, settings, content, engagements, keywords, resources, snapshots, experiments, reports, leads, tasks, checkins, handoffs, tiktokVault }
   }
 
   /** One-time import. Existing ids are never overwritten; the receipt lists what was inserted and skipped. */
@@ -124,6 +127,7 @@ export class StateService {
       ['content', this.content as never, CreateContentDto, (r) => r],
       ['engagements', this.engagement as never, CreateEngagementDto, (r) => r],
       ['keywords', this.keywords as never, CreateKeywordDto, (r) => r],
+      ['resources', this.resources as never, CreateResourceDto, (r) => r],
       ['snapshots', this.audience as never, CreateSnapshotDto, toSnapshot],
       ['experiments', this.experiments as never, CreateExperimentDto, (r) => r],
       ['reports', this.reports as never, CreateReportDto, (r) => r],

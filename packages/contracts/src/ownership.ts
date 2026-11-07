@@ -25,6 +25,7 @@ export const WRITE_ACCESS = {
   brief: ['creator'],
   settings: ['creator'],
   keywords: ['creator'],
+  resources: ['creator'],
   checkins: ['creator'],
   tiktok_vault: ['creator'],
   migrations: ['creator'],

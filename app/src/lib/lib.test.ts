@@ -7,9 +7,11 @@ import type { AppState } from './types'
 import { campaignPosition, weekRange } from './dates'
 import { growthPct, milestoneProgress, netFollowers, per1k, periodChange, profileToFollow } from './metrics'
 import {
+  fillTemplate,
   isRepeatReply,
   keywordActivationError,
   keywordMatches,
+  matchKeywords,
   decisionState,
   nextId,
   publishBlock,
@@ -75,6 +77,17 @@ describe('keyword matching', () => {
     expect(keywordMatches('night owl!', 'NIGHT OWL')).toBe(true)
     expect(keywordMatches('NIGHTOWL pls', 'NIGHT OWL')).toBe(true)
     expect(keywordMatches('night shift', 'NIGHT OWL')).toBe(false)
+  })
+  it('applies a campaign only on its posts, matched by video id', () => {
+    const r = { ...createSampleSeed().keywords[0], keyword: 'AGENT', postUrls: ['https://www.tiktok.com/@me/video/111?is_from_webapp=1'] }
+    expect(matchKeywords('agent pls', [r], 'https://www.tiktok.com/@me/video/111')).toHaveLength(1)
+    expect(matchKeywords('agent pls', [r], 'https://www.tiktok.com/@me/video/222')).toHaveLength(0)
+    expect(matchKeywords('agent pls', [r], '')).toHaveLength(0)
+    expect(matchKeywords('agent pls', [{ ...r, postUrls: [] }], '')).toHaveLength(1)
+  })
+  it('fills {name} in a campaign reply', () => {
+    expect(fillTemplate('Hey {name}! Here it is.', '@sam')).toBe('Hey sam! Here it is.')
+    expect(fillTemplate('Hey {name}!', '')).toBe('Hey there!')
   })
   it('cannot activate without a real resource', () => {
     const r = createSampleSeed().keywords[0]

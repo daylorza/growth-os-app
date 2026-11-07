@@ -5,16 +5,19 @@ import {
   CreateCheckInDto,
   CreateKeywordDto,
   CreateReportDto,
+  CreateResourceDto,
   CreateTaskDto,
   SettingsDto,
   UpdateCheckInDto,
   UpdateKeywordDto,
   UpdateReportDto,
+  UpdateResourceDto,
   UpdateTaskDto,
   type AudienceReport,
   type BaseDoc,
   type CheckIn,
   type KeywordRule,
+  type Resource,
   type Settings,
   type Singleton,
   type Task,
@@ -30,7 +33,16 @@ export class KeywordsService extends CollectionService<KeywordRule> {
   protected readonly collectionName = 'keywords'
   protected readonly idPrefix = 'K'
   protected defaults(): Omit<KeywordRule, 'id'> {
-    return { keyword: '', approvedResource: '', deliveryMethod: '', cta: '', replyTemplate: '', active: false }
+    return { keyword: '', approvedResource: '', deliveryMethod: '', cta: '', replyTemplate: '', active: false, resourceId: '', postUrls: [] }
+  }
+}
+
+@Injectable()
+export class ResourcesService extends CollectionService<Resource> {
+  protected readonly collectionName = 'resources'
+  protected readonly idPrefix = 'RS'
+  protected defaults(): Omit<Resource, 'id'> {
+    return { name: '', url: '', description: '' }
   }
 }
 
@@ -116,6 +128,7 @@ function crud<T extends BaseDoc>(path: string, service: new (...a: never[]) => C
 }
 
 export const KeywordsController = crud('keywords', KeywordsService, CreateKeywordDto, UpdateKeywordDto)
+export const ResourcesController = crud('resources', ResourcesService, CreateResourceDto, UpdateResourceDto)
 export const TasksController = crud('tasks', TasksService, CreateTaskDto, UpdateTaskDto)
 export const CheckInsController = crud('checkins', CheckInsService, CreateCheckInDto, UpdateCheckInDto)
 export const ReportsController = crud('reports', ReportsService, CreateReportDto, UpdateReportDto)
@@ -135,10 +148,10 @@ export class SettingsController {
   }
 }
 
-const SERVICES = [KeywordsService, TasksService, CheckInsService, ReportsService, SettingsService]
+const SERVICES = [KeywordsService, ResourcesService, TasksService, CheckInsService, ReportsService, SettingsService]
 
 @Module({
-  controllers: [KeywordsController, TasksController, CheckInsController, ReportsController, SettingsController],
+  controllers: [KeywordsController, ResourcesController, TasksController, CheckInsController, ReportsController, SettingsController],
   providers: SERVICES,
   exports: SERVICES,
 })
