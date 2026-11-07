@@ -81,12 +81,12 @@ export default function Shell({ children }: { children: ReactNode }) {
       <aside
         id="main-navigation"
         className={cx(
-          'fixed inset-y-0 left-0 z-40 w-[min(19rem,100vw)] overflow-y-auto border-r border-ink-600 bg-ink-900 p-4 lg:sticky lg:top-0 lg:block lg:h-dvh lg:w-[19rem]',
+          'fixed inset-y-0 left-0 z-40 w-[min(19rem,100vw)] overflow-y-auto border-r border-ink-600/70 bg-ink-900 p-4 lg:sticky lg:top-0 lg:block lg:h-dvh lg:w-[19rem]',
           navOpen ? 'block' : 'hidden',
         )}
       >
         <div className="flex items-center gap-3 px-2 pt-2 pb-5">
-          <Orbit className="text-accent" size={26} />
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-accent/30 bg-accent/10 text-accent"><Orbit size={23} /></span>
           <div>
             <div className="font-semibold tracking-wide">{brand}</div>
             <div className="text-[11px] tracking-widest text-muted uppercase">Growth Operating System</div>
@@ -109,7 +109,7 @@ export default function Shell({ children }: { children: ReactNode }) {
                 aria-current={active ? 'page' : undefined}
                 className={cx(
                   'group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors',
-                  active ? 'bg-ink-700 ring-1 ring-accent/40' : 'hover:bg-ink-800',
+                  active ? 'bg-ink-700 ring-1 ring-inset ring-accent/40 shadow-[inset_3px_0_0_var(--color-accent)]' : 'hover:bg-ink-800',
                 )}
               >
                 <r.icon size={18} className={active ? 'text-accent' : 'text-muted group-hover:text-fg'} />
@@ -148,7 +148,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           </button>
           <span className="text-sm font-medium">{route.label}</span>
         </div>
-        <main className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-10">
+        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-10 xl:px-12">
           {profile.sample && (
             <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-accent/40 bg-accent/5 px-4 py-3 text-sm">
               <span className="min-w-0 flex-1">

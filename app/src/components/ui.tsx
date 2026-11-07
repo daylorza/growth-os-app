@@ -15,7 +15,7 @@ import {
 import { cx } from '../lib/cx'
 
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <section className={cx('rounded-2xl border border-ink-600 bg-ink-800 p-5 shadow-sm shadow-black/10', className)}>{children}</section>
+  return <section className={cx('rounded-2xl border border-ink-600/80 bg-ink-800 p-5 shadow-[0_8px_28px_rgb(0_0_0/0.12)]', className)}>{children}</section>
 }
 
 export function CardTitle({ icon, children, right }: { icon?: ReactNode; children: ReactNode; right?: ReactNode }) {
@@ -215,7 +215,7 @@ export function Stat({ label, value, icon, note }: { label: string; value: React
     <Card className="flex flex-col">
       <div className="flex items-start justify-between text-sm text-muted">
         <span>{label}</span>
-        {icon && <span className="text-accent">{icon}</span>}
+        {icon && <span className="rounded-xl border border-accent/20 bg-accent/10 p-2 text-accent">{icon}</span>}
       </div>
       <div className="mt-4 text-3xl font-semibold tracking-tight tabular-nums">{value}</div>
       {note && <div className="mt-2 text-sm leading-relaxed text-muted">{note}</div>}

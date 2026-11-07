@@ -1,10 +1,10 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-ink-950: #100d15;
-  --color-ink-900: #17131d;
-  --color-ink-800: #1d1924;
-  --color-ink-700: #302938;
+  --color-ink-950: #0d0a12;
+  --color-ink-900: #15121b;
+  --color-ink-800: #1c1823;
+  --color-ink-700: #302839;
   --color-ink-600: #48404f;
   --color-fg: #f5f2f8;
   --color-muted: #c2bac9;
@@ -32,6 +32,22 @@
   ::selection {
     @apply bg-accent/30;
   }
+}
+
+/* Keep the ambient light in the overview's decorative edge, away from data. */
+.overview-stage {
+  background: #17131d;
+  isolation: isolate;
+  overflow: hidden;
+  position: relative;
+}
+.overview-stage::after {
+  background: radial-gradient(ellipse at 85% 100%, rgb(139 75 226 / 45%), transparent 58%);
+  content: '';
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: -1;
 }
 
 @media (prefers-reduced-motion: reduce) {
