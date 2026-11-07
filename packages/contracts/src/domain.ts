@@ -163,7 +163,7 @@ export interface Lead extends BaseDoc {
   createdAt: string
 }
 
-export const SNAPSHOT_SOURCE_TYPES = ['platform_export', 'analyst_agent', 'creative_agent', 'manual'] as const
+export const SNAPSHOT_SOURCE_TYPES = ['platform_export', 'platform_api', 'analyst_agent', 'creative_agent', 'manual'] as const
 export interface AudienceMetrics {
   followers: Metric
   following: Metric

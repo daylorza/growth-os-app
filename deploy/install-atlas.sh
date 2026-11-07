@@ -13,6 +13,8 @@
 #   growth-os-dispatch-x.timer       x_refresh every 4 to 6 hours     (installed, NOT enabled)
 #   growth-os-dispatch-weekly.timer  weekly_refresh Sun 8 PM ET       (installed, NOT enabled)
 #   growth-os-dispatch-sweep.timer   engagement_sweep every 4 to 6 hours (installed, NOT enabled)
+#   growth-os-tiktok.service         TikTok authorization page, 127.0.0.1:8768 (installed, NOT enabled)
+#   growth-os-tiktok-pull.timer      read-only TikTok pull, daily 07:30 UTC (installed, NOT enabled)
 #   growth-os-deploy.timer           deploy/update-atlas.sh every 5 min: CI-green origin/main only (installed, NOT enabled)
 # Secrets (passwords, per-role keys) are generated on first run, written only into the root-owned unit
 # files (chmod 600) and never printed. Re-running keeps existing secrets and any webhook values
@@ -60,6 +62,11 @@ ANALYST_WEBHOOK_URL="$(keep growth-os-api.service ANALYST_WEBHOOK_URL)"
 ANALYST_WEBHOOK_KEY="$(keep growth-os-api.service ANALYST_WEBHOOK_KEY)"
 CREATIVE_WEBHOOK_URL="$(keep growth-os-api.service CREATIVE_WEBHOOK_URL)"
 CREATIVE_WEBHOOK_KEY="$(keep growth-os-api.service CREATIVE_WEBHOOK_KEY)"
+TIKTOK_PORT="${TIKTOK_PORT:-8768}"
+# Registered in the TikTok app's Login Kit settings. The client key and secret live in /etc/growth-os/tiktok.env
+# (root only, written on the host by the creator); this script never reads or prints them.
+TIKTOK_REDIRECT_URI="$(keep growth-os-tiktok.service TIKTOK_REDIRECT_URI "${TIKTOK_REDIRECT_URI:-}")"
+TIKTOK_TOKEN_FILE=/var/lib/growth-os/tiktok/token.json
 NODE="$(command -v node)"
 
 mkdir -p "$DATA"
@@ -253,6 +260,58 @@ OnCalendar=*:0/5
 WantedBy=timers.target
 EOF
 
+mkdir -p /etc/growth-os "$(dirname "$TIKTOK_TOKEN_FILE")"
+chmod 700 /etc/growth-os
+chown "$APP_USER" "$(dirname "$TIKTOK_TOKEN_FILE")"
+chmod 700 "$(dirname "$TIKTOK_TOKEN_FILE")"
+
+cat > "$UNITS/growth-os-tiktok.service" <<EOF
+[Unit]
+Description=Growth OS TikTok connector: authorization page on 127.0.0.1 (read-only; enable to authorize)
+After=network-online.target
+
+[Service]
+Type=simple
+User=$APP_USER
+WorkingDirectory=$APP_DIR/server
+EnvironmentFile=-/etc/growth-os/tiktok.env
+Environment=TIKTOK_REDIRECT_URI=$TIKTOK_REDIRECT_URI
+Environment=TIKTOK_TOKEN_FILE=$TIKTOK_TOKEN_FILE
+Environment=TIKTOK_CONNECTOR_PORT=$TIKTOK_PORT
+ExecStart=$NODE dist/worker/tiktok-connector.js serve
+Restart=on-failure
+RestartSec=10
+EOF
+
+cat > "$UNITS/growth-os-tiktok-pull.service" <<EOF
+[Unit]
+Description=Growth OS TikTok connector: daily read-only pull of account and video stats
+After=network-online.target growth-os-api.service
+
+[Service]
+Type=oneshot
+User=$APP_USER
+WorkingDirectory=$APP_DIR/server
+EnvironmentFile=-/etc/growth-os/tiktok.env
+Environment=TIKTOK_REDIRECT_URI=$TIKTOK_REDIRECT_URI
+Environment=TIKTOK_TOKEN_FILE=$TIKTOK_TOKEN_FILE
+Environment=GROWTH_OS_API=http://127.0.0.1:$API_PORT
+Environment=GROWTH_OS_CREATOR_KEY=$CREATOR_KEY
+ExecStart=$NODE dist/worker/tiktok-connector.js pull
+EOF
+
+cat > "$UNITS/growth-os-tiktok-pull.timer" <<EOF
+[Unit]
+Description=Growth OS TikTok pull, daily before the 08:00 UTC audit
+
+[Timer]
+OnCalendar=*-*-* 07:30:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
 # The xAI fallback was removed: the analyst agent is the only path that reads X.
 rm -f "$UNITS/growth-os-xai-fallback.service"
 
@@ -262,5 +321,5 @@ systemctl daemon-reload
 systemctl enable --now growth-os-mongo.service growth-os-api.service growth-os-web.service
 systemctl restart growth-os-api.service growth-os-web.service
 echo "Installed. Web: http://$BIND_HOST:$WEB_PORT  API (local): 127.0.0.1:$API_PORT"
-echo "Timers installed, not enabled: growth-os-dispatch-daily.timer, growth-os-dispatch-measure.timer, growth-os-dispatch-x.timer, growth-os-dispatch-weekly.timer, growth-os-dispatch-sweep.timer, growth-os-deploy.timer"
+echo "Timers installed, not enabled: growth-os-dispatch-daily.timer, growth-os-dispatch-measure.timer, growth-os-dispatch-x.timer, growth-os-dispatch-weekly.timer, growth-os-dispatch-sweep.timer, growth-os-tiktok-pull.timer, growth-os-deploy.timer"
 echo "Creator login: user $CREATOR_USER. Password and per-role keys are in $UNITS/growth-os-api.service (root only)."

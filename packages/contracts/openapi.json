@@ -833,6 +833,7 @@
             "type": "string",
             "enum": [
               "platform_export",
+              "platform_api",
               "analyst_agent",
               "creative_agent",
               "manual"
