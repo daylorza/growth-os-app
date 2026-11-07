@@ -73,7 +73,7 @@ creative agent ──creative key─▶ :8766/api/*      reads handoffs (analysi
 scheduler (systemd timers) ──worker key──▶ /api/dispatch/*   (no LLM call, no platform call)
 ```
 
-- **Draft-only, enforced on the server.** No route posts, publishes, replies, likes, follows or messages anywhere, and there are no platform write calls in the codebase (`ci/no-platform-writes.sh` fails CI otherwise). Agents write drafts; only the creator approves, schedules, kills or logs something as published (with approval and a live URL). An agent may send one reply through its own connection only after the creator approved that exact queue item and told it to; it notes that it sent it, and the creator marks it posted. Revenue needs evidence.
+- **Draft-only, enforced on the server.** No route posts, publishes, replies, likes, follows or messages anywhere, and there are no platform write calls in the codebase (`ci/no-platform-writes.sh` fails CI otherwise). The one platform client is the read-only TikTok connector, limited to the OAuth token endpoint and Display API reads. Agents write drafts; only the creator approves, schedules, kills or logs something as published (with approval and a live URL). An agent may send one reply through its own connection only after the creator approved that exact queue item and told it to; it notes that it sent it, and the creator marks it posted. Revenue needs evidence.
 - **Auth on every call.** `GET /health` is the only public route and returns no data. The creator uses HTTP Basic; each role has its own bearer key. Every write records who wrote it, when and from where (`_meta`), and an append-only audit log keeps the history.
 - **Collection ownership.** A write to another agent's collection returns 403 (`packages/contracts/src/ownership.ts`):
 
@@ -201,6 +201,14 @@ Pushes `private/workspace.json`, `private/endpoint-seed.json` (extra verified re
 Run only one live dashboard. Once the endpoint is live, a local preview is a cold backup and stays stopped.
 
 **Auto-deploy (pull-based).** `growth-os-deploy.timer` runs `deploy/update-atlas.sh` every 5 minutes. When `origin/main` has a new commit and every GitHub check on it passed, it fast-forwards the checkout, runs `pnpm install --frozen-lockfile` and `pnpm -r build`, re-runs the installer (secrets and webhook settings are kept) and waits for both `/health` checks. A red or failed commit is skipped until a newer one lands. Nothing is pushed to the host and GitHub holds no host secrets. Enable once: `sudo systemctl enable --now growth-os-deploy.timer`. Logs: `journalctl -u growth-os-deploy`. Redeploy the current commit: `sudo systemctl set-environment FORCE=1 && sudo systemctl start growth-os-deploy; sudo systemctl unset-environment FORCE`.
+
+**TikTok connector (read-only).** `server/src/worker/tiktok-connector.ts` uses the creator's own TikTok developer app (Login Kit + Display API, scopes `user.info.basic`, `user.info.profile`, `user.info.stats`, `video.list`). It calls only TikTok's OAuth token endpoint, `/v2/user/info/` and `/v2/video/list/`; the CI guard and `test/draft-only.spec.ts` fail on any other TikTok path, so it can never post, upload, comment, like, follow or message. `growth-os-tiktok-pull.timer` (daily 07:30 UTC, before the audit) writes one verified `platform_api` TikTok snapshot per day (followers, following, posts; anything TikTok does not return stays UNKNOWN) and updates views, comments and shares on content items whose URL holds the video id. One-time setup on the host:
+
+1. Put the app's credentials in `/etc/growth-os/tiktok.env` (root, mode 600) as `TIKTOK_CLIENT_KEY=…` and `TIKTOK_CLIENT_SECRET=…`. They are never printed, committed or sent to the browser.
+2. Expose only the authorization page on the tailnet HTTPS name: `sudo tailscale serve --bg --set-path /growth-os/tiktok http://127.0.0.1:8768`, register `https://<host>.ts.net/growth-os/tiktok/callback/` as the redirect URI in the TikTok app, and re-run the installer once with `TIKTOK_REDIRECT_URI=` set to it (later runs keep it).
+3. `sudo systemctl enable --now growth-os-tiktok.service`, open `https://<host>.ts.net/growth-os/tiktok/start` and approve. The token is stored in `/var/lib/growth-os/tiktok/` (connector user only) and refreshed automatically (the refresh token lasts 180 days and rotates).
+4. `sudo systemctl enable --now growth-os-tiktok-pull.timer`. Logs: `journalctl -u growth-os-tiktok-pull`.
+
 
 ### Stack mapping
 

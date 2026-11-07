@@ -27,18 +27,25 @@ describe('draft-only', () => {
     for (const r of actual) expect(r).not.toMatch(/publish|\/post\b|reply|send|message|tweet|\bdm\b|like|follow|share|upload/i)
   })
 
-  it('only the webhook outbox and the workers make outbound calls, and nothing calls a social platform', () => {
+  it('only the webhook outbox and the workers make outbound calls; only the TikTok connector reaches a platform', () => {
     const files = sourceFiles(srcDir)
-    const outbound = files.filter((f) => /\bfetch\(|from 'node:https?'|axios|undici/.test(readFileSync(f, 'utf8'))).map((f) => f.slice(srcDir.length + 1))
-    expect(outbound.sort()).toEqual(['events/events.module.ts', 'worker/dispatch-worker.ts'])
-    expect(files.filter((f) => PLATFORM_HOSTS.test(readFileSync(f, 'utf8')))).toEqual([])
+    const outbound = files.filter((f) => /\bfetch\(|fetch as |from 'node:https?'|axios|undici/.test(readFileSync(f, 'utf8'))).map((f) => f.slice(srcDir.length + 1))
+    expect(outbound.sort()).toEqual(['events/events.module.ts', 'worker/dispatch-worker.ts', 'worker/tiktok-connector.ts'])
+    expect(files.filter((f) => PLATFORM_HOSTS.test(readFileSync(f, 'utf8'))).map((f) => f.slice(srcDir.length + 1))).toEqual(['worker/tiktok-connector.ts'])
   })
 
-  it('the workers only call this endpoint: no model or platform API', () => {
-    const worker = sourceFiles(join(srcDir, 'worker')).map((f) => readFileSync(f, 'utf8')).join('\n')
-    const hosts = [...worker.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1])
-    expect(new Set(hosts)).toEqual(new Set(['127.0.0.1']))
+  it('the scheduler only calls this endpoint: no model or platform API', () => {
+    const worker = readFileSync(join(srcDir, 'worker', 'dispatch-worker.ts'), 'utf8')
+    expect(new Set([...worker.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1]))).toEqual(new Set(['127.0.0.1']))
     expect(worker).not.toMatch(/x\.ai|openai|anthropic/)
+  })
+
+  it('the TikTok connector calls only the OAuth token endpoint and Display API reads', () => {
+    const src = readFileSync(join(srcDir, 'worker', 'tiktok-connector.ts'), 'utf8')
+    const urls = new Set([...src.matchAll(/https:\/\/[a-z0-9.-]*tiktok[a-z0-9.-]*\.com[^'"`\s]*/gi)].map((m) => m[0]))
+    expect(urls).toEqual(new Set(['https://www.tiktok.com/v2/auth/authorize/', 'https://open.tiktokapis.com/v2/oauth/token/', 'https://open.tiktokapis.com/v2/user/info/', 'https://open.tiktokapis.com/v2/video/list/']))
+    expect(src).not.toMatch(/\/v2\/post\/|\/(publish|upload|comment|like|follow|message|dm)\//i)
+    expect(new Set([...src.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1]))).toEqual(new Set(['www.tiktok.com', 'open.tiktokapis.com', '127.0.0.1', 'localhost']))
   })
 
   it('agents cannot approve, schedule, kill or log content as published', async () => {
