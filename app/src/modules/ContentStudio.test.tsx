@@ -69,3 +69,15 @@ describe('Content Studio: blocked "Log as published" shows a visible message', (
     expect(within(d).queryByRole('button', { name: 'Log as published' })).toBeNull()
   })
 })
+
+it('identifies Threads items and exposes the selected calendar view', () => {
+  const s = createSampleSeed()
+  const item = { ...s.content[0], platform: 'threads' as const, title: 'Threads brief' }
+  resetAll({ ...s, content: [item] })
+  render(<ContentStudio />)
+  expect(screen.getByRole('button', { name: 'calendar' }).getAttribute('aria-pressed')).toBe('true')
+  expect(screen.getByTitle(new RegExp(`^${item.id} ·`)).textContent).toContain('Threads')
+  fireEvent.click(screen.getByRole('button', { name: 'list' }))
+  expect(screen.getByRole('button', { name: 'list' }).getAttribute('aria-pressed')).toBe('true')
+  cleanup()
+})

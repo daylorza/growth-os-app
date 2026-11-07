@@ -75,7 +75,7 @@ export default function ContentStudio() {
           <>
             <div className="flex rounded-lg border border-ink-600 p-0.5 text-sm">
               {(['calendar', 'list'] as const).map((v) => (
-                <button key={v} onClick={() => setView(v)} className={cx('rounded-md px-3 py-1.5 capitalize', view === v ? 'bg-ink-700' : 'text-muted')}>
+                <button key={v} onClick={() => setView(v)} aria-pressed={view === v} className={cx('rounded-md px-3 py-1.5 capitalize', view === v ? 'bg-ink-700 text-fg' : 'text-muted hover:text-fg')}>
                   {v}
                 </button>
               ))}
@@ -114,7 +114,7 @@ export default function ContentStudio() {
                     <button
                       aria-label={`New brief on ${d}`}
                       onClick={() => create(d)}
-                      className="rounded text-faint opacity-0 hover:text-accent focus:opacity-100 group-hover:opacity-100"
+                      className="rounded text-faint hover:text-accent sm:opacity-0 sm:focus:opacity-100 sm:group-hover:opacity-100"
                     >
                       <Plus size={14} />
                     </button>
@@ -124,12 +124,12 @@ export default function ContentStudio() {
                       key={c.id}
                       onClick={() => setOpenId(c.id)}
                       className={cx(
-                        'truncate rounded px-1.5 py-1 text-left text-[11px] leading-tight',
+                        'truncate rounded px-1.5 py-1 text-left text-xs leading-tight',
                         c.status === 'published' ? 'bg-ok/10 text-ok' : c.approval === 'approved' ? 'bg-accent/15 text-accent' : 'bg-ink-700',
                       )}
                       title={`${c.id} · ${c.title}`}
                     >
-                      <span className="font-mono opacity-70">{c.platform === 'x' ? 'X' : 'TT'}</span> {c.title || 'Untitled'}
+                      <span className="font-mono opacity-70">{PLATFORM[c.platform]}</span> {c.title || 'Untitled'}
                     </button>
                   ))}
                 </div>

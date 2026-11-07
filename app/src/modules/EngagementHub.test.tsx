@@ -24,6 +24,12 @@ afterEach(() => {
 })
 
 describe('engagement links and sending through the creative agent', () => {
+  it('exposes the selected queue filter', () => {
+    render(<EngagementHub />)
+    expect(screen.getByRole('button', { name: /Needs action/ }).getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(screen.getByRole('button', { name: /Approved to post/ }))
+    expect(screen.getByRole('button', { name: /Approved to post/ }).getAttribute('aria-pressed')).toBe('true')
+  })
   it('links each item to its post and opens it in a new tab', () => {
     render(<EngagementHub />)
     fireEvent.click(screen.getByRole('button', { name: /Approved to post/ }))

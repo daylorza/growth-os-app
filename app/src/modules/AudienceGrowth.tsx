@@ -29,7 +29,7 @@ export default function AudienceGrowth() {
     <>
       <PageHeader
         eyebrow="Audience Growth"
-        title="TikTok and X performance"
+        title="Audience performance"
         right={
           <Select aria-label="Reporting period" options={PERIODS} value={period} onChange={setPeriod} className="w-auto!" />
         }
@@ -54,7 +54,7 @@ export default function AudienceGrowth() {
             Log a post as published in <Link className="text-accent" href="/studio">Content Studio</Link>, then add its metrics there.
           </Empty>
         ) : (
-          <div className="-mx-5 overflow-x-auto">
+          <div className="-mx-5 overflow-x-auto" role="region" aria-label="Post performance table, scroll horizontally for more columns" tabIndex={0}>
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="text-xs text-muted">
                 <tr className="border-b border-ink-600">
@@ -99,7 +99,7 @@ export default function AudienceGrowth() {
 function PlatformPanel({ platform, snaps, from, to }: { platform: Platform; snaps: FollowerSnapshot[]; from: string; to: string }) {
   const latest = latestSnapshot(snaps, platform)
   const change = periodChange(snaps, platform, from, to)
-  const series = sortedSnapshots(snaps, platform)
+  const series = sortedSnapshots(snaps, platform).filter((s) => s.date >= from && s.date <= to)
   return (
     <Card>
       <div className="flex items-start justify-between">
@@ -120,7 +120,22 @@ function PlatformPanel({ platform, snaps, from, to }: { platform: Platform; snap
       </dl>
       {!change && <p className="mt-2 text-xs text-faint">Needs two snapshots inside this period.</p>}
       {change && !change.verified && <p className="mt-2 text-xs text-warn">Includes unverified snapshots.</p>}
-      <Sparkline points={series.map((x) => x.count)} />
+      {series.length >= 2 && (
+        <div className="mt-4 border-t border-ink-600 pt-4">
+          <div className="flex flex-wrap justify-between gap-1 text-xs text-muted">
+            <span>Follower trend</span>
+            <span>{shortDate(series[0].date)}–{shortDate(series[series.length - 1].date)} · {series.length} snapshots</span>
+          </div>
+          <Sparkline points={series.map((x) => x.count)} />
+          <p className="mt-1 text-xs text-faint">Snapshots are equally spaced; the vertical scale fits the values shown.</p>
+          <details className="mt-2 text-xs text-muted">
+            <summary className="cursor-pointer hover:text-fg">View trend data</summary>
+            <ul className="mt-2 space-y-1 tabular-nums">
+              {series.map((point) => <li key={point.id}>{point.date}: {point.count.toLocaleString()} · {point.verified ? 'Verified' : 'Unverified'}</li>)}
+            </ul>
+          </details>
+        </div>
+      )}
     </Card>
   )
 }
@@ -136,7 +151,7 @@ function Sparkline({ points }: { points: number[] }) {
     .map((v, i) => `${i ? 'L' : 'M'}${((i / (points.length - 1)) * w).toFixed(1)},${(h - ((v - min) / span) * (h - 4) - 2).toFixed(1)}`)
     .join(' ')
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="mt-4 h-12 w-full" preserveAspectRatio="none" aria-hidden>
+    <svg viewBox={`0 0 ${w} ${h}`} className="mt-2 h-12 w-full" preserveAspectRatio="none" aria-hidden>
       <path d={d} fill="none" stroke="var(--color-accent)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
     </svg>
   )
