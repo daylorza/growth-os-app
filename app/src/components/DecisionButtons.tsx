@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { DecisionState as State } from '../lib/rules'
 import { refresh } from '../lib/store'
-import { Button } from './ui'
+import { Button, ConfirmButton, Field, Textarea } from './ui'
 
 type Decision = 'approve' | 'request_changes' | 'kill'
 
@@ -17,25 +17,22 @@ export function DecisionButtons({ id, state: initial }: { id: string; state: Sta
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [state, setState] = useState<State>(initial)
+  const [editingNote, setEditingNote] = useState(false)
+  const [note, setNote] = useState('')
 
   const decide = async (decision: Decision) => {
-    let note = ''
-    if (decision === 'request_changes') {
-      const n = prompt('What should change?')
-      if (n === null) return
-      note = n
-    }
-    if (decision === 'kill' && !confirm(`Kill ${id}? Its drafts are marked killed.`)) return
     setBusy(true)
     setError(null)
     try {
       const res = await fetch(`/api/content-items/${encodeURIComponent(id)}/decision`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-growth-client': 'dashboard', 'x-growth-source': 'dashboard' },
-        body: JSON.stringify({ decision, ...(note ? { note } : {}) }),
+        body: JSON.stringify({ decision, ...(decision === 'request_changes' && note ? { note } : {}) }),
       })
       if (!res.ok) throw new Error(((await res.json().catch(() => null)) as { message?: string } | null)?.message ?? `Failed (${res.status})`)
       setState(decision === 'approve' ? 'approved' : decision === 'kill' ? 'killed' : 'changes_requested')
+      setEditingNote(false)
+      setNote('')
       router.refresh()
       await refresh(true)
     } catch (e) {
@@ -50,12 +47,13 @@ export function DecisionButtons({ id, state: initial }: { id: string; state: Sta
       <Button size="sm" variant="primary" disabled={busy || state === 'approved' || state === 'killed'} onClick={() => decide('approve')}>
         {state === 'approved' ? 'Approved' : 'Approve'}
       </Button>
-      <Button size="sm" disabled={busy || state === 'killed'} onClick={() => decide('request_changes')}>
+      <Button size="sm" disabled={busy || state === 'killed'} onClick={() => setEditingNote(true)}>
         {state === 'changes_requested' ? 'Changes requested' : 'Request changes'}
       </Button>
-      <Button size="sm" variant="ghost" disabled={busy || state === 'killed'} onClick={() => decide('kill')}>
+      <ConfirmButton size="sm" variant="ghost" disabled={busy || state === 'killed'} message={`Kill ${id}? Its drafts are marked killed.`} onConfirm={() => decide('kill')}>
         {state === 'killed' ? 'Killed' : 'Kill'}
-      </Button>
+      </ConfirmButton>
+      {editingNote && <div className="w-full space-y-2"><Field label="What should change?">{(fieldId) => <Textarea id={fieldId} value={note} onChange={(e) => setNote(e.target.value)} />}</Field><div className="flex gap-2"><Button size="sm" disabled={busy} onClick={() => decide('request_changes')}>Submit changes</Button><Button size="sm" disabled={busy} onClick={() => { setEditingNote(false); setNote('') }}>Cancel</Button></div></div>}
       {error && <span role="alert" className="text-xs text-danger">{error}</span>}
     </div>
   )

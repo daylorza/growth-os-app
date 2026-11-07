@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createSampleSeed } from '../lib/seed'
 import { getState, resetAll } from '../lib/store'
 import EngagementHub from './EngagementHub'
@@ -16,11 +16,9 @@ beforeEach(() => {
       { id: 'E-10', platform: 'x', sourcePost: 'https://x.com/a/status/1', author: 'b', comment: 'Hi', keyword: '', category: 'question', draftReply: 'Hello there.', status: 'approved', leadId: '', note: '', createdAt: '2026-01-01', updatedAt: '2026-01-01' },
     ],
   })
-  vi.spyOn(window, 'confirm').mockReturnValue(true)
 })
 afterEach(() => {
   cleanup()
-  vi.restoreAllMocks()
 })
 
 describe('engagement links and sending through the creative agent', () => {
@@ -48,7 +46,10 @@ describe('engagement links and sending through the creative agent', () => {
     const creative = getState().profile.agents.creative.name
     const send = screen.getAllByRole('button', { name: `Send via ${creative}` })
     expect(send).toHaveLength(1)
+    const previousCount = getState().handoffs.length
     fireEvent.click(send[0])
+    expect(getState().handoffs).toHaveLength(previousCount)
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
     const h = getState().handoffs.at(-1)!
     expect(h).toMatchObject({ from: 'creator', to: 'creative', type: 'question', refs: [{ collection: 'engagement_queue', id: 'E-9' }] })
     expect(h.itemId).toMatch(/^AUDIT-\d{4}-\d{2}-\d{2}$/)
@@ -75,6 +76,7 @@ describe('engagement links and sending through the creative agent', () => {
     fireEvent.click(screen.getByRole('button', { name: /Approved to post/ }))
     const creative = getState().profile.agents.creative.name
     fireEvent.click(screen.getByRole('button', { name: `Send via ${creative}` }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
     expect(screen.getByRole('button', { name: `Asked ${creative} to send` })).toHaveProperty('disabled', true)
     cleanup()
     const st = getState()

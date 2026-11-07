@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { Badge, Button, Card, CardTitle, Drawer, Empty, Field, Input, Mono, Notice, PageHeader, Select, Stat, Textarea } from '../components/ui'
+import { Badge, Button, Card, CardTitle, ConfirmButton, Drawer, Empty, Field, Input, Mono, Notice, PageHeader, Select, Stat, Textarea } from '../components/ui'
 import { today } from '../lib/dates'
 import { ENGAGEMENT_PLATFORM, LEAD_STATUS, LEAD_TYPE, UNKNOWN } from '../lib/labels'
 import { nextId } from '../lib/rules'
@@ -92,9 +92,9 @@ function LeadDrawer({ lead: l, onClose }: { lead: Lead; onClose: () => void }) {
       onClose={onClose}
       title={<span className="flex items-center gap-2"><Mono>{l.id}</Mono> Lead</span>}
       footer={
-        <Button variant="danger" className="ml-auto" onClick={() => { if (confirm(`Delete ${l.id}?`)) { remove('leads', l.id); onClose() } }}>
+        <ConfirmButton variant="danger" className="ml-auto" message={`Delete ${l.id}?`} onConfirm={() => { remove('leads', l.id); onClose() }}>
           <Trash2 size={14} /> Delete
-        </Button>
+        </ConfirmButton>
       }
     >
       <div className="grid gap-4 sm:grid-cols-2">

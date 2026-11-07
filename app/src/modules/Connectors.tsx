@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Badge, Button, Card, CardTitle, Input, Notice } from '../components/ui'
+import { Badge, Button, Card, CardTitle, ConfirmButton, Input, Notice } from '../components/ui'
 import { CONNECTORS, type ConnectorDef } from '../lib/connectors'
 import { shortDate } from '../lib/dates'
 import { connectorServer, connectUrl, disconnect, fetchConnections, syncTikTok, type ServerConnection } from '../lib/oauth'
@@ -191,14 +191,15 @@ function TikTokImport() {
             setResult(result)
           }}
         />
-        <Button
+        <ConfirmButton
           size="sm"
           variant="ghost"
           disabled={!s.tiktokImport}
-          onClick={() => confirm('Remove TikTok data imported in this browser? Vault files are not affected.') && update((st) => ({ ...st, tiktokImport: null }))}
+          message="Remove TikTok data imported in this browser? Vault files are not affected."
+          onConfirm={() => update((st) => ({ ...st, tiktokImport: null }))}
         >
           Clear browser import
-        </Button>
+        </ConfirmButton>
       </div>
       {result && (
         <p className="text-xs text-muted" role="status">

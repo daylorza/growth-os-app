@@ -1,9 +1,31 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
-import { Drawer } from './ui'
+import { ConfirmButton, Drawer } from './ui'
 
 afterEach(cleanup)
+
+it('requires inline confirmation and allows cancellation', () => {
+  const action = vi.fn()
+  render(<ConfirmButton message="Delete this item?" onConfirm={action}>Delete</ConfirmButton>)
+  fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+  expect(screen.getByRole('alert').textContent).toContain('Delete this item?')
+  expect(action).not.toHaveBeenCalled()
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+  expect(action).not.toHaveBeenCalled()
+  fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
+  expect(action).toHaveBeenCalledOnce()
+})
+
+it('does not confirm an action that became disabled while awaiting confirmation', () => {
+  const action = vi.fn()
+  const view = render(<ConfirmButton message="Continue?" onConfirm={action}>Act</ConfirmButton>)
+  fireEvent.click(screen.getByRole('button', { name: 'Act' }))
+  view.rerender(<ConfirmButton message="Continue?" onConfirm={action} disabled>Act</ConfirmButton>)
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
+  expect(action).not.toHaveBeenCalled()
+})
 
 it('names the drawer, keeps keyboard focus inside it, and returns focus on close', () => {
   const onClose = vi.fn()
