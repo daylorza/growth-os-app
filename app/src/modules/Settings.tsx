@@ -2,7 +2,7 @@
 
 import { Lock } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { Badge, Button, Card, CardTitle, Checkbox, Field, Input, Notice, PageHeader, Textarea } from '../components/ui'
+import { Badge, Button, Card, CardTitle, Checkbox, ConfirmButton, Field, Input, Notice, PageHeader, Textarea } from '../components/ui'
 import { BRIEF_FIELDS, UNKNOWN, withProject } from '../lib/labels'
 import { hasPrivateWorkspace } from '../lib/private'
 import { exportJSON, importJSON, resetAll, update, useAppState, useSyncStatus } from '../lib/store'
@@ -27,6 +27,7 @@ export default function Settings() {
   const sync = useSyncStatus()
   const fileRef = useRef<HTMLInputElement>(null)
   const [importMsg, setImportMsg] = useState<string | null>(null)
+  const [pendingImport, setPendingImport] = useState<File | null>(null)
   const setBrief = (k: BriefKey, c: Partial<{ value: string; verified: boolean }>) =>
     update((st) => ({ ...st, brief: { ...st.brief, [k]: { ...st.brief[k], ...c } } }))
   const setSettings = (c: Partial<SettingsT>) => update((st) => ({ ...st, settings: { ...st.settings, ...c } }))
@@ -136,21 +137,25 @@ export default function Settings() {
             type="file"
             accept="application/json"
             className="hidden"
-            onChange={async (e) => {
+            onChange={(e) => {
               const file = e.target.files?.[0]
-              if (!file) return
-              if (!confirm('Importing replaces everything currently in the dashboard. Continue?')) return
-              const err = importJSON(await file.text())
-              setImportMsg(err ?? 'Backup imported.')
+              if (file) setPendingImport(file)
               e.target.value = ''
             }}
           />
           {!live && (
-            <Button variant="danger" className="ml-auto" onClick={() => confirm('Erase everything and start over? This cannot be undone. Export a backup first.') && resetAll()}>
+            <ConfirmButton variant="danger" className="ml-auto" message="Erase everything and start over? This cannot be undone. Export a backup first." onConfirm={() => resetAll()}>
               Reset everything
-            </Button>
+            </ConfirmButton>
           )}
         </div>
+        {pendingImport && !live && (
+          <div role="alert" className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+            <span>Importing replaces everything currently in the dashboard. Continue?</span>
+            <Button variant="danger" onClick={async () => { const err = importJSON(await pendingImport.text()); setImportMsg(err ?? 'Backup imported.'); setPendingImport(null) }}>Confirm import</Button>
+            <Button onClick={() => setPendingImport(null)}>Cancel</Button>
+          </div>
+        )}
         {live && <p className="mt-3 text-xs text-faint">Import and reset are off on the live endpoint: they would overwrite the workspace your agents use. Export still works.</p>}
         {importMsg && <p className="mt-3 text-xs text-muted">{importMsg}</p>}
       </Card>

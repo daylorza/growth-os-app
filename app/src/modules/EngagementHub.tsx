@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { Badge, Button, Card, CardTitle, CopyButton, Empty, Field, Input, Mono, Notice, PageHeader, Select, Textarea } from '../components/ui'
+import { Badge, Button, Card, CardTitle, ConfirmButton, CopyButton, Empty, Field, Input, Mono, Notice, PageHeader, Select, Textarea } from '../components/ui'
 import { cx } from '../lib/cx'
 import { nowStamp, today } from '../lib/dates'
 import { CATEGORY, ENGAGEMENT_PLATFORM, NEEDS_ACTION, REPLY_STATUS } from '../lib/labels'
@@ -257,9 +257,9 @@ function EngagementCard({ e }: { e: Engagement }) {
                 </a>
               )}
               {creativeLane && (
-                <Button size="sm" disabled={sendRequested || answered || sent.length > 0} onClick={() => confirm(`Ask ${creative} to send this exact reply on ${ENGAGEMENT_PLATFORM[e.platform]}?`) && askToSend()} title={sendRequested ? `Already asked ${creative}` : `${creative} sends it on its next run`}>
+                <ConfirmButton size="sm" disabled={sendRequested || answered || sent.length > 0} message={`Ask ${creative} to send this exact reply on ${ENGAGEMENT_PLATFORM[e.platform]}?`} onConfirm={askToSend} title={sendRequested ? `Already asked ${creative}` : `${creative} sends it on its next run`}>
                   {sendRequested ? `Asked ${creative} to send` : `Send via ${creative}`}
-                </Button>
+                </ConfirmButton>
               )}
               <Button size="sm" variant="primary" onClick={() => set({ status: 'posted_by_day' })}>I posted it</Button>
               <Button size="sm" variant="ghost" onClick={() => set({ status: 'drafted' })}>Edit again</Button>
@@ -301,17 +301,17 @@ function Resources({ resources, keywords }: { resources: Resource[]; keywords: K
             <a href={r.url} target="_blank" rel="noopener noreferrer" className="min-w-0 flex-1 truncate text-accent hover:underline">{r.url}</a>
             {r.description && <span className="w-full text-xs text-muted">{r.description}</span>}
             <CopyButton text={r.url} label="Copy link" />
-            <Button
+            <ConfirmButton
               size="sm"
               variant="ghost"
-              onClick={() => {
-                if (!confirm(`Delete resource ${r.name}? Campaigns using it switch off.`)) return
+              message={`Delete resource ${r.name}? Campaigns using it switch off.`}
+              onConfirm={() => {
                 for (const k of keywords.filter((x) => x.resourceId === r.id)) patch('keywords', k.id, { resourceId: '', approvedResource: '', active: false })
                 remove('resources', r.id)
               }}
             >
               <Trash2 size={14} /> Delete
-            </Button>
+            </ConfirmButton>
           </div>
         ))}
         {!resources.length && <Empty title="No resources yet" />}
@@ -421,9 +421,9 @@ function KeywordRules({ rules, resources }: { rules: KeywordRule[]; resources: R
                 >
                   {r.active ? 'Deactivate' : 'Activate'}
                 </Button>
-                <Button size="sm" variant="ghost" className="ml-auto" onClick={() => confirm(`Delete keyword ${r.keyword}?`) && remove('keywords', r.id)}>
+                <ConfirmButton size="sm" variant="ghost" className="ml-auto" message={`Delete keyword ${r.keyword}?`} onConfirm={() => remove('keywords', r.id)}>
                   <Trash2 size={14} /> Delete
-                </Button>
+                </ConfirmButton>
               </div>
             </div>
           </details>

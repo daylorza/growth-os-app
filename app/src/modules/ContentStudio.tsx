@@ -2,7 +2,7 @@
 
 import { Plus, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { Badge, Button, Card, CardTitle, CopyButton, Drawer, Empty, Field, Input, Mono, Notice, PageHeader, Select, Textarea } from '../components/ui'
+import { Badge, Button, Card, CardTitle, ConfirmButton, CopyButton, Drawer, Empty, Field, Input, Mono, Notice, PageHeader, Select, Textarea } from '../components/ui'
 import { cx } from '../lib/cx'
 import { addDays, parseDate, shortDate, today, weekRange } from '../lib/dates'
 import { CONTENT_STATUS, MODES, PILLARS, PLATFORM } from '../lib/labels'
@@ -259,18 +259,14 @@ function Editor({ item: c, onClose }: { item: ContentItem; onClose: () => void }
             <Button onClick={() => guarded(scheduleError(c, who), { status: 'scheduled' })}>Mark scheduled by {who}</Button>
           )}
           <CopyButton text={briefMarkdown(c, s.profile)} label="Copy brief" size="md" />
-          <Button
+          <ConfirmButton
             variant="danger"
             className="ml-auto"
-            onClick={() => {
-              if (confirm(`Delete ${c.id}? This cannot be undone.`)) {
-                remove('content', c.id)
-                onClose()
-              }
-            }}
+            message={`Delete ${c.id}? This cannot be undone.`}
+            onConfirm={() => { remove('content', c.id); onClose() }}
           >
             <Trash2 size={14} /> Delete
-          </Button>
+          </ConfirmButton>
         </>
       }
     >

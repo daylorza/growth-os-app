@@ -1,7 +1,7 @@
 'use client'
 
 import { Plus, Trash2 } from 'lucide-react'
-import { Badge, Button, Card, CardTitle, CopyButton, Empty, Field, Input, Mono, PageHeader, Select, Textarea } from '../components/ui'
+import { Badge, Button, Card, CardTitle, ConfirmButton, CopyButton, Empty, Field, Input, Mono, PageHeader, Select, Textarea } from '../components/ui'
 import { addDays, today, weekRange } from '../lib/dates'
 import { EXPERIMENT_STATUS, PILLARS, PLATFORM, PLATFORMS, UNKNOWN } from '../lib/labels'
 import { fmt, per1k, periodChange, pillarMix } from '../lib/metrics'
@@ -128,7 +128,7 @@ export default function ContentIntelligence() {
                   ))}
                   <Field label="Status">{(id) => <Select id={id} options={EXPERIMENT_STATUS} value={x.status} onChange={(status) => patch('experiments', x.id, { status })} />}</Field>
                   <div className="flex items-end justify-end">
-                    <Button size="sm" variant="ghost" onClick={() => confirm(`Delete ${x.id}?`) && remove('experiments', x.id)}><Trash2 size={14} /> Delete</Button>
+                    <ConfirmButton size="sm" variant="ghost" message={`Delete ${x.id}?`} onConfirm={() => remove('experiments', x.id)}><Trash2 size={14} /> Delete</ConfirmButton>
                   </div>
                 </div>
               </details>
@@ -165,7 +165,7 @@ export default function ContentIntelligence() {
                     </Field>
                   ))}
                   <div className="flex items-end justify-end sm:col-span-2">
-                    <Button size="sm" variant="ghost" onClick={() => confirm(`Delete ${r.id}?`) && remove('reports', r.id)}><Trash2 size={14} /> Delete</Button>
+                    <ConfirmButton size="sm" variant="ghost" message={`Delete ${r.id}?`} onConfirm={() => remove('reports', r.id)}><Trash2 size={14} /> Delete</ConfirmButton>
                   </div>
                 </div>
               </details>

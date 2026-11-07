@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { Badge, Button, Card, CardTitle, Checkbox, Empty, Field, Input, Mono, PageHeader, Select } from '../components/ui'
+import { Badge, Button, Card, CardTitle, Checkbox, ConfirmButton, Empty, Field, Input, Mono, PageHeader, Select } from '../components/ui'
 import { addDays, shortDate, today } from '../lib/dates'
 import { PLATFORM, PLATFORMS } from '../lib/labels'
 import { fmt, latestSnapshot, per1k, periodChange, profileToFollow, sortedSnapshots } from '../lib/metrics'
@@ -191,9 +191,9 @@ function SnapshotForm({ snaps }: { snaps: FollowerSnapshot[] }) {
               <span className="w-16 tabular-nums">{x.count.toLocaleString()}</span>
               <span className="min-w-0 flex-1 truncate text-muted">{x.source}</span>
               <Badge tone={x.verified ? 'ok' : 'warn'}>{x.verified ? 'Verified' : 'Unverified'}</Badge>
-              <Button variant="ghost" size="sm" aria-label="Delete snapshot" onClick={() => confirm('Delete this snapshot?') && remove('snapshots', x.id)}>
+              <ConfirmButton variant="ghost" size="sm" aria-label="Delete snapshot" message="Delete this snapshot?" onConfirm={() => remove('snapshots', x.id)}>
                 <Trash2 size={14} />
-              </Button>
+              </ConfirmButton>
             </li>
           ))}
         </ul>

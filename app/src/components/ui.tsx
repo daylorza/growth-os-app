@@ -73,6 +73,18 @@ export function Button({
   )
 }
 
+export function ConfirmButton({ message, onConfirm, children, ...props }: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> & { message: string; onConfirm: () => void; variant?: Variant; size?: 'sm' | 'md' }) {
+  const [confirming, setConfirming] = useState(false)
+  if (!confirming) return <Button {...props} onClick={() => setConfirming(true)}>{children}</Button>
+  return (
+    <span role="alert" className="inline-flex flex-wrap items-center gap-2 rounded-lg border border-warn/40 bg-ink-900 p-2 text-sm text-fg">
+      <span>{message}</span>
+      <Button size="sm" variant="danger" disabled={props.disabled} onClick={() => { if (!props.disabled) { setConfirming(false); onConfirm() } }}>Confirm</Button>
+      <Button size="sm" onClick={() => setConfirming(false)}>Cancel</Button>
+    </span>
+  )
+}
+
 const inputBase =
   'w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-fg placeholder:text-faint focus:border-accent/60'
 
