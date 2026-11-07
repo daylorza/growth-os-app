@@ -118,7 +118,6 @@ export default function ContentIntelligence() {
                 <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm">
                   <Mono>{x.id}</Mono>
                   <span className="min-w-0 flex-1 truncate">{x.hypothesis || 'Untitled hypothesis'}</span>
-                  {x.demo && <Badge>Demo</Badge>}
                   <Badge tone={x.status === 'running' ? 'accent' : x.status === 'done' ? 'ok' : 'neutral'}>{EXPERIMENT_STATUS[x.status]}</Badge>
                 </summary>
                 <div className="grid gap-3 border-t border-ink-600 p-4 sm:grid-cols-2">

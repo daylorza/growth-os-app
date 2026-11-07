@@ -155,7 +155,6 @@ function EngagementCard({ e }: { e: Engagement }) {
         {e.author && <span className="text-muted">@{e.author.replace(/^@/, '')}</span>}
         {e.sourcePost && <span className="truncate text-faint">on {e.sourcePost}</span>}
         {e.keyword && <Badge tone="accent">{e.keyword}</Badge>}
-        {e.demo && <Badge>Demo</Badge>}
         <span className="ml-auto"><Badge tone={e.status === 'escalated' ? 'danger' : e.status === 'approved' ? 'ok' : 'neutral'}>{REPLY_STATUS[e.status]}</Badge></span>
       </header>
       <p className="mt-3 text-sm">“{e.comment}”</p>

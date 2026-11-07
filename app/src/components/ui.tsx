@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { X } from 'lucide-react'
 import {
   useEffect,
@@ -13,7 +12,6 @@ import {
   type TextareaHTMLAttributes,
 } from 'react'
 import { cx } from '../lib/cx'
-import { hasDemoData, useAppState } from '../lib/store'
 
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
   return <section className={cx('rounded-2xl border border-ink-600 bg-ink-800 p-5', className)}>{children}</section>
@@ -176,19 +174,8 @@ export function PageHeader({ eyebrow, title, right, children }: { eyebrow: strin
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {right}
-        <DemoBadge />
       </div>
     </header>
-  )
-}
-
-function DemoBadge() {
-  const s = useAppState()
-  if (!hasDemoData(s)) return null
-  return (
-    <Link href="/settings" title="Example records are shown. Clear them in Settings.">
-      <Badge>Demo data</Badge>
-    </Link>
   )
 }
 
