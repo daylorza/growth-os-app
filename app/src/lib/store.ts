@@ -232,13 +232,24 @@ const COLLECTIONS: CollectionKey[] = [
   'handoffs',
 ]
 
-export const hasDemoData = (s: AppState) =>
-  COLLECTIONS.some((k) => (s[k] as { demo?: boolean }[]).some((i) => i.demo))
+/**
+ * Example records that "Clear demo data" would remove. Handoffs are a log and are never deleted, and a demo
+ * record that a real handoff points at is kept: the agents are using it.
+ */
+export function demoRecords(s: AppState): { collection: CollectionKey; id: string }[] {
+  const used = new Set(s.handoffs.filter((h) => !h.demo).map((h) => h.itemId))
+  return COLLECTIONS.filter((k) => k !== 'handoffs').flatMap((k) =>
+    (s[k] as { id: string; demo?: boolean }[]).filter((i) => i.demo && !used.has(i.id)).map((i) => ({ collection: k, id: i.id })),
+  )
+}
+
+export const hasDemoData = (s: AppState) => demoRecords(s).length > 0
 
 export function clearDemoData() {
   update((s) => {
+    const drop = new Set(demoRecords(s).map((r) => `${r.collection}/${r.id}`))
     const next = { ...s }
-    for (const k of COLLECTIONS) (next as Record<string, unknown>)[k] = (s[k] as { demo?: boolean }[]).filter((i) => !i.demo)
+    for (const k of COLLECTIONS) (next as Record<string, unknown>)[k] = (s[k] as { id: string }[]).filter((i) => !drop.has(`${k}/${i.id}`))
     return next
   })
 }

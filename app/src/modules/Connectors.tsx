@@ -7,6 +7,7 @@ import { shortDate } from '../lib/dates'
 import { connectorServer, connectUrl, disconnect, fetchConnections, syncTikTok, type ServerConnection } from '../lib/oauth'
 import { update, useAppState } from '../lib/store'
 import { mergeSnapshots } from '../lib/tiktok'
+import type { HandleKey } from '../lib/types'
 import { dataAge, importTikTokFiles, useTikTok, vaultSnapshot, type ImportResult } from '../lib/tiktokData'
 import { FreshnessNotice } from './TikTokStudio'
 
@@ -21,77 +22,106 @@ export default function ConnectorsCard() {
     fetchConnections().then(setConnections, (e: Error) => setServerError(e.message))
   }, [server])
 
+  const inUse = (c: ConnectorDef) => !!c.reader || !!s.profile.handles[c.id]?.trim() || connections.some((x) => x.id === c.id)
+  const active = CONNECTORS.filter(inUse)
+  const unused = CONNECTORS.filter((c) => !inUse(c))
+  const read = active.filter((c) => c.reader).length
+
   return (
     <Card className="mt-4">
-      <CardTitle right={<Badge tone={server ? 'ok' : 'neutral'}>{server ? 'Connector server set' : 'Export files only'}</Badge>}>Accounts and connectors</CardTitle>
+      <CardTitle right={<Badge tone={read ? 'ok' : 'neutral'}>{read} read by your agents</Badge>}>Accounts and connectors</CardTitle>
       <p className="-mt-2 mb-4 text-sm text-muted">
-        Read-only. Import analytics exports today, or connect accounts through a connector server. Nothing here can post, reply or message.
+        Read-only. Your agents read these accounts with their own access and record what they see here. Nothing on this page can post, reply or message.
       </p>
       {serverError && <Notice tone="danger">{serverError}</Notice>}
       <div className="flex flex-col gap-3">
-        {CONNECTORS.map((c) => (
-          <ConnectorRow key={c.id} c={c} handle={s.profile.handles[c.id] ?? ''} connection={connections.find((x) => x.id === c.id)} onConnections={setConnections} />
+        {active.map((c) => (
+          <ConnectorRow key={c.id} c={c} server={!!server} connection={connections.find((x) => x.id === c.id)} onConnections={setConnections} />
         ))}
       </div>
-      {!server && (
-        <p className="mt-4 text-xs text-faint">
-          “Connect” buttons need a connector server that runs OAuth and keeps tokens off this browser. Set <code>NEXT_PUBLIC_CONNECTOR_SERVER</code> to enable them.
-        </p>
-      )}
+      {unused.length > 0 && <p className="mt-4 text-xs text-faint">Not set up: {unused.map((c) => c.name).join(', ')}. Add a handle in Setup to track one.</p>}
     </Card>
   )
 }
 
-function ConnectorRow({ c, handle, connection, onConnections }: { c: ConnectorDef; handle: string; connection?: ServerConnection; onConnections: (x: ServerConnection[]) => void }) {
+/** Latest date anything arrived for a platform: a snapshot or an engagement item. */
+function latestData(s: ReturnType<typeof useAppState>, id: ConnectorDef['id']) {
+  const dates = [...s.snapshots.filter((x) => x.platform === id && !x.demo).map((x) => x.date), ...s.engagements.filter((e) => e.platform === id && !e.demo).map((e) => e.createdAt.slice(0, 10))]
+  return dates.sort().at(-1) ?? null
+}
+
+function ConnectorRow({ c, server, connection, onConnections }: { c: ConnectorDef; server: boolean; connection?: ServerConnection; onConnections: (x: ServerConnection[]) => void }) {
+  const s = useAppState()
   const tk = useTikTok()
   const url = connectUrl(c.id)
   const age = c.id === 'tiktok' ? dataAge(tk) : null
+  const latest = [latestData(s, c.id), age?.newest ?? null].filter((d): d is string => !!d).sort().at(-1) ?? null
+  const agent = c.reader ? s.profile.agents[c.reader.role].name : null
+  const handles = [s.profile.handles[c.id], ...(c.extraHandles ?? []).map((h) => s.profile.handles[h.key])].filter((h): h is string => !!h?.trim())
   const status = connection ? (
     <Badge tone="ok">Connected · {connection.handle}</Badge>
+  ) : agent ? (
+    <Badge tone="ok">Read by {agent}</Badge>
   ) : age ? (
     <Badge tone={age.stale ? 'warn' : 'ok'}>Exports · {shortDate(age.newest)}</Badge>
   ) : (
-    <Badge>Not connected</Badge>
+    <Badge>Handle only</Badge>
   )
-  const setHandle = (v: string) => update((st) => ({ ...st, profile: { ...st.profile, handles: { ...st.profile.handles, [c.id]: v } } }))
+  const setHandle = (key: HandleKey, v: string) => update((st) => ({ ...st, profile: { ...st.profile, handles: { ...st.profile.handles, [key]: v } } }))
 
   return (
-    <details className="rounded-xl border border-ink-600 bg-ink-900" open={c.id === 'tiktok'}>
+    <details className="rounded-xl border border-ink-600 bg-ink-900">
       <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 px-4 py-3">
         <span className="w-24 text-sm font-medium">{c.name}</span>
-        <span className="min-w-0 flex-1 truncate text-xs text-muted">{handle || 'No handle set'}</span>
+        <span className="min-w-0 flex-1 truncate text-xs text-muted">{handles.join(' · ') || 'No handle set'}</span>
+        <span className="text-xs text-faint">{latest ? `Latest data ${shortDate(latest)}` : 'No data yet'}</span>
         {status}
       </summary>
       <div className="grid gap-4 border-t border-ink-600 p-4 md:grid-cols-2">
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1.5 text-xs text-muted">
-            Handle
-            <Input placeholder={c.handlePlaceholder} value={handle} onChange={(e) => setHandle(e.target.value)} />
+            {c.extraHandles ? 'Personal handle' : 'Handle'}
+            <Input placeholder={c.handlePlaceholder} value={s.profile.handles[c.id] ?? ''} onChange={(e) => setHandle(c.id, e.target.value)} />
           </label>
-          <div>
-            <div className="mb-1 text-xs text-muted">Connect with {c.oauth.api}</div>
-            {connection ? (
-              <div className="flex flex-wrap gap-2">
-                {c.id === 'tiktok' && <SyncTikTokButton />}
-                <Button size="sm" variant="ghost" onClick={async () => { await disconnect(c.id); onConnections(await fetchConnections()) }}>Disconnect</Button>
-              </div>
-            ) : (
-              <Button size="sm" disabled={!url} onClick={() => url && window.location.assign(url)} title={url ? undefined : 'Needs NEXT_PUBLIC_CONNECTOR_SERVER'}>
-                Connect {c.name}
-              </Button>
-            )}
-            <p className="mt-1 text-xs text-faint">
-              Read-only{c.oauth.scopes.length ? `: ${c.oauth.scopes.join(', ')}` : ''}. {c.oauth.note}
+          {c.extraHandles?.map((h) => (
+            <label key={h.key} className="flex flex-col gap-1.5 text-xs text-muted">
+              {h.label}
+              <Input placeholder={c.handlePlaceholder} value={s.profile.handles[h.key] ?? ''} onChange={(e) => setHandle(h.key, e.target.value)} />
+            </label>
+          ))}
+          {agent && c.reader && (
+            <p className="text-xs text-muted">
+              {agent} reads it through {c.reader.via}. Sign-ins stay with {agent}; never enter a password here.
             </p>
+          )}
+          {(server || connection) && (
+            <div>
+              <div className="mb-1 text-xs text-muted">Connect with {c.oauth.api}</div>
+              {connection ? (
+                <div className="flex flex-wrap gap-2">
+                  {c.id === 'tiktok' && <SyncTikTokButton />}
+                  <Button size="sm" variant="ghost" onClick={async () => { await disconnect(c.id); onConnections(await fetchConnections()) }}>Disconnect</Button>
+                </div>
+              ) : (
+                <Button size="sm" disabled={!url} onClick={() => url && window.location.assign(url)}>
+                  Connect {c.name}
+                </Button>
+              )}
+              <p className="mt-1 text-xs text-faint">
+                Read-only{c.oauth.scopes.length ? `: ${c.oauth.scopes.join(', ')}` : ''}. {c.oauth.note}
+              </p>
+            </div>
+          )}
+        </div>
+        {c.exportFiles.status === 'available' && (
+          <div>
+            <div className="mb-1 text-xs text-muted">Import export files</div>
+            <ol className="mb-3 list-decimal pl-4 text-xs text-muted">
+              {c.exportFiles.steps.map((x) => <li key={x}>{x}</li>)}
+            </ol>
+            {c.id === 'tiktok' && <TikTokImport />}
           </div>
-        </div>
-        <div>
-          <div className="mb-1 text-xs text-muted">Import export files</div>
-          <ol className="mb-3 list-decimal pl-4 text-xs text-muted">
-            {c.exportFiles.steps.map((x) => <li key={x}>{x}</li>)}
-          </ol>
-          {c.id === 'tiktok' ? <TikTokImport /> : <Badge>Parser not built yet</Badge>}
-        </div>
+        )}
       </div>
     </details>
   )

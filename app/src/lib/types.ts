@@ -222,6 +222,8 @@ export interface Settings {
 }
 
 export type ConnectorId = 'tiktok' | 'x' | 'threads' | 'instagram' | 'youtube' | 'linkedin'
+/** Profile handle keys: one per platform, plus extra accounts such as a brand Instagram. */
+export type HandleKey = ConnectorId | 'instagram_brand'
 
 export interface AgentProfile {
   name: string
@@ -234,7 +236,7 @@ export interface Profile {
   brandName: string
   company: string
   projectName: string
-  handles: Partial<Record<ConnectorId, string>>
+  handles: Partial<Record<HandleKey, string>>
   agents: { analyst: AgentProfile; creative: AgentProfile }
   /** True for the fictional sample creator shown in the public demo. */
   sample: boolean
