@@ -16,8 +16,18 @@ export function keywordMatches(comment: string, keyword: string) {
   return c.some((_, i) => k.every((t, j) => c[i + j] === t))
 }
 
-export const matchKeywords = (comment: string, rules: KeywordRule[]) =>
-  rules.filter((r) => keywordMatches(comment, r.keyword))
+/** A post link reduced to what identifies it: the video id when there is one, else the URL without query or trailing slash. */
+export const postKey = (url: string) => /\/video\/(\d+)/.exec(url)?.[1] ?? url.trim().split(/[?#]/)[0].replace(/\/+$/, '').toLowerCase()
+
+/** Whether a campaign applies to a comment on this post. A campaign without posts applies everywhere. */
+export const postMatches = (r: KeywordRule, sourcePost: string) =>
+  !r.postUrls?.length || (!!sourcePost.trim() && r.postUrls.some((u) => postKey(u) === postKey(sourcePost)))
+
+export const matchKeywords = (comment: string, rules: KeywordRule[], sourcePost = '') =>
+  rules.filter((r) => keywordMatches(comment, r.keyword) && postMatches(r, sourcePost))
+
+/** A campaign's starting reply for one person: {name} becomes their name or handle. */
+export const fillTemplate = (template: string, name: string) => template.replaceAll('{name}', name.replace(/^@/, '').trim() || 'there')
 
 /** A keyword campaign can only go live once there is something real to deliver. */
 export function keywordActivationError(r: KeywordRule): string | null {

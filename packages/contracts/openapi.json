@@ -657,6 +657,19 @@
           "active": {
             "type": "boolean"
           },
+          "resourceId": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "postUrls": {
+            "items": {
+              "maxLength": 500,
+              "type": "string",
+              "pattern": "^https?:\\/\\/\\S+$"
+            },
+            "type": "array",
+            "maxItems": 50
+          },
           "demo": {
             "type": "boolean"
           }
@@ -776,6 +789,35 @@
           }
         },
         "type": "object"
+      },
+      "CreateResourceDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "url": {
+            "maxLength": 1000,
+            "type": "string",
+            "pattern": "^https:\\/\\/\\S+$"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "demo": {
+            "type": "boolean"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "url"
+        ]
       },
       "CreateScriptDto": {
         "properties": {
@@ -957,6 +999,10 @@
             "type": "array"
           },
           "keywords": {
+            "items": {},
+            "type": "array"
+          },
+          "resources": {
             "items": {},
             "type": "array"
           },
@@ -1592,6 +1638,19 @@
           "active": {
             "type": "boolean"
           },
+          "resourceId": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "postUrls": {
+            "items": {
+              "maxLength": 500,
+              "type": "string",
+              "pattern": "^https?:\\/\\/\\S+$"
+            },
+            "type": "array",
+            "maxItems": 50
+          },
           "demo": {
             "type": "boolean"
           }
@@ -1705,6 +1764,31 @@
           "limitations": {
             "type": "string",
             "maxLength": 5000
+          },
+          "demo": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "PartialCreateResourceDto": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "url": {
+            "maxLength": 1000,
+            "type": "string",
+            "pattern": "^https:\\/\\/\\S+$"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
           },
           "demo": {
             "type": "boolean"
@@ -4205,6 +4289,148 @@
         ],
         "summary": "Delete a keywords item (creator only)",
         "operationId": "deleteApiKeywordsId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/resources": {
+      "get": {
+        "tags": [
+          "resources"
+        ],
+        "summary": "List resources",
+        "operationId": "getApiResources",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "resources"
+        ],
+        "summary": "Create a resources item",
+        "operationId": "postApiResources",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateResourceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      }
+    },
+    "/api/resources/{id}": {
+      "patch": {
+        "tags": [
+          "resources"
+        ],
+        "summary": "Update a resources item",
+        "operationId": "patchApiResourcesId",
+        "x-roles": [
+          "creator",
+          "analyst",
+          "creative"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartialCreateResourceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Stored documents include `id` and `_meta` (who wrote it, when, from where)."
+          },
+          "400": {
+            "description": "Validation failed or a draft-only rule was broken"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "403": {
+            "description": "Role or collection ownership does not allow this"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "resources"
+        ],
+        "summary": "Delete a resources item (creator only)",
+        "operationId": "deleteApiResourcesId",
         "x-roles": [
           "creator",
           "analyst",

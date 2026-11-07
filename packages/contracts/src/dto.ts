@@ -378,9 +378,20 @@ export class CreateKeywordDto {
   @OptionalText() cta?: string
   @OptionalText() replyTemplate?: string
   @IsOptional() @IsBoolean() active?: boolean
+  @IsOptional() @Matches(ID_PATTERN) resourceId?: string
+  @IsOptional() @IsArray() @ArrayMaxSize(50) @IsString({ each: true }) @Matches(/^https?:\/\/\S+$/, { each: true, message: 'postUrls must be links' }) @MaxLength(500, { each: true }) postUrls?: string[]
   @IsOptional() @IsBoolean() demo?: boolean
 }
 export class UpdateKeywordDto extends PartialType(CreateKeywordDto) {}
+
+export class CreateResourceDto {
+  @IsOptional() @Matches(ID_PATTERN) id?: string
+  @RequiredText(200) name: string
+  @Matches(/^https:\/\/\S+$/, { message: 'url must be an https link' }) @MaxLength(1000) url: string
+  @OptionalText(1000) description?: string
+  @IsOptional() @IsBoolean() demo?: boolean
+}
+export class UpdateResourceDto extends PartialType(CreateResourceDto) {}
 
 export class CreateTaskDto {
   @IsOptional() @Matches(ID_PATTERN) id?: string
@@ -430,6 +441,7 @@ export class ImportDto {
   @IsOptional() @IsArray() content?: object[]
   @IsOptional() @IsArray() engagements?: object[]
   @IsOptional() @IsArray() keywords?: object[]
+  @IsOptional() @IsArray() resources?: object[]
   @IsOptional() @IsArray() snapshots?: object[]
   @IsOptional() @IsArray() experiments?: object[]
   @IsOptional() @IsArray() reports?: object[]

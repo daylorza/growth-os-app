@@ -40,6 +40,8 @@ const VALID: [new () => object, object][] = [
   [dto.PatchBriefDto, { fields: [{ key: 'goals', value: 'x' }] }],
   [dto.CreateKeywordDto, { keyword: 'X' }],
   [dto.UpdateKeywordDto, { active: true }],
+  [dto.CreateResourceDto, { name: 'Guide', url: 'https://example.com/g' }],
+  [dto.UpdateResourceDto, { description: 'Free guide' }],
   [dto.CreateTaskDto, { title: 'x' }],
   [dto.UpdateTaskDto, { done: true }],
   [dto.CreateCheckInDto, { kind: 'morning' }],

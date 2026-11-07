@@ -74,6 +74,7 @@ export const ROUTES: RouteSpec[] = [
   ...crud('engagement-queue', '/api/engagement-queue', dto.CreateEngagementDto, dto.UpdateEngagementDto, { patch: true }),
   ...crud('leads', '/api/leads', dto.CreateLeadDto, dto.UpdateLeadDto),
   ...crud('keywords', '/api/keywords', dto.CreateKeywordDto, dto.UpdateKeywordDto),
+  ...crud('resources', '/api/resources', dto.CreateResourceDto, dto.UpdateResourceDto),
   ...crud('tasks', '/api/tasks', dto.CreateTaskDto, dto.UpdateTaskDto),
   ...crud('checkins', '/api/checkins', dto.CreateCheckInDto, dto.UpdateCheckInDto),
   ...crud('reports', '/api/reports', dto.CreateReportDto, dto.UpdateReportDto),
