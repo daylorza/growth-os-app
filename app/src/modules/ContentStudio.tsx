@@ -117,7 +117,7 @@ export default function ContentStudio() {
                         <button
                           aria-label={`New brief on ${d}`}
                           onClick={() => create(d)}
-                          className="rounded text-faint hover:text-accent"
+                          className="-m-1 flex size-6 items-center justify-center rounded text-faint hover:text-accent"
                         >
                           <Plus size={14} />
                         </button>
