@@ -25,7 +25,7 @@ export const CONNECTORS: ConnectorDef[] = [
     id: 'tiktok',
     name: 'TikTok',
     handlePlaceholder: '@yourhandle',
-    reader: { role: 'creative', via: 'signed-in browser: TikTok Studio analytics, comments and notifications' },
+    reader: { role: 'creative', via: 'the TikTok Display API (counts) and a signed-in browser: TikTok Studio analytics, comments and notifications' },
     exportFiles: {
       status: 'available',
       steps: [
@@ -34,7 +34,7 @@ export const CONNECTORS: ConnectorDef[] = [
         'Import all the CSVs below (or drop them in private/vault/tiktok/inbox/ and run pnpm tiktok:ingest).',
       ],
     },
-    oauth: { api: 'TikTok Display API (Login Kit)', scopes: ['user.info.basic', 'user.info.stats', 'video.list'], note: 'Requires a TikTok developer app approved for these scopes.' },
+    oauth: { api: 'TikTok Display API (Login Kit)', scopes: ['user.info.basic', 'user.info.profile', 'user.info.stats', 'video.list'], note: 'Requires a TikTok developer app approved for these scopes.' },
   },
   {
     id: 'x',
