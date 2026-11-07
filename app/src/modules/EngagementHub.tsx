@@ -322,6 +322,29 @@ function Resources({ resources, keywords }: { resources: Resource[]; keywords: K
   )
 }
 
+/** One link per line. Typing stays free; the list is saved when the box loses focus. */
+function PostUrls({ id, urls, onChange }: { id: string; urls: string[]; onChange: (urls: string[]) => void }) {
+  const [text, setText] = useState(urls.join('\n'))
+  const parsed = text.split(/\s+/).map((u) => u.trim()).filter(Boolean)
+  const bad = parsed.filter((u) => !/^https?:\/\/\S+$/.test(u))
+  return (
+    <>
+      <Textarea
+        id={id}
+        rows={3}
+        value={text}
+        placeholder={'https://www.tiktok.com/@you/video/…\nhttps://www.tiktok.com/@you/video/…'}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={() => {
+          const next = parsed.filter((u) => /^https?:\/\/\S+$/.test(u))
+          if (next.join('\n') !== urls.join('\n')) onChange(next)
+        }}
+      />
+      {bad.length > 0 && <span className="text-xs text-warn">Not a link, will be skipped: {bad.join(', ')}</span>}
+    </>
+  )
+}
+
 function KeywordRules({ rules, resources }: { rules: KeywordRule[]; resources: Resource[] }) {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [newKw, setNewKw] = useState('')
@@ -359,16 +382,11 @@ function KeywordRules({ rules, resources }: { rules: KeywordRule[]; resources: R
                 )}
               </Field>
               <Field label="Delivery method" hint="e.g. Link in bio, pinned comment">{(id) => <Input id={id} value={r.deliveryMethod} onChange={(e) => set(r, { deliveryMethod: e.target.value })} />}</Field>
-              <Field label="Exact CTA" className="sm:col-span-2">{(id) => <Input id={id} value={r.cta} onChange={(e) => set(r, { cta: e.target.value })} />}</Field>
+              <Field label="Exact CTA" hint="What you say in the video. One per line if the posts use different wording." className="sm:col-span-2">
+                {(id) => <Textarea id={id} rows={2} value={r.cta} onChange={(e) => set(r, { cta: e.target.value })} />}
+              </Field>
               <Field label="Only on these posts" hint="One link per line. Empty: any post." className="sm:col-span-2">
-                {(id) => (
-                  <Textarea
-                    id={id}
-                    rows={3}
-                    value={(r.postUrls ?? []).join('\n')}
-                    onChange={(e) => set(r, { postUrls: e.target.value.split(/\s+/).map((u) => u.trim()).filter((u) => /^https?:\/\//.test(u)) })}
-                  />
-                )}
+                {(id) => <PostUrls id={id} urls={r.postUrls ?? []} onChange={(postUrls) => set(r, { postUrls })} />}
               </Field>
               <Field label="Starting reply (edit per comment)" hint="{name} becomes the person's name or handle." className="sm:col-span-2">
                 {(id) => <Textarea id={id} value={r.replyTemplate} onChange={(e) => set(r, { replyTemplate: e.target.value })} />}

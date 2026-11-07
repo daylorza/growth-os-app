@@ -49,4 +49,18 @@ describe('engagement links and sending through the creative agent', () => {
     expect(h.message).toContain('Here is how.')
     expect(screen.getByRole('button', { name: `Asked ${creative} to send` })).toHaveProperty('disabled', true)
   })
+
+  it('lets you type post links one per line and saves them when you leave the box', () => {
+    const st = getState()
+    resetAll({ ...st, keywords: [{ id: 'K-1', keyword: 'AGENT', approvedResource: '', deliveryMethod: 'TikTok DM', cta: '', replyTemplate: '', active: false, resourceId: '', postUrls: [] }] })
+    render(<EngagementHub />)
+    const box = screen.getByLabelText('Only on these posts') as HTMLTextAreaElement
+    fireEvent.change(box, { target: { value: 'https://www.tiktok.com/@a/video/1\nhttps://www.tik' } })
+    expect(box.value).toBe('https://www.tiktok.com/@a/video/1\nhttps://www.tik')
+    fireEvent.change(box, { target: { value: 'https://www.tiktok.com/@a/video/1\nhttps://www.tiktok.com/@a/video/2\nnot-a-link' } })
+    expect(screen.getByText(/will be skipped: not-a-link/)).toBeTruthy()
+    fireEvent.blur(box)
+    expect(getState().keywords[0].postUrls).toEqual(['https://www.tiktok.com/@a/video/1', 'https://www.tiktok.com/@a/video/2'])
+    expect(screen.getByLabelText(/Exact CTA/).tagName).toBe('TEXTAREA')
+  })
 })
