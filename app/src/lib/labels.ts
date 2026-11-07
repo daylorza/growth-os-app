@@ -58,7 +58,7 @@ export const CATEGORY: Record<CommentCategory, string> = {
 export const REPLY_STATUS: Record<ReplyStatus, string> = {
   new: 'New',
   drafted: 'Draft ready',
-  approved: 'Approved — post it yourself',
+  approved: 'Approved — ready to send',
   posted_by_day: 'Posted by you',
   escalated: 'Escalated to you',
   dismissed: 'Dismissed',
