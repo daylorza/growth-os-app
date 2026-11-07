@@ -24,7 +24,8 @@ export const TIKTOK = {
 export const SCOPES = ['user.info.basic', 'user.info.profile', 'user.info.stats', 'video.list']
 const USER_FIELDS = 'open_id,username,display_name,follower_count,following_count,likes_count,video_count'
 const VIDEO_FIELDS = 'id,title,create_time,share_url,view_count,like_count,comment_count,share_count'
-const MAX_PAGES = 3
+/** 20 videos a page: up to 400 of the newest public videos per daily pull. */
+const MAX_PAGES = 20
 
 export interface Token {
   accessToken: string

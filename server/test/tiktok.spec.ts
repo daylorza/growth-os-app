@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { authorizeUrl, contentMetricsFrom, freshToken, parseToken, pull, readToken, snapshotFrom, videoIdFromUrl, writeToken, type Token } from '../src/worker/tiktok-connector'
+import { authorizeUrl, contentMetricsFrom, freshToken, listVideos, parseToken, pull, readToken, snapshotFrom, videoIdFromUrl, writeToken, type Token } from '../src/worker/tiktok-connector'
 
 type Call = { url: string; method: string; body?: string; auth?: string }
 const reply = (status: number, body: unknown) => ({ ok: status < 400, status, text: async () => JSON.stringify(body) })
@@ -86,6 +86,15 @@ describe('TikTok connector (read-only)', () => {
     for (const c of calls.filter((x) => x.url.includes('tiktokapis'))) expect(c.auth).toBe('Bearer act.old')
     expect(calls.some((c) => c.url.endsWith('/api/content/C-2'))).toBe(false)
     expect(readFileSync(process.env.TIKTOK_TOKEN_FILE!, 'utf8')).toContain('act.old')
+  })
+
+  it('follows the page cursor until TikTok says there is no more', async () => {
+    const { f, calls } = fakeFetch((c) => {
+      const page = JSON.parse(c.body ?? '{}').cursor ?? 0
+      return { status: 200, body: { data: { videos: [{ id: `v${page}` }], has_more: page < 2, cursor: page + 1 }, error: { code: 'ok' } } }
+    })
+    expect((await listVideos(f, 'act')).map((v) => v.id)).toEqual(['v0', 'v1', 'v2'])
+    expect(calls).toHaveLength(3)
   })
 
   it('pull: a second run the same day keeps the first snapshot', async () => {

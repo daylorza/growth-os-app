@@ -58,8 +58,11 @@ function ConnectorRow({ c, server, connection, onConnections }: { c: ConnectorDe
   const latest = [latestData(s, c.id), age?.newest ?? null].filter((d): d is string => !!d).sort().at(-1) ?? null
   const agent = c.reader ? s.profile.agents[c.reader.role].name : null
   const handles = [s.profile.handles[c.id], ...(c.extraHandles ?? []).map((h) => s.profile.handles[h.key])].filter((h): h is string => !!h?.trim())
+  const apiLast = c.api ? s.snapshots.filter((x) => x.platform === c.id && x.id.startsWith(c.api!.idPrefix)).map((x) => x.date).sort().at(-1) : undefined
   const status = connection ? (
     <Badge tone="ok">Connected · {connection.handle}</Badge>
+  ) : apiLast && c.api ? (
+    <Badge tone="ok">{c.api.label} · {shortDate(apiLast)}</Badge>
   ) : agent ? (
     <Badge tone="ok">Read by {agent}</Badge>
   ) : age ? (
@@ -89,9 +92,14 @@ function ConnectorRow({ c, server, connection, onConnections }: { c: ConnectorDe
               <Input placeholder={c.handlePlaceholder} value={s.profile.handles[h.key] ?? ''} onChange={(e) => setHandle(h.key, e.target.value)} />
             </label>
           ))}
+          {c.api && (
+            <p className="text-xs text-muted">
+              Counts: the {c.api.label} connector on the host, {c.api.schedule}{apiLast ? ` (last pull ${shortDate(apiLast)})` : ' (not authorized yet)'}. Read-only.
+            </p>
+          )}
           {agent && c.reader && (
             <p className="text-xs text-muted">
-              {agent} reads it through {c.reader.via}. Sign-ins stay with {agent}; never enter a password here.
+              {c.api ? 'Everything else: ' : ''}{agent} reads it through {c.reader.via}. Sign-ins stay with {agent}; never enter a password here.
             </p>
           )}
           {(server || connection) && (
