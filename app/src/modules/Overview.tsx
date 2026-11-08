@@ -4,12 +4,12 @@ import Link from 'next/link'
 import { CalendarDays, ChartNoAxesColumnIncreasing, ListChecks, Sparkles, SquareCheck, Target, Users, Video } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Badge, Button, Card, CardTitle, Checkbox, Empty, Input, ProgressBar, Stat } from '../components/ui'
-import { campaignPosition, parseDate, today, weekRange } from '../lib/dates'
+import { campaignPosition, parseDate, weekRange } from '../lib/dates'
 import { BRIEF_FIELDS, UNKNOWN, withProject } from '../lib/labels'
 import type { Profile } from '../lib/types'
 import { latestSnapshot, milestoneProgress } from '../lib/metrics'
 import { nextId } from '../lib/rules'
-import { patch, upsert, useAppState } from '../lib/store'
+import { patch, upsert, useAppState, useToday } from '../lib/store'
 import { useFollowerSnapshots } from '../lib/tiktokData'
 
 function weeklyLoopFocus(on: string, p: Profile) {
@@ -22,7 +22,7 @@ function weeklyLoopFocus(on: string, p: Profile) {
 export default function Overview() {
   const s = useAppState()
   const [newTask, setNewTask] = useState('')
-  const t = today()
+  const t = useToday()
   const snaps = useFollowerSnapshots()
   const tiktok = latestSnapshot(snaps, 'tiktok')
   const progress = milestoneProgress(tiktok?.count, s.settings.tiktokGoal)
@@ -61,10 +61,10 @@ export default function Overview() {
         <Stat
           label="TikTok Followers"
           icon={<Users size={20} />}
-          value={tiktok ? tiktok.count.toLocaleString() : UNKNOWN}
+          value={tiktok ? tiktok.count.toLocaleString('en-US') : UNKNOWN}
           note={tiktok ? (tiktok.verified ? `Verified · ${tiktok.date} · ${tiktok.id.startsWith('TT-') ? 'TikTok export' : 'manual'}` : `Unverified · ${tiktok.source}`) : 'Add a snapshot in Audience Growth'}
         />
-        <Stat label="Growth Target" icon={<Target size={20} />} value={s.settings.tiktokGoal.toLocaleString()} note="Milestone, not a guarantee" />
+        <Stat label="Growth Target" icon={<Target size={20} />} value={s.settings.tiktokGoal.toLocaleString('en-US')} note="Milestone, not a guarantee" />
         <Stat
           label="Weekly Videos"
           icon={<Video size={20} />}
@@ -81,7 +81,7 @@ export default function Overview() {
 
       <Card className="mt-4">
         <div className="flex items-baseline justify-between">
-          <h2 className="text-base font-medium">First {s.settings.tiktokGoal.toLocaleString()} Followers</h2>
+          <h2 className="text-base font-medium">First {s.settings.tiktokGoal.toLocaleString('en-US')} Followers</h2>
           <span className="text-accent tabular-nums">{progress ? `${Math.round(progress.pct)}%` : '—'}</span>
         </div>
         <div className="mt-4">
@@ -89,7 +89,7 @@ export default function Overview() {
         </div>
         <p className="mt-3 text-sm text-muted">
           {progress
-            ? `${progress.remaining.toLocaleString()} followers remaining · ${tiktok?.verified ? 'Verified baseline' : 'Illustrative baseline'}`
+            ? `${progress.remaining.toLocaleString('en-US')} followers remaining · ${tiktok?.verified ? 'Verified baseline' : 'Illustrative baseline'}`
             : 'No baseline yet. Record your current TikTok follower count to start tracking.'}
         </p>
       </Card>

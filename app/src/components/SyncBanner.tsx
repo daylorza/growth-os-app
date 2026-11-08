@@ -12,7 +12,7 @@ export function SyncBanner() {
       <span className="font-mono tracking-wide text-muted uppercase">{s.mode === 'endpoint' ? 'Endpoint' : s.mode}</span>
       <span className="min-w-0 flex-1 text-muted">
         {s.error ??
-          (s.pending ? 'Saving…' : `Saved to the Growth OS endpoint${s.lastSync ? ` · synced ${new Date(s.lastSync).toLocaleTimeString()}` : ''}`)}
+          (s.pending ? 'Saving…' : `Saved to the Growth OS endpoint${s.lastSync ? ` · synced ${new Date(s.lastSync).toLocaleTimeString('en-US')}` : ''}`)}
       </span>
       {(s.mode === 'endpoint' || s.mode === 'offline') && (
         <button className="text-accent hover:underline" onClick={() => refresh(true)}>

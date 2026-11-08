@@ -2,7 +2,7 @@
  * Fictional TikTok data for the public demo's sample creator. Deterministic (seeded),
  * generated relative to today so the demo never looks stale. Not real account data.
  */
-import { addDays, today } from './dates'
+import { addDays } from './dates'
 import type { DailyRow, FollowerRow, TikTokSnapshot, VideoRow, ViewerRow } from './tiktok'
 
 const DAYS = 90
@@ -40,7 +40,7 @@ const TITLES = [
   'A week of real numbers, no filters',
 ]
 
-export function buildSampleTikTok(end: string = addDays(today(), -1)): TikTokSnapshot {
+export function buildSampleTikTok(end: string): TikTokSnapshot {
   const r = rng(42)
   const start = addDays(end, -(DAYS - 1))
   const at = `${addDays(end, 1)}T12:00:00Z`
@@ -105,4 +105,3 @@ export function buildSampleTikTok(end: string = addDays(today(), -1)): TikTokSna
   }
 }
 
-export const SAMPLE_TIKTOK = buildSampleTikTok()

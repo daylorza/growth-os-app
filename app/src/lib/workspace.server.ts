@@ -2,14 +2,16 @@ import 'server-only'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { headers } from 'next/headers'
+import { today } from './dates'
 import type { PrivateData } from './private'
 import type { EndpointState } from './remote'
 
 /** Where the server finds its data. */
-export type Initial =
+export type Initial = (
   | { mode: 'local'; private: PrivateData }
   | { mode: 'endpoint'; state: EndpointState }
   | { mode: 'offline'; error: string }
+) & { today: string }
 
 /** Base URL of the NestJS API, server-side only. Unset means local mode (no endpoint, data in this browser). */
 export const apiBase = () => process.env.GROWTH_OS_API?.trim().replace(/\/$/, '') || ''
@@ -39,10 +41,11 @@ export async function apiGet<T>(path: string): Promise<T> {
 }
 
 export async function loadInitial(): Promise<Initial> {
-  if (!apiBase()) return { mode: 'local', private: readPrivate() }
+  const day = today()
+  if (!apiBase()) return { mode: 'local', private: readPrivate(), today: day }
   try {
-    return { mode: 'endpoint', state: await apiGet<EndpointState>('/api/state') }
+    return { mode: 'endpoint', state: await apiGet<EndpointState>('/api/state'), today: day }
   } catch (e) {
-    return { mode: 'offline', error: e instanceof Error ? e.message : String(e) }
+    return { mode: 'offline', error: e instanceof Error ? e.message : String(e), today: day }
   }
 }

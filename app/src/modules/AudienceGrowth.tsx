@@ -4,11 +4,11 @@ import Link from 'next/link'
 import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Badge, Button, Card, CardTitle, Checkbox, ConfirmButton, Empty, Field, Input, Mono, PageHeader, Select } from '../components/ui'
-import { addDays, shortDate, today } from '../lib/dates'
+import { addDays, shortDate } from '../lib/dates'
 import { PLATFORM, PLATFORMS } from '../lib/labels'
 import { fmt, latestSnapshot, per1k, periodChange, profileToFollow, sortedSnapshots } from '../lib/metrics'
 import { nextId } from '../lib/rules'
-import { remove, upsert, useAppState } from '../lib/store'
+import { remove, upsert, useAppState, useToday } from '../lib/store'
 import { useFollowerSnapshots, useTikTok } from '../lib/tiktokData'
 import TikTokStudio from './TikTokStudio'
 import type { FollowerSnapshot, Platform } from '../lib/types'
@@ -21,7 +21,7 @@ export default function AudienceGrowth() {
   const tk = useTikTok()
   const snaps = useFollowerSnapshots()
   const [period, setPeriod] = useState<Period>('7')
-  const to = today()
+  const to = useToday()
   const from = period === 'campaign' ? s.settings.campaignStart : addDays(to, -Number(period))
   const published = s.content.filter((c) => c.status === 'published')
 
@@ -106,7 +106,7 @@ function PlatformPanel({ platform, snaps, from, to }: { platform: Platform; snap
         <h2 className="text-sm text-muted">{PLATFORM[platform]} followers</h2>
         {latest && <Badge tone={latest.verified ? 'ok' : 'warn'}>{latest.verified ? 'Verified' : 'Unverified'}</Badge>}
       </div>
-      <div className="mt-3 text-3xl font-semibold tabular-nums xl:text-4xl">{latest ? latest.count.toLocaleString() : 'UNKNOWN'}</div>
+      <div className="mt-3 text-3xl font-semibold tabular-nums xl:text-4xl">{latest ? latest.count.toLocaleString('en-US') : 'UNKNOWN'}</div>
       <p className="mt-1 text-xs text-faint">{latest ? `As of ${shortDate(latest.date)} · ${latest.source}` : 'No snapshot recorded'}</p>
       <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-ink-600 pt-4 text-sm">
         <div>
@@ -131,7 +131,7 @@ function PlatformPanel({ platform, snaps, from, to }: { platform: Platform; snap
           <details className="mt-2 text-xs text-muted">
             <summary className="cursor-pointer hover:text-fg">View trend data</summary>
             <ul className="mt-2 space-y-1 tabular-nums">
-              {series.map((point) => <li key={point.id}>{point.date}: {point.count.toLocaleString()} · {point.verified ? 'Verified' : 'Unverified'}</li>)}
+              {series.map((point) => <li key={point.id}>{point.date}: {point.count.toLocaleString('en-US')} · {point.verified ? 'Verified' : 'Unverified'}</li>)}
             </ul>
           </details>
         </div>
@@ -158,7 +158,7 @@ function Sparkline({ points }: { points: number[] }) {
 }
 
 function SnapshotForm({ snaps }: { snaps: FollowerSnapshot[] }) {
-  const empty = { platform: 'tiktok' as Platform, date: today(), count: '', source: '', verified: false }
+  const empty = { platform: 'tiktok' as Platform, date: useToday(), count: '', source: '', verified: false }
   const [f, setF] = useState(empty)
   const valid = f.count !== '' && Number(f.count) >= 0 && f.source.trim()
   const sorted = [...snaps].sort((a, b) => b.date.localeCompare(a.date))
@@ -188,7 +188,7 @@ function SnapshotForm({ snaps }: { snaps: FollowerSnapshot[] }) {
             <li key={x.id} className="flex items-center gap-3 py-2">
               <Mono>{x.date}</Mono>
               <span className="w-14">{PLATFORM[x.platform]}</span>
-              <span className="w-16 tabular-nums">{x.count.toLocaleString()}</span>
+              <span className="w-16 tabular-nums">{x.count.toLocaleString('en-US')}</span>
               <span className="min-w-0 flex-1 truncate text-muted">{x.source}</span>
               <Badge tone={x.verified ? 'ok' : 'warn'}>{x.verified ? 'Verified' : 'Unverified'}</Badge>
               <ConfirmButton variant="ghost" size="sm" aria-label="Delete snapshot" message="Delete this snapshot?" onConfirm={() => remove('snapshots', x.id)}>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, type ReactNode } from 'react'
-import { initialView, initStore, refresh, ServerStateContext, type InitialData } from '../lib/store'
+import { initialView, initStore, refresh, ServerStateContext, ServerTodayContext, type InitialData } from '../lib/store'
 
 const POLL_MS = 30_000
 
@@ -28,5 +28,9 @@ export function WorkspaceProvider({ initial, children }: { initial: InitialData;
     }
   }, [initial.mode])
 
-  return <ServerStateContext.Provider value={view}>{children}</ServerStateContext.Provider>
+  return (
+    <ServerTodayContext.Provider value={initial.today}>
+      <ServerStateContext.Provider value={view}>{children}</ServerStateContext.Provider>
+    </ServerTodayContext.Provider>
+  )
 }

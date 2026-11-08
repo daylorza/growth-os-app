@@ -6,13 +6,14 @@ import { addDays, shortDate } from '../lib/dates'
 import { fmt } from '../lib/metrics'
 import { engagementPct, topActiveHours, viewWindow, type TikTokSnapshot } from '../lib/tiktok'
 import { dataAge } from '../lib/tiktokData'
+import { useToday } from '../lib/store'
 
 
 const pct = (v: number | null | undefined, signed = false) => (v == null ? '—' : `${signed && v > 0 ? '+' : ''}${v.toFixed(1)}%`)
 const hourLabel = (h: number) => `${h % 12 || 12}${h < 12 ? 'am' : 'pm'}`
 
 export function FreshnessNotice({ tk }: { tk: TikTokSnapshot }) {
-  const age = dataAge(tk)
+  const age = dataAge(tk, useToday())
   if (!age) return <Notice>No TikTok export imported yet. Download a four-role export from TikTok Studio and import it in Settings.</Notice>
   if (!age.stale) return null
   return (
@@ -25,7 +26,7 @@ export function FreshnessNotice({ tk }: { tk: TikTokSnapshot }) {
 
 export default function TikTokStudio({ tk }: { tk: TikTokSnapshot }) {
   const [showAll, setShowAll] = useState(false)
-  const age = dataAge(tk)
+  const age = dataAge(tk, useToday())
   const windows = [7, 14, 28].map((n) => viewWindow(tk.daily, n)).filter((w) => w != null)
   const followerAt = (date: string) => [...tk.followers].reverse().find((f) => f.date <= date)?.count
   const viewers28 = tk.viewers.slice(-28)
