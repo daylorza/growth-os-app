@@ -6,10 +6,10 @@ import { useState } from 'react'
 import { Badge, Button, Card, CardTitle, ConfirmButton, CopyButton, Empty, Field, Input, Mono, Notice, PageHeader, Select, Textarea } from '../components/ui'
 import { cx } from '../lib/cx'
 import { nowStamp, today } from '../lib/dates'
-import { CATEGORY, ENGAGEMENT_PLATFORM, NEEDS_ACTION, REPLY_STATUS } from '../lib/labels'
-import { alreadyHandled, campaignFor, fillTemplate, isRepeatReply, keywordActivationError, matchKeywords, nextId, replyApproveError, replyRiskWarnings, sameRecipient } from '../lib/rules'
+import { CATEGORY, ENGAGEMENT_PLATFORM, NEEDS_ACTION, REPLY_CHANNEL, REPLY_STATUS } from '../lib/labels'
+import { alreadyHandled, campaignFor, channelFor, earlierContact, fillTemplate, isPostLink, isRepeatReply, keywordActivationError, matchKeywords, nextId, replyApproveError, replyRiskWarnings, sameRecipient } from '../lib/rules'
 import { patch, remove, upsert, useAppState } from '../lib/store'
-import type { CommentCategory, Engagement, EngagementPlatform, KeywordRule, LeadType, ReplyStatus, Resource } from '../lib/types'
+import type { CommentCategory, Engagement, EngagementPlatform, KeywordRule, LeadType, ReplyChannel, ReplyStatus, Resource } from '../lib/types'
 
 const TABS: Record<string, { label: string; statuses: ReplyStatus[] }> = {
   todo: { label: 'Needs action', statuses: NEEDS_ACTION },
@@ -134,7 +134,7 @@ function EngagementCard({ e }: { e: Engagement }) {
   const warnings = replyRiskWarnings(e.draftReply, s.profile.creatorName).filter((w) => !(campaign && w.startsWith('Mentions a DM')))
   const repeat = !campaign && isRepeatReply(e.draftReply, s.engagements, e.id)
   const already = sameRecipient(e, s.engagements)
-  const sent = already.filter(alreadyHandled)
+  const contacted = already.filter(earlierContact)
   const locked = e.status === 'posted_by_day' || e.status === 'sent_by_agent' || e.status === 'dismissed'
   const answered = !locked && alreadyHandled(e)
   const link = /^https?:\/\/\S+$/.test(e.sourcePost.trim()) ? e.sourcePost.trim() : null
@@ -142,15 +142,22 @@ function EngagementCard({ e }: { e: Engagement }) {
   const creativeLane = (['tiktok', 'threads', 'instagram'] as const).includes(e.platform as 'tiktok')
   // A send request counts only for the text it carried: after the reply is edited and re-approved, it can be sent again.
   const sendRequested = !!e.draftReply.trim() && s.handoffs.some((h) => h.to === 'creative' && h.refs?.some((r) => r.collection === 'engagement_queue' && r.id === e.id) && h.message.includes(e.draftReply))
+  const channel = channelFor(e, s.keywords)
+  // A comment reply needs the post or comment itself; a profile link sends the agent looking, and it ends up in DMs.
+  const noTarget = channel === 'comment' && !(link && isPostLink(link))
+  const sendBlocked = sendRequested ? `Already asked ${creative}` : answered || contacted.length ? 'Already answered or dismissed for this person. Check the conversation and reply yourself.' : noTarget ? 'Add the link to the post or comment first (not the profile).' : null
   const askToSend = () => {
-    const where = [ENGAGEMENT_PLATFORM[e.platform], e.account, e.author && `@${e.author.replace(/^@/, '')}`].filter(Boolean).join(' · ')
+    const who = e.author && `@${e.author.replace(/^@/, '')}`
+    const where = [ENGAGEMENT_PLATFORM[e.platform], e.account, who].filter(Boolean).join(' · ')
+    const how = channel === 'dm' ? `Channel: direct message. Send it in your conversation with ${who || 'them'}. Do not post it as a comment.` : `Channel: comment reply. Post it as a public reply under their comment on ${link}. Do not DM them.`
+    const earlier = already.length ? ` Earlier items for this person: ${already.map((o) => `${o.id} (${REPLY_STATUS[o.status]}${o.note ? `: ${o.note}` : ''})`).join('; ')}. If any of them already covered this, do not send.` : ''
     upsert('handoffs', {
       id: nextId('H', s.handoffs),
       from: 'creator',
       to: 'creative',
       itemId: `AUDIT-${today()}`,
       type: 'question',
-      message: `Send the approved reply on ${e.id} (${where}${link ? `, ${link}` : ''}). First open your conversation with them and the comment's replies: if ${s.profile.creatorName} already messaged them this link or answered there, do not send; set ${e.id} to status dismissed and add "Not sent: already DM'd by the creator, <date>" (or "already replied") to its note instead. Otherwise send exactly this text, once:\n\n${e.draftReply}\n\nThen mark it done: PATCH /api/engagement-queue/${e.id} with status sent_by_agent (reply text unchanged) and add "Sent by the creative agent, <time>" to its note.`,
+      message: `Send the approved reply on ${e.id} (${where}${link ? `, ${link}` : ''}). ${how}\n\nFirst open your conversation with them and the comment's replies: if ${s.profile.creatorName} already messaged them this link or answered there, do not send; set ${e.id} to status dismissed and add "Not sent: already DM'd by the creator, <date>" (or "already replied") to its note instead.${earlier} Otherwise send exactly this text, once:\n\n${e.draftReply}\n\nThen mark it done: PATCH /api/engagement-queue/${e.id} with status sent_by_agent (reply text unchanged) and add "Sent by the creative agent, <time>" to its note.`,
       refs: [{ collection: 'engagement_queue', id: e.id }],
       createdAt: nowStamp(),
       acknowledged: false,
@@ -216,6 +223,15 @@ function EngagementCard({ e }: { e: Engagement }) {
           )}
         </Field>
       </div>
+      <div className="mt-3 grid gap-3 sm:grid-cols-[14rem_1fr]">
+        <Field label="Send as">
+          {(id) => <Select id={id} disabled={locked || e.status === 'approved'} options={REPLY_CHANNEL} value={channel} onChange={(c: ReplyChannel) => set({ channel: c })} />}
+        </Field>
+        <Field label="Link to the post or comment">
+          {(id) => <Input id={id} disabled={locked} value={e.sourcePost} placeholder="https://www.tiktok.com/@you/video/…" onChange={(ev) => set({ sourcePost: ev.target.value })} />}
+        </Field>
+      </div>
+      {creativeLane && e.status === 'approved' && noTarget && !sendRequested && <Notice>Comment reply without a link to the post or comment. Add it before sending via {creative}.</Notice>}
       {campaign && (
         <p className="mt-2 text-xs text-muted">
           Campaign DM: <Mono>{campaign.keyword}</Mono>{resource ? ` → ${resource.name}` : ''}
@@ -223,8 +239,8 @@ function EngagementCard({ e }: { e: Engagement }) {
       )}
       {answered && <Notice tone="danger">Already answered: {e.note}. Don't send this again.</Notice>}
       {already.length > 0 && (
-        <Notice tone={sent.length ? 'danger' : 'neutral'}>
-          {sent.length ? 'Already sent to' : 'Already in the queue for'} @{e.author.replace(/^@/, '')}: {already.map((o) => `${o.id} (${REPLY_STATUS[o.status]}${alreadyHandled(o) ? ', answered' : ''})`).join(', ')}. Don't DM them twice.
+        <Notice tone={contacted.length ? 'danger' : 'neutral'}>
+          {contacted.length ? 'Earlier contact with' : 'Already in the queue for'} @{e.author.replace(/^@/, '')}: {already.map((o) => `${o.id} (${REPLY_STATUS[o.status]}${alreadyHandled(o) ? ', answered' : ''})`).join(', ')}. Don't DM them twice.
         </Notice>
       )}
       {(warnings.length > 0 || repeat || error) && (
@@ -257,7 +273,7 @@ function EngagementCard({ e }: { e: Engagement }) {
                 </a>
               )}
               {creativeLane && (
-                <ConfirmButton size="sm" disabled={sendRequested || answered || sent.length > 0} message={`Ask ${creative} to send this exact reply on ${ENGAGEMENT_PLATFORM[e.platform]}?`} onConfirm={askToSend} title={sendRequested ? `Already asked ${creative}` : `${creative} sends it on its next run`}>
+                <ConfirmButton size="sm" disabled={!!sendBlocked} message={`Ask ${creative} to send this exact reply as a ${REPLY_CHANNEL[channel].toLowerCase()} on ${ENGAGEMENT_PLATFORM[e.platform]}?`} onConfirm={askToSend} title={sendBlocked ?? `${creative} sends it on its next run`}>
                   {sendRequested ? `Asked ${creative} to send` : `Send via ${creative}`}
                 </ConfirmButton>
               )}

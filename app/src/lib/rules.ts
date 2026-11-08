@@ -30,7 +30,17 @@ export const matchKeywords = (comment: string, rules: KeywordRule[], sourcePost 
 export const campaignFor = (e: Pick<Engagement, 'keyword' | 'sourcePost'>, rules: KeywordRule[]) =>
   rules.find((r) => r.active && /\bdm\b/i.test(r.deliveryMethod) && e.keyword.trim() && keywordMatches(e.keyword, r.keyword) && postMatches(r, e.sourcePost))
 
-const person = (s: string) => s.trim().replace(/^@/, '').toLowerCase()
+/** Every name a person goes by in an author field: each @handle, and the display name around them. "Star Trade @startech" → star trade, startech. */
+const names = (s: string) => {
+  const key = (x: string) => x.toLowerCase().replace(/[^\p{L}\p{N}_.]/gu, '')
+  const handles = [...s.matchAll(/@([\w.]+)/g)].map((m) => key(m[1]))
+  const display = key(s.replace(/@[\w.]+/g, ''))
+  return new Set([...handles, display].filter(Boolean))
+}
+const samePerson = (a: string, b: string) => {
+  const x = names(a)
+  return [...names(b)].some((n) => x.has(n))
+}
 
 /** Notes that mean the person already got an answer: the agent sent it, or found the creator already replied or DM'd. */
 const HANDLED = /sent by|already (replied|dm'?d|messaged|handled)/i
@@ -38,9 +48,25 @@ const HANDLED = /sent by|already (replied|dm'?d|messaged|handled)/i
 /** This item's person already got an answer (marked posted or sent, or a note saying so). */
 export const alreadyHandled = (o: Pick<Engagement, 'status' | 'note'>) => o.status === 'posted_by_day' || o.status === 'sent_by_agent' || HANDLED.test(o.note ?? '')
 
-/** Other queue items for the same person on the same platform: queued, approved or already answered. Dismissed items count only when their note says they were answered. */
+/** Other queue items for the same person on the same platform, matched on any @handle or display name, including dismissed ones. */
 export const sameRecipient = (e: Engagement, all: Engagement[]) =>
-  person(e.author) ? all.filter((o) => o.id !== e.id && o.platform === e.platform && person(o.author) === person(e.author) && (o.status !== 'dismissed' || alreadyHandled(o))) : []
+  names(e.author).size ? all.filter((o) => o.id !== e.id && o.platform === e.platform && samePerson(o.author, e.author)) : []
+
+/** Earlier contact that means nobody should send this person anything without checking: answered, or dismissed. */
+export const earlierContact = (o: Engagement) => alreadyHandled(o) || o.status === 'dismissed'
+
+/** How this reply goes out: what the item says, else a DM for a DM campaign item and a comment reply for anything else. */
+export const channelFor = (e: Pick<Engagement, 'channel' | 'keyword' | 'sourcePost'>, rules: KeywordRule[]) => e.channel ?? (campaignFor(e, rules) ? 'dm' : 'comment')
+
+/** A link to one post, comment or thread, not just a profile: at least two path segments (…/@me/video/1, /p/abc). */
+export const isPostLink = (url: string) => {
+  try {
+    const u = new URL(url.trim())
+    return /^https?:$/.test(u.protocol) && u.pathname.split('/').filter(Boolean).length >= 2
+  } catch {
+    return false
+  }
+}
 
 /** A campaign's starting reply for one person: {name} becomes their name or handle. */
 export const fillTemplate = (template: string, name: string) => template.replaceAll('{name}', name.replace(/^@/, '').trim() || 'there')
