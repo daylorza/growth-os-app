@@ -4,10 +4,10 @@ import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Badge, Button, Card, CardTitle, Checkbox, Field, Input, Mono, PageHeader, ProgressBar, Select, Textarea } from '../components/ui'
 import { cx } from '../lib/cx'
-import { campaignPosition, shortDate, today } from '../lib/dates'
+import { campaignPosition, shortDate } from '../lib/dates'
 import { latestSnapshot, milestoneProgress } from '../lib/metrics'
 import { nextId } from '../lib/rules'
-import { patch, remove, update, upsert, useAppState } from '../lib/store'
+import { patch, remove, update, upsert, useAppState, useToday } from '../lib/store'
 import { useFollowerSnapshots } from '../lib/tiktokData'
 import { useProfile } from '../lib/profile'
 import type { CheckIn, Owner, Task } from '../lib/types'
@@ -37,7 +37,7 @@ const EVENING = [
 
 export default function Goals() {
   const s = useAppState()
-  const t = today()
+  const t = useToday()
   const snaps = useFollowerSnapshots()
   const tiktok = latestSnapshot(snaps, 'tiktok')
   const prog = milestoneProgress(tiktok?.count, s.settings.tiktokGoal)
@@ -60,10 +60,10 @@ export default function Goals() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <CardTitle>First {s.settings.tiktokGoal.toLocaleString()} TikTok followers</CardTitle>
+          <CardTitle>First {s.settings.tiktokGoal.toLocaleString('en-US')} TikTok followers</CardTitle>
           <ProgressBar pct={prog?.pct ?? null} label="Progress to the follower goal" />
           <p className="mt-3 text-sm text-muted">
-            {prog ? `${tiktok!.count.toLocaleString()} now · ${prog.remaining.toLocaleString()} to go · ${tiktok!.verified ? 'verified' : 'unverified'}` : 'No baseline recorded yet.'}
+            {prog ? `${tiktok!.count.toLocaleString('en-US')} now · ${prog.remaining.toLocaleString('en-US')} to go · ${tiktok!.verified ? 'verified' : 'unverified'}` : 'No baseline recorded yet.'}
           </p>
           <p className="mt-2 text-xs text-faint">An ambition, not a guaranteed result. Link eligibility depends on current TikTok rules; check account settings.</p>
         </Card>
@@ -111,7 +111,7 @@ export default function Goals() {
 }
 
 function CheckInCard({ kind, fields, checkins }: { kind: CheckIn['kind']; fields: readonly (readonly [string, string])[]; checkins: CheckIn[] }) {
-  const t = today()
+  const t = useToday()
   const existing = checkins.find((c) => c.date === t && c.kind === kind)
   const id = existing?.id ?? `CI-${t}-${kind}`
   const values = existing?.fields ?? {}
@@ -130,7 +130,7 @@ function CheckInCard({ kind, fields, checkins }: { kind: CheckIn['kind']; fields
 }
 
 function TaskList({ tasks }: { tasks: Task[] }) {
-  const t = today()
+  const t = useToday()
   const p = useProfile()
   const [f, setF] = useState({ title: '', owner: 'creator' as Owner, date: t })
   const groups: [string, Task[]][] = [

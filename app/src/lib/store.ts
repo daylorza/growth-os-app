@@ -1,4 +1,5 @@
 import { createContext, useContext, useSyncExternalStore } from 'react'
+import { today } from './dates'
 import { privateWorkspace, setPrivateData, type PrivateData } from './private'
 import { diff, fetchState, fromEndpoint, send, type EndpointState } from './remote'
 import { createBlankSeed, createSeed, migrateState, type Migrations } from './seed'
@@ -19,10 +20,12 @@ const legacyKeys = () => (privateWorkspace() as { migrations?: Migrations } | un
  */
 export type SyncMode = 'local' | 'endpoint' | 'empty' | 'offline'
 
-export type InitialData =
+/** `today` is the server's date, so the first client render matches the server HTML. */
+export type InitialData = (
   | { mode: 'local'; private: PrivateData }
   | { mode: 'endpoint'; state: EndpointState }
   | { mode: 'offline'; error: string }
+) & { today: string }
 
 export interface SyncStatus {
   mode: SyncMode
@@ -78,16 +81,16 @@ function applyEndpoint(s: EndpointState) {
 export function initialView(initial: InitialData): AppState {
   if (initial.mode === 'local') {
     setPrivateData(initial.private)
-    return createSeed()
+    return createSeed(initial.today)
   }
   if (initial.mode === 'endpoint' && initial.state.initialized) {
-    const base = createBlankSeed(initial.state.profile!)
+    const base = createBlankSeed(initial.state.profile!, initial.today)
     const mapped = fromEndpoint(initial.state, base)
     setPrivateData(mapped.private)
     return mapped.state
   }
   setPrivateData({})
-  return createSeed()
+  return createSeed(initial.today)
 }
 
 /** Called once in the browser by the workspace provider. */
@@ -188,6 +191,16 @@ export const ServerStateContext = createContext<AppState | null>(null)
 export function useAppState() {
   const server = useContext(ServerStateContext)
   return useSyncExternalStore(subscribe, ensure, () => server ?? ensure())
+}
+
+/** The date the server rendered with, provided by the workspace provider for hydration. */
+export const ServerTodayContext = createContext<string | null>(null)
+const noSubscribe = () => () => {}
+
+/** Today's date: the server's during hydration, then the browser's own. Use this in render instead of today(). */
+export function useToday() {
+  const server = useContext(ServerTodayContext)
+  return useSyncExternalStore(noSubscribe, today, () => server ?? today())
 }
 
 const getStatus = () => status

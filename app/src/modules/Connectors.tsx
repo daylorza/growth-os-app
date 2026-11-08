@@ -5,7 +5,7 @@ import { Badge, Button, Card, CardTitle, ConfirmButton, Input, Notice } from '..
 import { CONNECTORS, type ConnectorDef } from '../lib/connectors'
 import { shortDate } from '../lib/dates'
 import { connectorServer, connectUrl, disconnect, fetchConnections, syncTikTok, type ServerConnection } from '../lib/oauth'
-import { update, useAppState } from '../lib/store'
+import { update, useAppState, useToday } from '../lib/store'
 import { mergeSnapshots } from '../lib/tiktok'
 import type { HandleKey } from '../lib/types'
 import { dataAge, importTikTokFiles, useTikTok, vaultSnapshot, type ImportResult } from '../lib/tiktokData'
@@ -54,7 +54,8 @@ function ConnectorRow({ c, server, connection, onConnections }: { c: ConnectorDe
   const s = useAppState()
   const tk = useTikTok()
   const url = connectUrl(c.id)
-  const age = c.id === 'tiktok' ? dataAge(tk) : null
+  const t = useToday()
+  const age = c.id === 'tiktok' ? dataAge(tk, t) : null
   const latest = [latestData(s, c.id), age?.newest ?? null].filter((d): d is string => !!d).sort().at(-1) ?? null
   const agent = c.reader ? s.profile.agents[c.reader.role].name : null
   const handles = [s.profile.handles[c.id], ...(c.extraHandles ?? []).map((h) => s.profile.handles[h.key])].filter((h): h is string => !!h?.trim())
@@ -164,7 +165,7 @@ function TikTokImport() {
   const tk = useTikTok()
   const ref = useRef<HTMLInputElement>(null)
   const [result, setResult] = useState<ImportResult | null>(null)
-  const base = vaultSnapshot(s.profile.sample)
+  const base = vaultSnapshot(s.profile.sample, useToday())
   return (
     <div className="flex flex-col gap-2">
       <FreshnessNotice tk={tk} />

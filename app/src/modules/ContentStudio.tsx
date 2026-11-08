@@ -9,7 +9,7 @@ import { CONTENT_STATUS, MODES, PILLARS, PLATFORM } from '../lib/labels'
 import { useProfile } from '../lib/profile'
 import { nextId, publishLogError, scheduleError } from '../lib/rules'
 import { blankContent } from '../lib/seed'
-import { patch, remove, upsert, useAppState } from '../lib/store'
+import { patch, remove, upsert, useAppState, useToday } from '../lib/store'
 import type { ContentItem, ContentStatus, PostMetrics, Profile } from '../lib/types'
 import { ownerName } from '../lib/profile'
 
@@ -60,6 +60,7 @@ export default function ContentStudio() {
     setOpenId(id)
   }
 
+  const t = useToday()
   const start = s.settings.campaignStart
   const gridStart = weekRange(start).start
   const days = Array.from({ length: 35 }, (_, i) => addDays(gridStart, i))
@@ -109,7 +110,7 @@ export default function ContentStudio() {
                       className={cx(
                         'group flex min-h-24 flex-col gap-1 rounded-lg border p-1.5 text-left',
                         inCampaign ? 'bg-ink-900' : 'bg-ink-800',
-                        d === today() ? 'border-accent/60' : inCampaign ? 'border-ink-600' : 'border-transparent',
+                        d === t ? 'border-accent/60' : inCampaign ? 'border-ink-600' : 'border-transparent',
                       )}
                     >
                       <div className="flex items-center justify-between">

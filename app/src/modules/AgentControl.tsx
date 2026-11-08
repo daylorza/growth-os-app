@@ -4,11 +4,11 @@ import { ArrowRight, ChartNoAxesColumnIncreasing, Sparkles } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Badge, Button, Card, CardTitle, Checkbox, CopyButton, Empty, Field, Mono, PageHeader, Select, Textarea } from '../components/ui'
 import { cx } from '../lib/cx'
-import { nowStamp, parseDate, today } from '../lib/dates'
+import { nowStamp, parseDate } from '../lib/dates'
 import { buildAgentPrompt } from '../lib/agentPrompt'
 import { ownerName, useProfile } from '../lib/profile'
 import { isOverdue, nextId } from '../lib/rules'
-import { patch, upsert, useAppState } from '../lib/store'
+import { patch, upsert, useAppState, useToday } from '../lib/store'
 import type { Handoff, Owner, Profile } from '../lib/types'
 
 const ICONS = { analyst: <ChartNoAxesColumnIncreasing size={20} />, creative: <Sparkles size={20} /> }
@@ -49,7 +49,7 @@ const handoffText = (h: Handoff, p: Profile) => `[${h.id}] ${ownerName(p, h.from
 export default function AgentControl() {
   const s = useAppState()
   const p = useProfile()
-  const dow = parseDate(today()).getDay()
+  const dow = parseDate(useToday()).getDay()
   const d = duties(p)
   return (
     <>
@@ -116,7 +116,7 @@ function PasteAnalystReply() {
   const s = useAppState()
   const p = useProfile()
   const [text, setText] = useState('')
-  const itemId = `AUDIT-${today()}`
+  const itemId = `AUDIT-${useToday()}`
   return (
     <Card className="mt-4">
       <CardTitle>Paste {p.agents.analyst.name}'s reply</CardTitle>
@@ -141,13 +141,14 @@ function PasteAnalystReply() {
 function HandoffLog() {
   const s = useAppState()
   const p = useProfile()
+  const audit = `AUDIT-${useToday()}`
   const empty = { from: 'analyst' as Owner, to: 'creative' as Owner, itemId: '', message: '' }
   const [f, setF] = useState(empty)
   const OWNERS = p.owners
   const itemOptions: Record<string, string> = {
     '': 'Choose an item',
     ...Object.fromEntries(s.content.map((c) => [c.id, `${c.id} · ${c.title || 'Untitled'}`])),
-    [`AUDIT-${today()}`]: `AUDIT-${today()} · daily audit`,
+    [audit]: `${audit} · daily audit`,
   }
   const sorted = [...s.handoffs].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   const open = sorted.filter((h) => !h.acknowledged)

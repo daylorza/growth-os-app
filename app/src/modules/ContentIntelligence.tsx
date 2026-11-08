@@ -2,11 +2,11 @@
 
 import { Plus, Trash2 } from 'lucide-react'
 import { Badge, Button, Card, CardTitle, ConfirmButton, CopyButton, Empty, Field, Input, Mono, PageHeader, Select, Textarea } from '../components/ui'
-import { addDays, today, weekRange } from '../lib/dates'
+import { addDays, weekRange } from '../lib/dates'
 import { EXPERIMENT_STATUS, PILLARS, PLATFORM, PLATFORMS, UNKNOWN } from '../lib/labels'
 import { fmt, per1k, periodChange, pillarMix } from '../lib/metrics'
 import { nextId } from '../lib/rules'
-import { patch, remove, upsert, useAppState } from '../lib/store'
+import { patch, remove, upsert, useAppState, useToday } from '../lib/store'
 import { useFollowerSnapshots } from '../lib/tiktokData'
 import type { AppState, AudienceReport, Experiment, FollowerSnapshot } from '../lib/types'
 
@@ -33,7 +33,7 @@ const REPORT_FIELDS: [keyof AudienceReport, string][] = [
   ['limitations', 'Uncertainty and sample limits'],
 ]
 
-function weeklyReport(s: AppState, snaps: FollowerSnapshot[], on: string = today()) {
+function weeklyReport(s: AppState, snaps: FollowerSnapshot[], on: string) {
   const { start, end } = weekRange(on)
   const lines: string[] = [`# Weekly report · ${start} to ${end}`, '']
   // Baseline = latest TikTok count on or before the campaign start, else the earliest one recorded.
@@ -73,7 +73,7 @@ function weeklyReport(s: AppState, snaps: FollowerSnapshot[], on: string = today
 export default function ContentIntelligence() {
   const s = useAppState()
   const snaps = useFollowerSnapshots()
-  const report = weeklyReport(s, snaps)
+  const report = weeklyReport(s, snaps, useToday())
   const mix = pillarMix(s.content)
   const total = mix.reduce((n, m) => n + m.count, 0)
   return (

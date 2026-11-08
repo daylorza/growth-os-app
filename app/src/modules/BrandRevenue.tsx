@@ -37,7 +37,7 @@ export default function BrandRevenue() {
         <Stat label="Qualified inquiries" value={qualified} />
         <Stat label="Discovery calls" value={calls} />
         <Stat label="Verified traffic" value={<span className="text-2xl text-muted">Unavailable</span>} note="No analytics connected" />
-        <Stat label="Attributed revenue" value={evidenced.length ? `$${revenue.toLocaleString()}` : <span className="text-2xl text-muted">None yet</span>} note="Counted only with evidence" />
+        <Stat label="Attributed revenue" value={evidenced.length ? `$${revenue.toLocaleString('en-US')}` : <span className="text-2xl text-muted">None yet</span>} note="Counted only with evidence" />
       </div>
 
       <div className="mt-4 grid gap-3 md:grid-cols-3 xl:grid-cols-6">

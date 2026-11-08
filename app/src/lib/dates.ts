@@ -32,9 +32,9 @@ export function weekRange(on: string = today()) {
   return { start, end: addDays(start, 6) }
 }
 
-export const weekdayName = (s: string) => parseDate(s).toLocaleDateString(undefined, { weekday: 'long' })
+export const weekdayName = (s: string) => parseDate(s).toLocaleDateString('en-US', { weekday: 'long' })
 
 export const shortDate = (s: string) =>
-  s ? parseDate(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '—'
+  s ? parseDate(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'
 
 export const nowStamp = () => new Date().toISOString()

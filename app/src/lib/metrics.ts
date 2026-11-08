@@ -16,7 +16,7 @@ export const profileToFollow = (
 ): number | null => (sameCohort && follows != null && visits ? (follows / visits) * 100 : null)
 
 export const fmt = (v: number | null | undefined, digits = 1) =>
-  v == null || Number.isNaN(v) ? 'Unavailable' : v.toLocaleString(undefined, { maximumFractionDigits: digits })
+  v == null || Number.isNaN(v) ? 'Unavailable' : v.toLocaleString('en-US', { maximumFractionDigits: digits })
 
 export function sortedSnapshots(snaps: FollowerSnapshot[], platform: Platform) {
   return snaps.filter((s) => s.platform === platform).sort((a, b) => a.date.localeCompare(b.date))
