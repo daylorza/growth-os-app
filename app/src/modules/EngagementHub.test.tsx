@@ -86,6 +86,36 @@ describe('engagement links and sending through the creative agent', () => {
     expect(screen.getByRole('button', { name: `Send via ${creative}` })).toHaveProperty('disabled', false)
   })
 
+  it('blocks sending after earlier contact with the same person, and names the channel in the request', () => {
+    const st = getState()
+    const dismissed = { id: 'E-30', platform: 'tiktok' as const, sourcePost: '', author: 'Fan @fan', comment: 'Hi', keyword: '', category: 'question' as const, draftReply: '', status: 'dismissed' as const, leadId: '', note: 'Spam check', createdAt: '2026-01-01', updatedAt: '2026-01-01' }
+    resetAll({ ...st, engagements: [...st.engagements, dismissed] })
+    render(<EngagementHub />)
+    fireEvent.click(screen.getByRole('button', { name: /Approved to post/ }))
+    const creative = getState().profile.agents.creative.name
+    expect(screen.getByRole('button', { name: `Send via ${creative}` })).toHaveProperty('disabled', true)
+    cleanup()
+    resetAll({ ...st })
+    render(<EngagementHub />)
+    fireEvent.click(screen.getByRole('button', { name: /Approved to post/ }))
+    fireEvent.click(screen.getByRole('button', { name: `Send via ${creative}` }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
+    const h = getState().handoffs.at(-1)!
+    expect(h.message).toContain(`Channel: comment reply. Post it as a public reply under their comment on ${URL_}. Do not DM them.`)
+  })
+
+  it('will not ask for a comment reply when the item only links a profile', () => {
+    const st = getState()
+    resetAll({ ...st, engagements: st.engagements.map((x) => (x.id === 'E-9' ? { ...x, sourcePost: 'https://www.tiktok.com/@me' } : x)) })
+    render(<EngagementHub />)
+    fireEvent.click(screen.getByRole('button', { name: /Approved to post/ }))
+    const creative = getState().profile.agents.creative.name
+    expect(screen.getByRole('button', { name: `Send via ${creative}` })).toHaveProperty('disabled', true)
+    expect(screen.getByText(/without a link to the post or comment/)).toBeTruthy()
+    fireEvent.change(screen.getAllByLabelText('Link to the post or comment')[0], { target: { value: URL_ } })
+    expect(screen.getByRole('button', { name: `Send via ${creative}` })).toHaveProperty('disabled', false)
+  })
+
   it('shows an item the creative agent sent under Done, locked, with the agent named', () => {
     const st = getState()
     resetAll({ ...st, engagements: st.engagements.map((x) => (x.id === 'E-9' ? { ...x, status: 'sent_by_agent' as const, note: 'Sent by the creative agent, 2026-01-01' } : x)) })

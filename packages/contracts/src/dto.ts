@@ -39,6 +39,7 @@ import {
   OWNERS,
   PILLARS,
   PLATFORMS,
+  REPLY_CHANNELS,
   REPLY_STATUSES,
   SNAPSHOT_SOURCE_TYPES,
   type AudienceSnapshot,
@@ -229,6 +230,7 @@ export class CreateEngagementDto {
   @OptionalText() keyword?: string
   @IsOptional() @IsIn(COMMENT_CATEGORIES) category?: Engagement['category']
   @OptionalText() draftReply?: string
+  @IsOptional() @IsIn(REPLY_CHANNELS) channel?: Engagement['channel']
   @IsOptional() @IsIn(REPLY_STATUSES) status?: Engagement['status']
   @OptionalText() leadId?: string
   @OptionalText() note?: string

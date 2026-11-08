@@ -420,6 +420,13 @@
             "type": "string",
             "maxLength": 5000
           },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "comment",
+              "dm"
+            ]
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -1477,6 +1484,13 @@
           "draftReply": {
             "type": "string",
             "maxLength": 5000
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "comment",
+              "dm"
+            ]
           },
           "status": {
             "type": "string",

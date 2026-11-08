@@ -9,6 +9,7 @@ import type {
   Pillar,
   EngagementPlatform,
   Platform,
+  ReplyChannel,
   ReplyStatus,
 } from './types'
 
@@ -64,6 +65,8 @@ export const REPLY_STATUS: Record<ReplyStatus, string> = {
   escalated: 'Escalated to you',
   dismissed: 'Dismissed',
 }
+
+export const REPLY_CHANNEL: Record<ReplyChannel, string> = { comment: 'Comment reply', dm: 'Direct message' }
 
 export const EXPERIMENT_STATUS: Record<ExperimentStatus, string> = {
   planned: 'Planned',

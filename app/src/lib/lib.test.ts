@@ -21,6 +21,9 @@ import {
   replyApproveError,
   replyRiskWarnings,
   sameRecipient,
+  channelFor,
+  earlierContact,
+  isPostLink,
 } from './rules'
 import { createSampleSeed, migrateState } from './seed'
 import type { Engagement, FollowerSnapshot } from './types'
@@ -98,13 +101,36 @@ describe('keyword matching', () => {
     expect(campaignFor({ ...a, sourcePost: 'https://www.tiktok.com/@me/video/222' }, [r])).toBeUndefined()
     expect(campaignFor(a, [{ ...r, active: false }])).toBeUndefined()
     expect(campaignFor(a, [{ ...r, deliveryMethod: 'Link in bio' }])).toBeUndefined()
-    expect(sameRecipient(a, [a, b, c]).map((x) => x.id)).toEqual(['E-2'])
+    expect(sameRecipient(a, [a, b, c]).map((x) => x.id)).toEqual(['E-2', 'E-3'])
+    expect(earlierContact(c)).toBe(true)
+    expect(earlierContact(a)).toBe(false)
     const d: Engagement = { ...base, id: 'E-4', author: 'SAM', status: 'dismissed', note: "Already DM'd by the creator, 2026-11-05" }
     expect(sameRecipient(a, [a, d]).map((x) => x.id)).toEqual(['E-4'])
     expect(alreadyHandled(d)).toBe(true)
     expect(alreadyHandled({ status: 'new', note: 'Already replied by the creator, 2026-11-05' })).toBe(true)
     expect(alreadyHandled({ status: 'drafted', note: '' })).toBe(false)
     expect(sameRecipient({ ...a, author: '' }, [a, b])).toEqual([])
+  })
+  it('matches a person on any @handle or display name in the author field', () => {
+    const base = { platform: 'tiktok' as const, comment: 'x', category: 'question' as const, draftReply: '', leadId: '', note: '', createdAt: '', updatedAt: '', keyword: '', sourcePost: '', status: 'new' as const }
+    const a: Engagement = { ...base, id: 'E-1', author: 'Star Trade @startech' }
+    const b: Engagement = { ...base, id: 'E-2', author: 'StarTrade' }
+    const c: Engagement = { ...base, id: 'E-3', author: '@startech' }
+    const d: Engagement = { ...base, id: 'E-4', author: 'someone else' }
+    expect(sameRecipient(b, [a, b, c, d]).map((x) => x.id)).toEqual(['E-1'])
+    expect(sameRecipient(c, [a, b, c, d]).map((x) => x.id)).toEqual(['E-1'])
+    expect(sameRecipient({ ...a, platform: 'x' }, [b, c])).toEqual([])
+  })
+  it('sends DM campaign items as a DM and everything else as a comment reply, unless the item says otherwise', () => {
+    const r = { ...createSampleSeed().keywords[0], keyword: 'AGENT', active: true, deliveryMethod: 'TikTok DM', postUrls: [] }
+    expect(channelFor({ keyword: 'agent', sourcePost: '' }, [r])).toBe('dm')
+    expect(channelFor({ keyword: '', sourcePost: '' }, [r])).toBe('comment')
+    expect(channelFor({ keyword: 'agent', sourcePost: '', channel: 'comment' }, [r])).toBe('comment')
+    expect(isPostLink('https://www.tiktok.com/@me/video/1')).toBe(true)
+    expect(isPostLink('https://www.instagram.com/p/abc')).toBe(true)
+    expect(isPostLink('https://www.tiktok.com/@me')).toBe(false)
+    expect(isPostLink('https://www.tiktok.com/@me/')).toBe(false)
+    expect(isPostLink('not a link')).toBe(false)
   })
   it('fills {name} in a campaign reply', () => {
     expect(fillTemplate('Hey {name}! Here it is.', '@sam')).toBe('Hey sam! Here it is.')
