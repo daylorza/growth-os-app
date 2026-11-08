@@ -66,6 +66,7 @@ export type CommentCategory =
   | 'spam'
   | 'sensitive'
 
+export type ReplyChannel = 'comment' | 'dm'
 export type ReplyStatus = 'new' | 'drafted' | 'approved' | 'posted_by_day' | 'sent_by_agent' | 'escalated' | 'dismissed'
 
 export interface Engagement {
@@ -79,6 +80,8 @@ export interface Engagement {
   keyword: string
   category: CommentCategory
   draftReply: string
+  /** Unset on older items: a DM campaign item is a DM, anything else a comment reply. */
+  channel?: ReplyChannel
   status: ReplyStatus
   leadId: string
   note: string

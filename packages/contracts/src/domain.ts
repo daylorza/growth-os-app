@@ -90,6 +90,9 @@ export interface ContentItem extends BaseDoc {
 export const COMMENT_CATEGORIES = ['question', 'technical', 'appreciation', 'criticism', 'client_inquiry', 'collaboration', 'spam', 'sensitive'] as const
 export const REPLY_STATUSES = ['new', 'drafted', 'approved', 'posted_by_day', 'sent_by_agent', 'escalated', 'dismissed'] as const
 export type ReplyStatus = (typeof REPLY_STATUSES)[number]
+/** How a reply is delivered: publicly under the comment, or as a direct message. */
+export const REPLY_CHANNELS = ['comment', 'dm'] as const
+export type ReplyChannel = (typeof REPLY_CHANNELS)[number]
 
 export interface Engagement extends BaseDoc {
   platform: EngagementPlatform
@@ -101,6 +104,8 @@ export interface Engagement extends BaseDoc {
   keyword: string
   category: (typeof COMMENT_CATEGORIES)[number]
   draftReply: string
+  /** Unset on older items: a DM campaign item is a DM, anything else a comment reply. */
+  channel?: ReplyChannel
   status: ReplyStatus
   leadId: string
   note: string
