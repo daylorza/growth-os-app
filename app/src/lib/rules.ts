@@ -35,8 +35,8 @@ const person = (s: string) => s.trim().replace(/^@/, '').toLowerCase()
 /** Notes that mean the person already got an answer: the agent sent it, or found the creator already replied or DM'd. */
 const HANDLED = /sent by|already (replied|dm'?d|messaged|handled)/i
 
-/** This item's person already got an answer (marked posted, or a note saying so). */
-export const alreadyHandled = (o: Pick<Engagement, 'status' | 'note'>) => o.status === 'posted_by_day' || HANDLED.test(o.note ?? '')
+/** This item's person already got an answer (marked posted or sent, or a note saying so). */
+export const alreadyHandled = (o: Pick<Engagement, 'status' | 'note'>) => o.status === 'posted_by_day' || o.status === 'sent_by_agent' || HANDLED.test(o.note ?? '')
 
 /** Other queue items for the same person on the same platform: queued, approved or already answered. Dismissed items count only when their note says they were answered. */
 export const sameRecipient = (e: Engagement, all: Engagement[]) =>

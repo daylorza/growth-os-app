@@ -97,6 +97,26 @@ describe('draft-only', () => {
     expect((await creative.patch(`/api/engagement-queue/${t.body.id}`, { status: 'posted_by_day' })).status).toBe(403)
   })
 
+  it('the creative agent marks an approved reply sent only after the creator asked it to send that exact text', async () => {
+    const day = as(app, basic)
+    const creative = as(app, bearer('creative'))
+    const { body: e } = await creative.post('/api/engagement-queue', { platform: 'tiktok', author: 'fan', comment: 'How?', draftReply: 'Here is how.' })
+    const sent = (id = e.id, extra = {}) => creative.patch(`/api/engagement-queue/${id}`, { status: 'sent_by_agent', ...extra })
+    expect((await sent()).status).toBe(403)
+    expect((await day.patch(`/api/engagement-queue/${e.id}`, { status: 'approved' })).status).toBe(200)
+    expect((await sent()).status).toBe(403)
+    const ask = (text: string) => day.post('/api/handoffs', { contentItemId: 'AUDIT-2026-01-01', from: 'creator', to: 'creative', type: 'question', body: `Send exactly this text, once:\n\n${text}`, refs: [{ collection: 'engagement_queue', id: e.id }] })
+    expect((await ask('An older reply.')).status).toBe(201)
+    expect((await sent()).status).toBe(403)
+    expect((await ask('Here is how.')).status).toBe(201)
+    expect((await as(app, bearer('analyst')).patch(`/api/engagement-queue/${e.id}`, { status: 'sent_by_agent' })).status).toBe(403)
+    expect((await day.patch(`/api/engagement-queue/${e.id}`, { status: 'sent_by_agent' })).status).toBe(403)
+    expect((await sent(e.id, { draftReply: 'Something else.' })).status).toBe(400)
+    const ok = await sent(e.id, { note: 'Sent by the creative agent, 2026-01-01 10:00' })
+    expect(ok.status).toBe(200)
+    expect(ok.body).toMatchObject({ status: 'sent_by_agent', draftReply: 'Here is how.' })
+  })
+
   it('agent drafts stay drafts until the creator decides', async () => {
     const id = await contentItem(app)
     const creative = as(app, bearer('creative'))

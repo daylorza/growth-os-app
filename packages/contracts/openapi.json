@@ -427,6 +427,7 @@
               "drafted",
               "approved",
               "posted_by_day",
+              "sent_by_agent",
               "escalated",
               "dismissed"
             ]
@@ -1484,6 +1485,7 @@
               "drafted",
               "approved",
               "posted_by_day",
+              "sent_by_agent",
               "escalated",
               "dismissed"
             ]

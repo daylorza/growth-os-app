@@ -66,7 +66,7 @@ export type CommentCategory =
   | 'spam'
   | 'sensitive'
 
-export type ReplyStatus = 'new' | 'drafted' | 'approved' | 'posted_by_day' | 'escalated' | 'dismissed'
+export type ReplyStatus = 'new' | 'drafted' | 'approved' | 'posted_by_day' | 'sent_by_agent' | 'escalated' | 'dismissed'
 
 export interface Engagement {
   id: string
