@@ -86,6 +86,17 @@ describe('engagement links and sending through the creative agent', () => {
     expect(screen.getByRole('button', { name: `Send via ${creative}` })).toHaveProperty('disabled', false)
   })
 
+  it('shows an item the creative agent sent under Done, locked, with the agent named', () => {
+    const st = getState()
+    resetAll({ ...st, engagements: st.engagements.map((x) => (x.id === 'E-9' ? { ...x, status: 'sent_by_agent' as const, note: 'Sent by the creative agent, 2026-01-01' } : x)) })
+    render(<EngagementHub />)
+    expect(screen.getByRole('button', { name: /Approved to post/ }).textContent).toContain('1')
+    fireEvent.click(screen.getByRole('button', { name: /Done/ }))
+    expect(screen.getByText(`Sent by ${st.profile.agents.creative.name}`)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Manually replied' })).toBeNull()
+    expect(screen.queryByText(/Already answered/)).toBeNull()
+  })
+
   it('Manually replied marks an open item done and keeps a note, without approving it first', () => {
     const st = getState()
     resetAll({ ...st, engagements: [{ id: 'E-20', platform: 'tiktok', sourcePost: URL_, author: 'fan', comment: 'Love it', keyword: '', category: 'appreciation', draftReply: '', status: 'new', leadId: '', note: '', createdAt: '2026-01-01', updatedAt: '2026-01-01' }] })

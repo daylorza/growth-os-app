@@ -60,6 +60,7 @@ export const REPLY_STATUS: Record<ReplyStatus, string> = {
   drafted: 'Draft ready',
   approved: 'Approved — ready to send',
   posted_by_day: 'Posted by you',
+  sent_by_agent: 'Sent by the creative agent',
   escalated: 'Escalated to you',
   dismissed: 'Dismissed',
 }

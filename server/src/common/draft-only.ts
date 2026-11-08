@@ -28,6 +28,11 @@ export function checkEngagement(actor: Actor, prev: Engagement | null, next: Eng
     if (!next.draftReply.trim()) throw new RuleViolation('Write a draft reply first.')
   }
   if (next.status === 'posted_by_day') creatorOnly(actor, 'log a reply as posted (the creator posts it herself)')
+  if (next.status === 'sent_by_agent') {
+    if (actor.role !== 'creative') throw new RuleViolation('Only the creative agent marks a reply as sent by it.', 'forbidden')
+    if (prev?.status !== 'approved') throw new RuleViolation('Only a reply the creator approved can be marked sent.')
+    if (next.draftReply !== prev.draftReply) throw new RuleViolation('Mark the approved text as sent without changing it.')
+  }
 }
 
 export function checkLead(actor: Actor, prev: Lead | null, next: Lead) {

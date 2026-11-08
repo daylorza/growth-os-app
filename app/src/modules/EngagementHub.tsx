@@ -14,7 +14,7 @@ import type { CommentCategory, Engagement, EngagementPlatform, KeywordRule, Lead
 const TABS: Record<string, { label: string; statuses: ReplyStatus[] }> = {
   todo: { label: 'Needs action', statuses: NEEDS_ACTION },
   approved: { label: 'Approved to post', statuses: ['approved'] },
-  done: { label: 'Done', statuses: ['posted_by_day', 'dismissed'] },
+  done: { label: 'Done', statuses: ['posted_by_day', 'sent_by_agent', 'dismissed'] },
 }
 
 export default function EngagementHub() {
@@ -135,8 +135,8 @@ function EngagementCard({ e }: { e: Engagement }) {
   const repeat = !campaign && isRepeatReply(e.draftReply, s.engagements, e.id)
   const already = sameRecipient(e, s.engagements)
   const sent = already.filter(alreadyHandled)
-  const answered = e.status !== 'posted_by_day' && alreadyHandled(e)
-  const locked = e.status === 'posted_by_day' || e.status === 'dismissed'
+  const locked = e.status === 'posted_by_day' || e.status === 'sent_by_agent' || e.status === 'dismissed'
+  const answered = !locked && alreadyHandled(e)
   const link = /^https?:\/\/\S+$/.test(e.sourcePost.trim()) ? e.sourcePost.trim() : null
   const creative = s.profile.agents.creative.name
   const creativeLane = (['tiktok', 'threads', 'instagram'] as const).includes(e.platform as 'tiktok')
@@ -150,7 +150,7 @@ function EngagementCard({ e }: { e: Engagement }) {
       to: 'creative',
       itemId: `AUDIT-${today()}`,
       type: 'question',
-      message: `Send the approved reply on ${e.id} (${where}${link ? `, ${link}` : ''}). First open your conversation with them and the comment's replies: if ${s.profile.creatorName} already messaged them this link or answered there, do not send; add "Not sent: already DM'd by the creator, <date>" (or "already replied") to the note of ${e.id} instead. Otherwise send exactly this text, once:\n\n${e.draftReply}\n\nThen add "Sent by the creative agent, <time>" to the note of ${e.id}. ${s.profile.creatorName} marks it posted.`,
+      message: `Send the approved reply on ${e.id} (${where}${link ? `, ${link}` : ''}). First open your conversation with them and the comment's replies: if ${s.profile.creatorName} already messaged them this link or answered there, do not send; set ${e.id} to status dismissed and add "Not sent: already DM'd by the creator, <date>" (or "already replied") to its note instead. Otherwise send exactly this text, once:\n\n${e.draftReply}\n\nThen mark it done: PATCH /api/engagement-queue/${e.id} with status sent_by_agent (reply text unchanged) and add "Sent by the creative agent, <time>" to its note.`,
       refs: [{ collection: 'engagement_queue', id: e.id }],
       createdAt: nowStamp(),
       acknowledged: false,
@@ -188,7 +188,7 @@ function EngagementCard({ e }: { e: Engagement }) {
           e.sourcePost && <span className="truncate text-faint">on {e.sourcePost}</span>
         )}
         {e.keyword && <Badge tone="accent">{e.keyword}</Badge>}
-        <span className="ml-auto"><Badge tone={e.status === 'escalated' ? 'danger' : e.status === 'approved' ? 'ok' : 'neutral'}>{REPLY_STATUS[e.status]}</Badge></span>
+        <span className="ml-auto"><Badge tone={e.status === 'escalated' ? 'danger' : e.status === 'approved' || e.status === 'sent_by_agent' ? 'ok' : 'neutral'}>{e.status === 'sent_by_agent' ? `Sent by ${creative}` : REPLY_STATUS[e.status]}</Badge></span>
       </header>
       <p className="mt-3 text-sm">“{e.comment}”</p>
       {e.note && <p className="mt-1 text-xs text-muted">Note: {e.note}</p>}

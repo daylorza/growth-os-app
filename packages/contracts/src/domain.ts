@@ -88,7 +88,7 @@ export interface ContentItem extends BaseDoc {
 }
 
 export const COMMENT_CATEGORIES = ['question', 'technical', 'appreciation', 'criticism', 'client_inquiry', 'collaboration', 'spam', 'sensitive'] as const
-export const REPLY_STATUSES = ['new', 'drafted', 'approved', 'posted_by_day', 'escalated', 'dismissed'] as const
+export const REPLY_STATUSES = ['new', 'drafted', 'approved', 'posted_by_day', 'sent_by_agent', 'escalated', 'dismissed'] as const
 export type ReplyStatus = (typeof REPLY_STATUSES)[number]
 
 export interface Engagement extends BaseDoc {
