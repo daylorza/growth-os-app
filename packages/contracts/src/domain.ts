@@ -104,6 +104,8 @@ export interface PublishTarget {
   error: string
   /** Read from Buffer once the version is sent. Unset until then. */
   metrics?: TargetMetrics
+  /** Set by the creator when retrying a failed version: once Buffer's post is deleted, it returns to draft. Only while cancelled. */
+  retry?: boolean
 }
 
 export interface ContentItem extends BaseDoc {

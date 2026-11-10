@@ -95,11 +95,18 @@ export class ContentService extends CollectionService<ContentItem> {
 
 /**
  * Platform versions sent without every field get the blank defaults, so rules compare like with like.
- * Buffer's metrics are kept when a version is sent back without them.
+ * Buffer's metrics, and a pending retry on a still-cancelled version, are kept when a version is sent back without them.
  */
 const withTargetDefaults = (input: Partial<ContentItem>, prev: ContentItem | null): Partial<ContentItem> =>
   input.targets
-    ? { ...input, targets: input.targets.map((t) => { const p = prev?.targets?.find((x) => x.platform === t.platform); return { ...blankTarget(t.platform), ...(p?.metrics && { metrics: p.metrics }), ...t } }) }
+    ? {
+        ...input,
+        targets: input.targets.map((t) => {
+          const p = prev?.targets?.find((x) => x.platform === t.platform)
+          const keepRetry = p?.retry && t.retry === undefined && (t.status ?? p.status) === 'cancelled'
+          return { ...blankTarget(t.platform), ...(p?.metrics && { metrics: p.metrics }), ...(keepRetry && { retry: true }), ...t }
+        }),
+      }
     : input
 
 /**

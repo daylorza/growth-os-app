@@ -86,6 +86,27 @@ describe('platform versions published through Buffer', () => {
     expect((await setTargets(day(), id, [{ ...t, status: 'draft', bufferPostId: '' }])).status).toBe(200)
   })
 
+  it('retry: only the creator retries, only a failed version, and the pending retry survives an agent save until Buffer lets go', async () => {
+    const id = await approvedItem('threads', 'x')
+    await approve(id, 'threads')
+    const [t, x] = await targets(id)
+    await setTargets(day(), id, [{ ...t, status: 'scheduled', bufferPostId: 'b-r' }, x])
+    const failed = { ...t, status: 'failed', bufferPostId: 'b-r', error: 'Channel disconnected' }
+    await setTargets(day(), id, [failed, x])
+    const retrying = { ...failed, status: 'cancelled', retry: true, error: '' }
+    const creative = as(app, bearer('creative'))
+    expect((await setTargets(creative, id, [retrying, x])).status).toBe(403)
+    expect((await setTargets(day(), id, [{ ...failed, retry: true }, x])).body.message).toMatch(/Only a cancelled/)
+    expect((await setTargets(day(), id, [retrying, x])).status).toBe(200)
+    const { retry: _r, ...withoutRetry } = retrying
+    expect((await setTargets(creative, id, [withoutRetry, { ...x, caption: 'agent X caption' }])).status).toBe(200)
+    expect((await targets(id))[0]).toMatchObject({ status: 'cancelled', retry: true })
+    const back = await setTargets(day(), id, [{ ...retrying, status: 'draft', bufferPostId: '', retry: false }, { ...x, caption: 'agent X caption' }])
+    expect(back.status).toBe(200)
+    expect(back.body.targets[0]).toMatchObject({ status: 'draft', bufferPostId: '', retry: false })
+    expect((await setTargets(day(), id, [{ ...back.body.targets[0], status: 'cancelled', retry: true }, back.body.targets[1]])).body.message).toMatch(/cannot become cancelled|Only a failed/)
+  })
+
   it('the item is published once every version is live; a failed one keeps it open; a live one never changes', async () => {
     const id = await approvedItem('threads', 'x')
     await approve(id, 'threads')

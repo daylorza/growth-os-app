@@ -91,7 +91,7 @@ function TargetRow({ item, t, who, onChange, onRemove }: { item: ContentItem; t:
     <div className="grid gap-3 rounded-lg border border-ink-700 p-3" data-testid={`target-${t.platform}`}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-medium">{name}</span>
-        <Badge tone={TARGET_TONE[t.status]}>{TARGET_STATUS[t.status]}</Badge>
+        {t.retry && t.status === 'cancelled' ? <Badge tone="accent">Retrying</Badge> : <Badge tone={TARGET_TONE[t.status]}>{TARGET_STATUS[t.status]}</Badge>}
         {t.scheduledAt && t.status !== 'draft' && <span className="text-xs text-muted">{shortDateTime(t.scheduledAt)}</span>}
         {removable && (
           <Button size="sm" variant="ghost" className="ml-auto" aria-label={`Remove the ${name} version`} onClick={onRemove}>
@@ -132,14 +132,22 @@ function TargetRow({ item, t, who, onChange, onRemove }: { item: ContentItem; t:
             Cancel
           </ConfirmButton>
         )}
-        {(t.status === 'failed' || t.status === 'cancelled') && !t.bufferPostId && (
+        {t.status === 'failed' && (
+          <Button size="sm" onClick={() => onChange(t.bufferPostId ? { status: 'cancelled', retry: true, error: '' } : { status: 'draft', error: '' })}>
+            Retry
+          </Button>
+        )}
+        {t.status === 'cancelled' && !t.bufferPostId && (
           <Button size="sm" onClick={() => onChange({ status: 'draft', error: '' })}>
             Back to draft
           </Button>
         )}
       </div>
       {t.status === 'approved' && <p className="text-xs text-faint">The Buffer connector picks this up within 5 minutes.</p>}
-      {t.status === 'cancelled' && t.bufferPostId && <p className="text-xs text-faint">Removing it from Buffer within 5 minutes.</p>}
+      {t.status === 'failed' && t.bufferPostId && <p className="text-xs text-faint">Retry removes the failed post from Buffer and returns this version to draft, so you can pick a new time and approve it again.</p>}
+      {t.status === 'cancelled' && t.bufferPostId && (
+        <p className="text-xs text-faint">{t.retry ? 'Removing the failed post from Buffer within 5 minutes, then this version returns to draft.' : 'Removing it from Buffer within 5 minutes.'}</p>
+      )}
     </div>
   )
 }
