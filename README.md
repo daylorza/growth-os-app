@@ -1,6 +1,6 @@
 # Growth OS
 
-A draft-only growth dashboard for creators on TikTok, X and Threads. Plan a 30-day content calendar, draft replies to comments, track real analytics from platform exports, and coordinate two AI agents: an analyst and a creative. Nothing in the app posts, publishes or sends. You approve and publish everything yourself.
+A growth dashboard for creators on TikTok, X and Threads. Plan a 30-day content calendar, draft replies to comments, track real analytics from platform exports, and coordinate two AI agents: an analyst and a creative. Nothing goes out without your approval: approve a platform version and Buffer publishes it at the time you set, or publish it yourself. The app never replies, likes, follows or messages.
 
 ![Overview: mission control for a fictional sample creator](docs/screenshots/overview.png)
 
@@ -23,7 +23,7 @@ Requires Node 22.18+ and [pnpm](https://pnpm.io). Without an endpoint the dashbo
 |---|---|
 | Overview | Followers, growth target, weekly cadence, campaign week, today's priorities, what's waiting on you |
 | Audience Growth | TikTok, X and Threads follower history, 7/14/28-day views and engagement, audience signals, per-video table |
-| Content Studio | 30-day calendar and creative briefs: three hooks, script, visuals, caption, CTA, native X version |
+| Content Studio | 30-day calendar and creative briefs: three hooks, script, visuals, caption, CTA, native X version. Per-platform captions and publish times for TikTok, Threads and X, approved one by one and published through Buffer, with a queue of what is on its way |
 | Engagement Hub | One queue for everyone who needs an answer (the agents add X, TikTok, Threads and Instagram comments and messages as drafts, with the account they came in on), a Resources list (what you give out), keyword campaigns tied to a resource and to specific posts (`{name}` fills in per person), and reply drafts that warn on prices, DM promises and repeats. The nav shows how many need action |
 | Agent Control | Copyable system prompts for the analyst and creative agents, handoff chain, weekly loop, handoff log |
 | Content Intelligence | Content mix vs targets, experiment log, weekly audience report, auto-drafted weekly report |
@@ -35,13 +35,13 @@ Requires Node 22.18+ and [pnpm](https://pnpm.io). Without an endpoint the dashbo
 
 ## Principles
 
-- **Draft-only.** Approval gates are built into the flow. A post can't be logged as published without your approval and a live URL. Sensitive comments can only be escalated, never auto-answered. Keyword campaigns stay off until there's a real resource to deliver.
+- **Creator-approved publishing only.** Approval gates are built into the flow. Buffer publishes a platform version only after you approved that version and its time; agents can draft captions but never approve, schedule or publish. A post can't be logged as published without your approval and a live URL. Sensitive comments can only be escalated, never auto-answered. Keyword campaigns stay off until there's a real resource to deliver.
 - **No invented numbers.** Unknown values stay `UNKNOWN`. Metrics show "Unavailable" rather than guessing. TikTok views and X impressions are never added together.
 - **Private by default.** With no endpoint configured, everything lives in your browser's local storage. With the optional endpoint (below), one authenticated server you host is the single source of truth for you and your agents. No tracking, no third-party accounts.
 
 ## Connect your accounts
 
-All connectors are read-only. Set them up in **Settings → Accounts and connectors**.
+All data connectors are read-only. Set them up in **Settings → Accounts and connectors**. Publishing goes through Buffer only (see [Buffer connector](#deploy-tailnet-host) below).
 
 - **Export files (works today for TikTok).** Download the Overview, Content, Viewers and Followers CSVs from TikTok Studio and import them. The parser fills in the year TikTok leaves out of its dates, takes post years from the video ID, and drops the occasional "0 followers" glitch day.
 - **X, Instagram, YouTube, LinkedIn.** Connector slots are in place. Each parser is built from a real sample export, so the format is never guessed.
@@ -73,7 +73,7 @@ creative agent ──creative key─▶ :8766/api/*      reads handoffs (analysi
 scheduler (systemd timers) ──worker key──▶ /api/dispatch/*   (no LLM call, no platform call)
 ```
 
-- **Draft-only, enforced on the server.** No route posts, publishes, replies, likes, follows or messages anywhere, and there are no platform write calls in the codebase (`ci/no-platform-writes.sh` fails CI otherwise). The one platform client is the read-only TikTok connector, limited to the OAuth token endpoint and Display API reads. Agents write drafts; only the creator approves, schedules, kills or logs something as published (with approval and a live URL). An agent may send one reply through its own connection only after the creator approved that exact queue item and told it to; it then marks the item `sent_by_agent` (Done), which the server accepts only from the creative agent, only on an approved item it was asked to send, and only with the approved text unchanged. Revenue needs evidence.
+- **Creator-approved publishing, enforced on the server.** No route posts, publishes, replies, likes, follows or messages anywhere. The only platform clients are the read-only TikTok connector (OAuth token endpoint and Display API reads) and the Buffer connector, which may only schedule, edit or cancel a platform version the creator approved; `ci/no-platform-writes.sh` and `test/draft-only.spec.ts` fail CI on anything else. Agents write drafts; only the creator approves, schedules, kills or logs something as published (with approval and a live URL). A platform version is locked once approved, and live once Buffer sends it. An agent may send one reply through its own connection only after the creator approved that exact queue item and told it to; it then marks the item `sent_by_agent` (Done), which the server accepts only from the creative agent, only on an approved item it was asked to send, and only with the approved text unchanged. Revenue needs evidence.
 - **Auth on every call.** `GET /health` is the only public route and returns no data. The creator uses HTTP Basic; each role has its own bearer key. The dashboard never shows the browser's Basic prompt: `/login` checks the creator login with the API and keeps it in an encrypted HttpOnly cookie (key from `GROWTH_OS_SESSION_SECRET`, or a 0600 file created at `GROWTH_OS_SESSION_KEY_FILE`, default `~/.config/growth-os/session.key`). Every write records who wrote it, when and from where (`_meta`), and an append-only audit log keeps the history.
 - **Collection ownership.** A write to another agent's collection returns 403 (`packages/contracts/src/ownership.ts`):
 
@@ -208,6 +208,12 @@ Run only one live dashboard. Once the endpoint is live, a local preview is a col
 2. Expose only the authorization page on the tailnet HTTPS name: `sudo tailscale serve --bg --set-path /growth-os/tiktok http://127.0.0.1:8768`, register `https://<host>.ts.net/growth-os/tiktok/callback/` as the redirect URI in the TikTok app, and re-run the installer once with `TIKTOK_REDIRECT_URI=` set to it (later runs keep it).
 3. `sudo systemctl enable --now growth-os-tiktok.service`, open `https://<host>.ts.net/growth-os/tiktok/start` and approve. The token is stored in `/var/lib/growth-os/tiktok/` (connector user only) and refreshed automatically (the refresh token lasts 180 days and rotates).
 4. `sudo systemctl enable --now growth-os-tiktok-pull.timer`. Logs: `journalctl -u growth-os-tiktok-pull`.
+
+**Buffer connector (the one publish path).** `server/src/worker/buffer-connector.ts` uses the creator's personal Buffer API key. Each content item can carry one version per platform (TikTok, Threads, X: caption, publish time, status). The creator approves each version in Content Studio; the API rejects approval from agents, before the item itself is approved, without a caption, less than 10 minutes ahead, or (TikTok) without a media link. `growth-os-buffer-sync.timer` runs every 5 minutes: for each approved version it calls Buffer's `createPost` with the approved time (`customScheduled`), the caption and the media link, then records Buffer's post id (`scheduled`) or Buffer's reason (`failed`); for each cancelled version still in Buffer it calls `deletePost`. A late version (its time passed before it reached Buffer) is marked failed, never sent late. The item moves to scheduled once Buffer holds a version and to published once every version that was not cancelled is live; a failed version keeps it open. Reading Buffer's sent and error status, live links and post metrics back into Growth OS is not built yet; until then, check Buffer for what went out. Buffer fetches media from a public URL at publish time, so the media link must be a stable public https file (not a Drive or Dropbox share page, not a signed link). One-time setup on the host:
+
+1. Create a personal key in Buffer (Settings → API) and put it in `/etc/growth-os/buffer.env` (root, mode 600) as `BUFFER_API_KEY=…`. It is never printed, committed or sent to the browser. Connect the TikTok, Threads and X channels in Buffer.
+2. `sudo systemctl start growth-os-buffer-channels && journalctl -u growth-os-buffer-channels -n 5` lists the organization and channels. With one channel per platform nothing else is needed; otherwise add `BUFFER_ORGANIZATION_ID=…` or `BUFFER_CHANNEL_TIKTOK=…` / `BUFFER_CHANNEL_THREADS=…` / `BUFFER_CHANNEL_X=…` to the same file.
+3. `sudo systemctl enable --now growth-os-buffer-sync.timer`. Logs: `journalctl -u growth-os-buffer-sync`.
 
 
 ### Stack mapping

@@ -11,7 +11,7 @@ import ConnectorsCard from './Connectors'
 import { ProfileFields } from './Setup'
 
 const PERMISSIONS = [
-  'Publish posts',
+  'Publish posts on their own',
   'Send public replies',
   'Send DMs or follow-ups',
   'Delete, hide or block',
@@ -101,8 +101,12 @@ export default function Settings() {
 
       <div className="mt-4">
         <Card>
-          <CardTitle icon={<Lock size={18} />}>Permissions: draft-only</CardTitle>
+          <CardTitle icon={<Lock size={18} />}>Permissions</CardTitle>
           <ul className="flex flex-col divide-y divide-ink-700">
+            <li className="flex items-center justify-between py-2.5 text-sm">
+              <span>Publish through Buffer</span>
+              <Badge tone="accent">Only what {s.profile.creatorName} approves, at the time set</Badge>
+            </li>
             {PERMISSIONS.map((p) => (
               <li key={p} className="flex items-center justify-between py-2.5 text-sm">
                 <span>{p}</span>

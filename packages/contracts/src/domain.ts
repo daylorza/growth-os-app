@@ -59,6 +59,27 @@ export interface PostMetrics {
   source?: string
 }
 
+/**
+ * One platform version of a content item, published through Buffer.
+ * draft → approved (creator) → scheduled (Buffer connector) → sent, or failed / cancelled. A sent version is live and never changes.
+ */
+export const TARGET_STATUSES = ['draft', 'approved', 'scheduled', 'sent', 'failed', 'cancelled'] as const
+export type TargetStatus = (typeof TARGET_STATUSES)[number]
+
+export interface PublishTarget {
+  platform: Platform
+  caption: string
+  /** When Buffer publishes it: an ISO date-time chosen by the creator. */
+  scheduledAt: string
+  status: TargetStatus
+  /** Buffer's post id while a post exists in Buffer. Empty otherwise. */
+  bufferPostId: string
+  /** The live post, once Buffer reports it sent. */
+  liveUrl: string
+  /** Why Buffer could not schedule or publish it. */
+  error: string
+}
+
 export interface ContentItem extends BaseDoc {
   title: string
   owner: Owner
@@ -85,6 +106,10 @@ export interface ContentItem extends BaseDoc {
   url: string
   publishedAt: string
   metrics: PostMetrics
+  /** Public https link to the video or image Buffer fetches when it publishes. Unset on older items. */
+  mediaUrl?: string
+  /** Platform versions to publish through Buffer, at most one per platform. Unset on older items. */
+  targets?: PublishTarget[]
 }
 
 export const COMMENT_CATEGORIES = ['question', 'technical', 'appreciation', 'criticism', 'client_inquiry', 'collaboration', 'spam', 'sensitive'] as const

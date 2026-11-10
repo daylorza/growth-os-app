@@ -26,6 +26,21 @@ export interface PostMetrics {
   source?: string
 }
 
+/** A platform version published through Buffer: draft → approved (creator) → scheduled (Buffer connector) → sent, or failed / cancelled. */
+export type TargetStatus = 'draft' | 'approved' | 'scheduled' | 'sent' | 'failed' | 'cancelled'
+
+export interface PublishTarget {
+  platform: Platform
+  caption: string
+  /** ISO date-time Buffer publishes at. */
+  scheduledAt: string
+  status: TargetStatus
+  /** Buffer's post id while Buffer holds the post. */
+  bufferPostId: string
+  liveUrl: string
+  error: string
+}
+
 export interface ContentItem {
   id: string
   title: string
@@ -53,6 +68,10 @@ export interface ContentItem {
   url: string
   publishedAt: string
   metrics: PostMetrics
+  /** Public https link Buffer fetches when it publishes. Unset on older items. */
+  mediaUrl?: string
+  /** Platform versions to publish through Buffer. Unset on older items. */
+  targets?: PublishTarget[]
   demo?: boolean
 }
 

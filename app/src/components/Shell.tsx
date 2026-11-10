@@ -141,7 +141,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           })}
         </nav>
         <p className="mt-6 px-2 text-xs leading-relaxed text-faint">
-          Draft-only. Nothing here posts, publishes, or sends messages. {profile.creatorName} approves and publishes every public action.
+          Nothing goes out without {profile.creatorName}&apos;s approval. Posts publish only through Buffer, per approved platform version, at the time {profile.creatorName} set. Nothing here replies, likes, follows or sends messages.
         </p>
         {syncMode !== 'local' && (
           <form method="post" action="/auth/logout" className="mt-4 px-2">

@@ -3,7 +3,7 @@
   "info": {
     "title": "Growth OS API",
     "version": "1.0.0",
-    "description": "Draft-only. No route posts, publishes, replies, likes, follows or messages on any platform. Metrics are a number or \"UNKNOWN\", never an estimate. TikTok and X are never combined."
+    "description": "Creator-approved publishing only. No route posts, publishes, replies, likes, follows or messages on any platform; the separate Buffer connector schedules only the platform versions (content targets) the creator approved. Metrics are a number or \"UNKNOWN\", never an estimate. TikTok and X are never combined."
   },
   "security": [
     {
@@ -303,6 +303,18 @@
           "metrics": {
             "$ref": "#/components/schemas/PostMetricsDto",
             "type": "object"
+          },
+          "mediaUrl": {
+            "maxLength": 2000,
+            "type": "string",
+            "pattern": "^(|https:\\/\\/\\S+)$"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/PublishTargetDto"
+            },
+            "type": "array",
+            "maxItems": 3
           },
           "demo": {
             "type": "boolean"
@@ -1373,6 +1385,18 @@
             "$ref": "#/components/schemas/PostMetricsDto",
             "type": "object"
           },
+          "mediaUrl": {
+            "maxLength": 2000,
+            "type": "string",
+            "pattern": "^(|https:\\/\\/\\S+)$"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/PublishTargetDto"
+            },
+            "type": "array",
+            "maxItems": 3
+          },
           "demo": {
             "type": "boolean"
           }
@@ -1970,6 +1994,54 @@
           "handles",
           "agents",
           "sample"
+        ]
+      },
+      "PublishTargetDto": {
+        "properties": {
+          "platform": {
+            "type": "string",
+            "enum": [
+              "tiktok",
+              "x",
+              "threads"
+            ]
+          },
+          "caption": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "scheduledAt": {
+            "pattern": "^(|\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?(Z|[+-]\\d{2}:\\d{2}))$",
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "approved",
+              "scheduled",
+              "sent",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "bufferPostId": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "liveUrl": {
+            "maxLength": 2000,
+            "type": "string",
+            "pattern": "^(|https:\\/\\/\\S+)$"
+          },
+          "error": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "type": "object",
+        "required": [
+          "platform"
         ]
       },
       "RefDto": {

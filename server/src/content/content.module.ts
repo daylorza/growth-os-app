@@ -1,8 +1,8 @@
-import { Body, Controller, Delete, Get, Injectable, Module, Param, Patch, Post } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Delete, Get, Injectable, Module, Param, Patch, Post } from '@nestjs/common'
 import { CreateContentDto, DecisionDto, UpdateContentDto, type ContentItem, type Decision, type Handoff, type NextStep, type Owner } from '@growth-os/contracts'
 import { Writer, type WriteContext } from '../common/actor'
 import { CollectionService } from '../common/collection.service'
-import { checkContent } from '../common/draft-only'
+import { blankTarget, checkContent } from '../common/draft-only'
 import { CreativeModule, BriefsService, CaptionsService, HooksService, ScriptsService } from '../creative/creative.module'
 import { AuditService } from '../db/audit.service'
 import { Store } from '../db/store'
@@ -48,11 +48,25 @@ export class ContentService extends CollectionService<ContentItem> {
       url: '',
       publishedAt: '',
       metrics: {},
+      mediaUrl: '',
+      targets: [],
     }
   }
 
   protected checkWrite(ctx: WriteContext, prev: ContentItem | null, next: ContentItem) {
     checkContent(ctx.actor, prev, next)
+  }
+
+  create(ctx: WriteContext, input: Partial<ContentItem>) {
+    return super.create(ctx, withTargetDefaults(input))
+  }
+
+  /** A deleted item must not leave a post behind in Buffer. */
+  async remove(ctx: WriteContext, id: string) {
+    const item = await this.get(id)
+    if ((item.targets ?? []).some((t) => t.bufferPostId || t.status === 'approved'))
+      throw new BadRequestException('Cancel the approved and scheduled platform versions first, so nothing is left in Buffer.')
+    return super.remove(ctx, id)
   }
 
   /** Agent-facing create: the API owns ids, so any id in the body is ignored. */
@@ -61,14 +75,40 @@ export class ContentService extends CollectionService<ContentItem> {
     return this.create(ctx, rest)
   }
 
-  /** The creator logs a post she published herself; the analyst is asked to measure it (post_published). */
-  async update(ctx: WriteContext, id: string, changes: Partial<ContentItem>) {
+  /**
+   * The creator logs a post she published herself, or the Buffer connector reports every platform version sent;
+   * either way the analyst is asked to measure it (post_published).
+   */
+  async update(ctx: WriteContext, id: string, input: Partial<ContentItem>) {
     const prev = await this.get(id)
+    const merged = withTargetDefaults(input)
+    const changes = { ...merged, ...publishState({ ...prev, ...merged }, prev, input) }
     const next = await super.update(ctx, id, { ...changes, ...(changes.status === 'published' && !changes.publishedAt && !prev.publishedAt ? { publishedAt: new Date().toISOString() } : {}) })
-    if (next.status === 'published' && prev.status !== 'published')
-      await this.handoffs.system(ctx, `H-PUBLISHED-${id}`, { contentItemId: id, from: 'creator', to: 'analyst', type: 'question', body: `Published by the creator: ${next.url}. Measure at 24h and 72h.`, refs: [{ collection: 'content_items', id }] }, 'post_published')
+    if (next.status === 'published' && prev.status !== 'published') {
+      const sent = (next.targets ?? []).filter((t) => t.status === 'sent')
+      const body = sent.length ? `Published through Buffer: ${sent.map((t) => `${t.platform} ${t.liveUrl}`).join(', ')}.` : `Published by the creator: ${next.url}.`
+      await this.handoffs.system(ctx, `H-PUBLISHED-${id}`, { contentItemId: id, from: 'creator', to: 'analyst', type: 'question', body: `${body} Measure at 24h and 72h.`, refs: [{ collection: 'content_items', id }] }, 'post_published')
+    }
     return next
   }
+}
+
+/** Platform versions sent without every field get the blank defaults, so rules compare like with like. */
+const withTargetDefaults = (input: Partial<ContentItem>): Partial<ContentItem> =>
+  input.targets ? { ...input, targets: input.targets.map((t) => ({ ...blankTarget(t.platform), ...t })) } : input
+
+/**
+ * Item status follows its platform versions when they change: scheduled once Buffer holds one, published once every
+ * version that was not cancelled is live. A failed version keeps the item open.
+ */
+export function publishState(next: ContentItem, prev: ContentItem, input: Partial<ContentItem>): Partial<ContentItem> {
+  const targets = next.targets ?? []
+  if (!input.targets || input.status || next.status === 'published' || next.status === 'killed') return {}
+  const open = targets.filter((t) => t.status !== 'cancelled')
+  const live = open.find((t) => t.status === 'sent' && t.liveUrl)
+  if (open.length && live && open.every((t) => t.status === 'sent')) return { status: 'published', url: next.url || live.liveUrl }
+  if (targets.some((t) => t.status === 'scheduled') && prev.status === 'approved') return { status: 'scheduled' }
+  return {}
 }
 
 const latestOf = (hs: Handoff[], pred: (h: Handoff) => boolean) => [...hs].reverse().find(pred) ?? null

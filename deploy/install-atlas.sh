@@ -15,6 +15,8 @@
 #   growth-os-dispatch-sweep.timer   engagement_sweep every 4 to 6 hours (installed, NOT enabled)
 #   growth-os-tiktok.service         TikTok authorization page, 127.0.0.1:8768 (installed, NOT enabled)
 #   growth-os-tiktok-pull.timer      read-only TikTok pull, daily 07:30 UTC (installed, NOT enabled)
+#   growth-os-buffer-channels.service lists the Buffer organization and channels into the journal (run by hand)
+#   growth-os-buffer-sync.timer      schedules creator-approved platform versions in Buffer, every 5 min (installed, NOT enabled)
 #   growth-os-deploy.timer           deploy/update-atlas.sh every 5 min: CI-green origin/main only (installed, NOT enabled)
 # Secrets (passwords, per-role keys) are generated on first run, written only into the root-owned unit
 # files (chmod 600) and never printed. Re-running keeps existing secrets and any webhook values
@@ -312,6 +314,37 @@ Persistent=true
 WantedBy=timers.target
 EOF
 
+# Buffer: the one publish path. BUFFER_API_KEY (and any BUFFER_ORGANIZATION_ID / BUFFER_CHANNEL_* overrides) live in
+# /etc/growth-os/buffer.env (root only, written on the host by the creator); this script never reads or prints them.
+for mode in channels sync; do
+cat > "$UNITS/growth-os-buffer-$mode.service" <<EOF
+[Unit]
+Description=Growth OS Buffer connector: $mode (schedules only creator-approved platform versions)
+After=network-online.target growth-os-api.service
+
+[Service]
+Type=oneshot
+User=$APP_USER
+WorkingDirectory=$APP_DIR/server
+EnvironmentFile=-/etc/growth-os/buffer.env
+Environment=GROWTH_OS_API=http://127.0.0.1:$API_PORT
+Environment=GROWTH_OS_CREATOR_KEY=$CREATOR_KEY
+ExecStart=$NODE dist/worker/buffer-connector.js $mode
+EOF
+done
+
+cat > "$UNITS/growth-os-buffer-sync.timer" <<EOF
+[Unit]
+Description=Growth OS Buffer sync every 5 minutes (enable once Buffer is connected)
+
+[Timer]
+OnBootSec=5min
+OnCalendar=*:0/5
+
+[Install]
+WantedBy=timers.target
+EOF
+
 # The xAI fallback was removed: the analyst agent is the only path that reads X.
 rm -f "$UNITS/growth-os-xai-fallback.service"
 
@@ -321,5 +354,5 @@ systemctl daemon-reload
 systemctl enable --now growth-os-mongo.service growth-os-api.service growth-os-web.service
 systemctl restart growth-os-api.service growth-os-web.service
 echo "Installed. Web: http://$BIND_HOST:$WEB_PORT  API (local): 127.0.0.1:$API_PORT"
-echo "Timers installed, not enabled: growth-os-dispatch-daily.timer, growth-os-dispatch-measure.timer, growth-os-dispatch-x.timer, growth-os-dispatch-weekly.timer, growth-os-dispatch-sweep.timer, growth-os-tiktok-pull.timer, growth-os-deploy.timer"
+echo "Timers installed, not enabled: growth-os-dispatch-daily.timer, growth-os-dispatch-measure.timer, growth-os-dispatch-x.timer, growth-os-dispatch-weekly.timer, growth-os-dispatch-sweep.timer, growth-os-tiktok-pull.timer, growth-os-buffer-sync.timer, growth-os-deploy.timer"
 echo "Creator login: user $CREATOR_USER. Password and per-role keys are in $UNITS/growth-os-api.service (root only)."

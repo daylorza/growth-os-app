@@ -36,7 +36,7 @@ export function buildOpenApi(): Schema {
       title: 'Growth OS API',
       version: '1.0.0',
       description:
-        'Draft-only. No route posts, publishes, replies, likes, follows or messages on any platform. Metrics are a number or "UNKNOWN", never an estimate. TikTok and X are never combined.',
+        'Creator-approved publishing only. No route posts, publishes, replies, likes, follows or messages on any platform; the separate Buffer connector schedules only the platform versions (content targets) the creator approved. Metrics are a number or "UNKNOWN", never an estimate. TikTok and X are never combined.',
     },
     security: [{ basic: [] }, { bearer: [] }],
     components: {

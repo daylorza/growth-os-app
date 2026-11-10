@@ -12,6 +12,7 @@ import { blankContent } from '../lib/seed'
 import { patch, remove, upsert, useAppState, useToday } from '../lib/store'
 import type { ContentItem, ContentStatus, PostMetrics, Profile } from '../lib/types'
 import { ownerName } from '../lib/profile'
+import { BufferQueue, CrossPost } from './CrossPost'
 
 const statusTone: Record<ContentStatus, 'neutral' | 'accent' | 'ok' | 'warn' | 'danger'> = {
   idea: 'neutral',
@@ -87,7 +88,7 @@ export default function ContentStudio() {
           </>
         }
       >
-        {p.agents.creative.name} drafts, {p.creatorName} approves. Publishing happens on the platform, by you. Log the live link here afterwards.
+        {p.agents.creative.name} drafts, {p.creatorName} approves. Approve a platform version and Buffer publishes it at your time, or publish it yourself and log the live link.
       </PageHeader>
 
       {view === 'calendar' ? (
@@ -184,6 +185,8 @@ export default function ContentStudio() {
           </ul>
         )}
       </Card>
+
+      <BufferQueue onOpen={setOpenId} />
 
       {open && <Editor item={open} onClose={() => setOpenId(null)} />}
     </>
@@ -321,6 +324,8 @@ function Editor({ item: c, onClose }: { item: ContentItem; onClose: () => void }
             />
           )}
         </Field>
+
+        <CrossPost key={c.id} item={c} />
 
         <fieldset className="grid gap-3 rounded-xl border border-ink-600 p-4">
           <legend className="px-1 text-xs text-muted">Log as published (after you post it yourself)</legend>
