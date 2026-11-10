@@ -41,6 +41,8 @@ export interface PublishTarget {
   error: string
   /** Read from Buffer once sent. A metric Buffer did not report is absent, never 0. */
   metrics?: TargetMetrics
+  /** Retrying a failed version: once Buffer's post is deleted, it returns to draft. */
+  retry?: boolean
 }
 
 export interface TargetMetrics {

@@ -189,6 +189,8 @@ async function record(f: Fetch, itemId: string, platform: Platform, expected: Pu
 export interface SyncResult {
   scheduled: string[]
   cancelled: string[]
+  /** Failed versions the creator retried: deleted from Buffer and back to draft. */
+  retried: string[]
   failed: string[]
   sent: string[]
   measured: string[]
@@ -196,7 +198,7 @@ export interface SyncResult {
 }
 
 export async function sync(f: Fetch = fetch as unknown as Fetch, now = Date.now()): Promise<SyncResult> {
-  const out: SyncResult = { scheduled: [], cancelled: [], failed: [], sent: [], measured: [], problems: [] }
+  const out: SyncResult = { scheduled: [], cancelled: [], retried: [], failed: [], sent: [], measured: [], problems: [] }
   const res = await api(f, '/api/content-items')
   if (!res.ok) throw new Error(`Could not read content items: HTTP ${res.status}`)
   const items = (await json(res)) as unknown as ContentItem[]
@@ -229,8 +231,9 @@ export async function sync(f: Fetch = fetch as unknown as Fetch, now = Date.now(
     if (t.status === 'cancelled') {
       const r = await deletePost(f, t.bufferPostId)
       if (r.id) {
-        note(await record(f, c.id, t.platform, 'cancelled', { bufferPostId: '', error: '' }))
-        out.cancelled.push(label)
+        // A retried failed version goes back to draft, for the creator to pick a new time and approve again.
+        note(await record(f, c.id, t.platform, 'cancelled', t.retry ? { status: 'draft', bufferPostId: '', error: '', retry: false } : { bufferPostId: '', error: '' }))
+        out[t.retry ? 'retried' : 'cancelled'].push(label)
       } else note(await record(f, c.id, t.platform, 'cancelled', { error: `Buffer did not delete it: ${r.message}` }))
       continue
     }
