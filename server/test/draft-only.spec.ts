@@ -1,6 +1,6 @@
 import type { INestApplication } from '@nestjs/common'
 import { ROUTES } from '@growth-os/contracts'
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { as, basic, bearer, contentItem, makeApp, routes } from './helpers'
@@ -11,7 +11,10 @@ const sourceFiles = (dir: string): string[] =>
     const p = join(dir, f)
     return statSync(p).isDirectory() ? sourceFiles(p) : p.endsWith('.ts') ? [p] : []
   })
-const PLATFORM_HOSTS = /tiktok\.com|tiktokapis\.com|twitter\.com|api\.x\.com|upload\.x\.com|\/\/x\.com|instagram\.com|facebook\.com|graph\.|threads\.net|linkedin\.com|youtube\.com|googleapis\.com/
+const PLATFORM_HOSTS = /tiktok\.com|tiktokapis\.com|twitter\.com|api\.x\.com|upload\.x\.com|\/\/x\.com|instagram\.com|facebook\.com|graph\.|threads\.net|linkedin\.com|youtube\.com|googleapis\.com|buffer(app)?\.com/
+const bufferFile = join(srcDir, 'worker', 'buffer-connector.ts')
+/** The only Buffer mutations the connector may send: schedule, edit or cancel a creator-approved platform version. */
+const BUFFER_MUTATIONS = ['createPost', 'deletePost', 'editPost']
 
 describe('draft-only', () => {
   let app: INestApplication
@@ -46,6 +49,14 @@ describe('draft-only', () => {
     expect(urls).toEqual(new Set(['https://www.tiktok.com/v2/auth/authorize/', 'https://open.tiktokapis.com/v2/oauth/token/', 'https://open.tiktokapis.com/v2/user/info/', 'https://open.tiktokapis.com/v2/video/list/']))
     expect(src).not.toMatch(/\/v2\/post\/|\/(publish|upload|comment|like|follow|message|dm)\//i)
     expect(new Set([...src.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1]))).toEqual(new Set(['www.tiktok.com', 'open.tiktokapis.com', '127.0.0.1', 'localhost']))
+  })
+
+  it.skipIf(!existsSync(bufferFile))('the Buffer connector calls only api.buffer.com and sends only schedule, edit or cancel mutations', () => {
+    const src = readFileSync(bufferFile, 'utf8')
+    expect(new Set([...src.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1]))).toEqual(new Set(['api.buffer.com']))
+    const mutations = [...src.matchAll(/mutation\s*\w*\s*(?:\([^)]*\))?\s*\{\s*(\w+)/g)].map((m) => m[1])
+    expect(mutations.length).toBeGreaterThan(0)
+    for (const m of mutations) expect(BUFFER_MUTATIONS).toContain(m)
   })
 
   it('agents cannot approve, schedule, kill or log content as published', async () => {
