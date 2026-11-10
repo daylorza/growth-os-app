@@ -28,8 +28,12 @@ export function checkContent(actor: Actor, prev: ContentItem | null, next: Conte
 /** The Buffer connector runs every few minutes; an approved time must leave it room to schedule. */
 export const MIN_LEAD_MINUTES = 10
 const PLATFORM_NAME: Record<Platform, string> = { tiktok: 'TikTok', threads: 'Threads', x: 'X' }
-/** Publishing state: written by the creator, or by the Buffer connector with her key. Never by an agent. */
-const PUBLISH_FIELDS = ['status', 'bufferPostId', 'liveUrl', 'error'] as const
+/** Publishing state and Buffer's metrics: written by the creator, or by the Buffer connector with her key. Never by an agent. */
+const PUBLISH_FIELDS = ['status', 'bufferPostId', 'liveUrl', 'error', 'metrics'] as const
+/** Key order does not matter: a client echoing the metrics back in another order has not changed them. */
+const canonical = (v: unknown): unknown =>
+  Array.isArray(v) ? v.map(canonical) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b)).map(([k, x]) => [k, canonical(x)])) : v
+const same = (a: unknown, b: unknown) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b))
 const TRANSITIONS: Record<TargetStatus, readonly TargetStatus[]> = {
   draft: ['approved'],
   approved: ['draft', 'scheduled', 'failed', 'cancelled'],
@@ -61,10 +65,10 @@ export function checkTargets(actor: Actor, prev: ContentItem | null, next: Conte
     const name = PLATFORM_NAME[t.platform]
     const p = before.get(t.platform)
     if (!p) {
-      if (t.status !== 'draft' || t.bufferPostId || t.liveUrl || t.error) throw new RuleViolation(`A new ${name} version starts as a draft.`)
+      if (t.status !== 'draft' || t.bufferPostId || t.liveUrl || t.error || t.metrics) throw new RuleViolation(`A new ${name} version starts as a draft.`)
       continue
     }
-    if (PUBLISH_FIELDS.some((k) => t[k] !== p[k])) creatorOnly(actor, `change the ${name} version's publishing state`)
+    if (PUBLISH_FIELDS.some((k) => !same(t[k], p[k]))) creatorOnly(actor, `change the ${name} version's publishing state`)
     if (p.status === 'sent' && (t.status !== 'sent' || t.caption !== p.caption || t.scheduledAt !== p.scheduledAt || t.bufferPostId !== p.bufferPostId))
       throw new RuleViolation(`The ${name} version is live. It no longer changes.`)
     if (p.status !== 'draft' && t.status !== 'draft' && (t.caption !== p.caption || t.scheduledAt !== p.scheduledAt))

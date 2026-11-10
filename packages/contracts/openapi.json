@@ -2037,6 +2037,10 @@
           "error": {
             "type": "string",
             "maxLength": 2000
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/TargetMetricsDto",
+            "type": "object"
           }
         },
         "type": "object",
@@ -2153,6 +2157,76 @@
         "type": "object",
         "required": [
           "platform"
+        ]
+      },
+      "TargetMetricDto": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "value": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "count",
+              "percentage"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "name",
+          "value",
+          "unit"
+        ]
+      },
+      "TargetMetricsDto": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "buffer"
+            ]
+          },
+          "measuredAt": {
+            "pattern": "^(|\\d{4}-\\d{2}-\\d{2}T\\S+)$",
+            "type": "string"
+          },
+          "readAt": {
+            "oneOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "format": "date-time",
+                "type": "string"
+              }
+            ]
+          },
+          "values": {
+            "items": {
+              "$ref": "#/components/schemas/TargetMetricDto"
+            },
+            "type": "array",
+            "maxItems": 50
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "measuredAt",
+          "readAt",
+          "values"
         ]
       },
       "TikTokVaultDto": {

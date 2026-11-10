@@ -1,6 +1,6 @@
 import type { ContentItem, PublishTarget } from '@growth-os/contracts'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { channelFor, gql, postInput, sync, type Channel } from '../src/worker/buffer-connector'
+import { channelFor, gql, needsRead, postInput, sync, type Channel } from '../src/worker/buffer-connector'
 
 type Call = { url: string; method: string; body?: string; auth?: string; source?: string }
 const reply = (status: number, body: unknown) => ({ ok: status < 400, status, text: async () => JSON.stringify(body) })
@@ -73,7 +73,7 @@ describe('Buffer connector', () => {
       item('C-2', [t('threads', { status: 'draft' }), t('x', { status: 'scheduled', bufferPostId: 'bp-9' })]),
     ])
     const r = await sync(f, NOW)
-    expect(r).toEqual({ scheduled: ['C-1 threads'], cancelled: ['C-1 tiktok'], failed: ['C-1 x'], problems: [] })
+    expect(r).toEqual({ scheduled: ['C-1 threads'], cancelled: ['C-1 tiktok'], failed: ['C-1 x'], sent: [], measured: [], problems: [] })
     const [threads, x, tiktok] = store.get('C-1')!.targets!
     expect(threads).toMatchObject({ status: 'scheduled', bufferPostId: 'bp-ch-th', error: '' })
     expect(x).toMatchObject({ status: 'failed', bufferPostId: '', error: expect.stringContaining('time passed') })
@@ -87,10 +87,90 @@ describe('Buffer connector', () => {
     for (const c of calls.filter((x) => x.url.startsWith('http://127.0.0.1'))) expect(c.source).toBe('buffer connector')
   })
 
-  it('sync: nothing approved or cancelled means no Buffer call at all', async () => {
-    const { f, bufferCalls } = fake([item('C-1', [t('threads', { status: 'draft' }), t('x', { status: 'sent', bufferPostId: 'b', liveUrl: 'https://x.com/a/status/1' })])])
-    expect(await sync(f, NOW)).toEqual({ scheduled: [], cancelled: [], failed: [], problems: [] })
+  it('sync: nothing approved, cancelled or due for a read means no Buffer call at all', async () => {
+    const { f, bufferCalls } = fake([
+      item('C-1', [t('threads', { status: 'draft' }), t('x', { status: 'sent', bufferPostId: 'b', liveUrl: 'https://x.com/a/status/1' })]),
+      item('C-2', [t('threads', { status: 'scheduled', bufferPostId: 'bp-later' })]),
+    ])
+    expect(await sync(f, NOW)).toEqual({ scheduled: [], cancelled: [], failed: [], sent: [], measured: [], problems: [] })
     expect(bufferCalls()).toHaveLength(0)
+  })
+
+  it('sync: a due scheduled version becomes sent with its live link, or failed with Buffer\'s reason; one still sending is left', async () => {
+    const due = '2026-11-10T11:00:00.000Z'
+    const { f, store, bufferCalls } = fake(
+      [
+        item('C-1', [t('threads', { status: 'scheduled', scheduledAt: due, bufferPostId: 'bp-th' }), t('x', { status: 'scheduled', scheduledAt: due, bufferPostId: 'bp-x' })]),
+        item('C-2', [t('tiktok', { status: 'scheduled', scheduledAt: due, bufferPostId: 'bp-tt' })]),
+      ],
+      (op, v) => {
+        if (op !== 'Post') return {}
+        const id = (v.input as { id: string }).id
+        const post = { 'bp-th': { id, status: 'sent', externalLink: 'https://www.threads.com/@me/post/1', metrics: null, metricsUpdatedAt: null }, 'bp-x': { id, status: 'error', error: { message: 'Channel disconnected' } }, 'bp-tt': { id, status: 'sending' } }[id]
+        return { post }
+      },
+    )
+    const r = await sync(f, NOW)
+    expect(r).toEqual({ scheduled: [], cancelled: [], failed: ['C-1 x'], sent: ['C-1 threads'], measured: [], problems: [] })
+    expect(bufferCalls().map((b) => b.variables.input)).toEqual([{ id: 'bp-th' }, { id: 'bp-x' }, { id: 'bp-tt' }])
+    expect(bufferCalls().every((b) => b.query.startsWith('query Post('))).toBe(true)
+    const [threads, x] = store.get('C-1')!.targets!
+    expect(threads).toMatchObject({ status: 'sent', bufferPostId: 'bp-th', liveUrl: 'https://www.threads.com/@me/post/1', error: '' })
+    expect(threads.metrics).toBeUndefined()
+    expect(x).toMatchObject({ status: 'failed', bufferPostId: 'bp-x', error: 'Buffer could not publish it: Channel disconnected' })
+    expect(store.get('C-2')!.targets![0]).toMatchObject({ status: 'scheduled', bufferPostId: 'bp-tt' })
+  })
+
+  it('sync: a day after sending, stores only the metrics Buffer reported, with when Buffer measured them; reads again after 12 hours', async () => {
+    const sentAt = '2026-11-08T12:00:00.000Z'
+    const reported = [
+      { type: 'views', name: 'Views', value: 1200, unit: 'count' },
+      { type: 'engagementRate', name: 'Engagement Rate', value: 4.5, unit: 'percentage' },
+      { type: 'reach', name: 'Reach', value: null, unit: 'count' },
+    ]
+    const { f, store, bufferCalls } = fake([item('C-1', [t('x', { status: 'sent', scheduledAt: sentAt, bufferPostId: 'bp-x', liveUrl: 'https://x.com/a/status/1' })])], (op, v) =>
+      op === 'Post' ? { post: { id: (v.input as { id: string }).id, status: 'sent', externalLink: 'https://x.com/a/status/1', metrics: reported, metricsUpdatedAt: '2026-11-10T03:00:00.000Z' } } : {},
+    )
+    expect((await sync(f, NOW)).measured).toEqual(['C-1 x'])
+    expect(store.get('C-1')!.targets![0].metrics).toEqual({
+      source: 'buffer',
+      measuredAt: '2026-11-10T03:00:00.000Z',
+      readAt: new Date(NOW).toISOString(),
+      values: [
+        { type: 'views', name: 'Views', value: 1200, unit: 'count' },
+        { type: 'engagementRate', name: 'Engagement Rate', value: 4.5, unit: 'percentage' },
+      ],
+    })
+    expect((await sync(f, NOW + 6 * 3_600_000)).measured).toEqual([])
+    expect(bufferCalls()).toHaveLength(1)
+    expect((await sync(f, NOW + 13 * 3_600_000)).measured).toEqual(['C-1 x'])
+    expect(bufferCalls()).toHaveLength(2)
+  })
+
+  it('sync: Buffer having no metrics yet is stored as an empty read, never as zeros', async () => {
+    const { f, store } = fake([item('C-1', [t('x', { status: 'sent', scheduledAt: '2026-11-09T06:00:00.000Z', bufferPostId: 'bp-x', liveUrl: 'https://x.com/a/status/1' })])], (op, v) =>
+      op === 'Post' ? { post: { id: (v.input as { id: string }).id, status: 'sent', metrics: null, metricsUpdatedAt: null } } : {},
+    )
+    await sync(f, NOW)
+    expect(store.get('C-1')!.targets![0].metrics).toEqual({ source: 'buffer', measuredAt: '', readAt: new Date(NOW).toISOString(), values: [] })
+  })
+
+  it('sync: a Buffer read that fails is reported and leaves the version as it was', async () => {
+    const { f, store } = fake([item('C-1', [t('x', { status: 'scheduled', scheduledAt: '2026-11-10T11:00:00.000Z', bufferPostId: 'bp-gone' })])], (op) =>
+      op === 'Post' ? { status: 200, body: { errors: [{ message: 'Post not found' }] } } : {},
+    )
+    const r = await sync(f, NOW)
+    expect(r.problems).toEqual(['C-1 x: could not read Buffer post bp-gone: Buffer: Post not found'])
+    expect(store.get('C-1')!.targets![0]).toMatchObject({ status: 'scheduled', bufferPostId: 'bp-gone', error: '' })
+  })
+
+  it('reads a sent version for its missing link and for metrics only within 30 days', () => {
+    const sent = (scheduledAt: string, over: Partial<PublishTarget> = {}) => t('x', { status: 'sent', bufferPostId: 'b', liveUrl: 'https://x.com/a/status/1', scheduledAt, ...over })
+    expect(needsRead(sent('2026-11-10T11:00:00.000Z', { liveUrl: '' }), NOW)).toBe(true)
+    expect(needsRead(sent('2026-11-10T11:00:00.000Z'), NOW)).toBe(false)
+    expect(needsRead(sent('2026-11-01T12:00:00.000Z'), NOW)).toBe(true)
+    expect(needsRead(sent('2026-10-01T12:00:00.000Z', { liveUrl: '' }), NOW)).toBe(false)
+    expect(needsRead(t('x', { status: 'failed', bufferPostId: 'b', scheduledAt: '2026-11-10T11:00:00.000Z' }), NOW)).toBe(false)
   })
 
   it('sync: a Buffer refusal fails that version with Buffer\'s reason and leaves the others', async () => {

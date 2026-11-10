@@ -58,7 +58,7 @@ export class ContentService extends CollectionService<ContentItem> {
   }
 
   create(ctx: WriteContext, input: Partial<ContentItem>) {
-    return super.create(ctx, withTargetDefaults(input))
+    return super.create(ctx, withTargetDefaults(input, null))
   }
 
   /** A deleted item must not leave a post behind in Buffer. */
@@ -81,7 +81,7 @@ export class ContentService extends CollectionService<ContentItem> {
    */
   async update(ctx: WriteContext, id: string, input: Partial<ContentItem>) {
     const prev = await this.get(id)
-    const merged = withTargetDefaults(input)
+    const merged = withTargetDefaults(input, prev)
     const changes = { ...merged, ...publishState({ ...prev, ...merged }, prev, input) }
     const next = await super.update(ctx, id, { ...changes, ...(changes.status === 'published' && !changes.publishedAt && !prev.publishedAt ? { publishedAt: new Date().toISOString() } : {}) })
     if (next.status === 'published' && prev.status !== 'published') {
@@ -93,9 +93,14 @@ export class ContentService extends CollectionService<ContentItem> {
   }
 }
 
-/** Platform versions sent without every field get the blank defaults, so rules compare like with like. */
-const withTargetDefaults = (input: Partial<ContentItem>): Partial<ContentItem> =>
-  input.targets ? { ...input, targets: input.targets.map((t) => ({ ...blankTarget(t.platform), ...t })) } : input
+/**
+ * Platform versions sent without every field get the blank defaults, so rules compare like with like.
+ * Buffer's metrics are kept when a version is sent back without them.
+ */
+const withTargetDefaults = (input: Partial<ContentItem>, prev: ContentItem | null): Partial<ContentItem> =>
+  input.targets
+    ? { ...input, targets: input.targets.map((t) => { const p = prev?.targets?.find((x) => x.platform === t.platform); return { ...blankTarget(t.platform), ...(p?.metrics && { metrics: p.metrics }), ...t } }) }
+    : input
 
 /**
  * Item status follows its platform versions when they change: scheduled once Buffer holds one, published once every

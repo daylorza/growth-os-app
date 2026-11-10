@@ -42,6 +42,7 @@ import {
   REPLY_CHANNELS,
   REPLY_STATUSES,
   SNAPSHOT_SOURCE_TYPES,
+  TARGET_METRIC_UNITS,
   TARGET_STATUSES,
   type AudienceSnapshot,
   type CheckIn,
@@ -99,6 +100,20 @@ export class PostMetricsDto {
   @IsOptional() @IsString() source?: string
 }
 
+export class TargetMetricDto {
+  @RequiredText(64) type: string
+  @RequiredText(200) name: string
+  @IsNumber() @Min(0) value: number
+  @IsIn(TARGET_METRIC_UNITS) unit: (typeof TARGET_METRIC_UNITS)[number]
+}
+
+export class TargetMetricsDto {
+  @IsIn(['buffer']) source: 'buffer'
+  @IsString() @Matches(/^(|\d{4}-\d{2}-\d{2}T\S+)$/, { message: 'measuredAt must be an ISO date-time or empty' }) measuredAt: string
+  @IsISO8601() readAt: string
+  @IsArray() @ArrayMaxSize(50) @ValidateNested({ each: true }) @Type(() => TargetMetricDto) values: TargetMetricDto[]
+}
+
 export class PublishTargetDto {
   @IsIn(PLATFORMS) platform: Platform
   @OptionalText() caption?: string
@@ -108,6 +123,7 @@ export class PublishTargetDto {
   @OptionalText(200) bufferPostId?: string
   @IsOptional() @Matches(/^(|https:\/\/\S+)$/, { message: 'liveUrl must be an https link' }) @MaxLength(2000) liveUrl?: string
   @OptionalText(2000) error?: string
+  @IsOptional() @IsObject() @ValidateNested() @Type(() => TargetMetricsDto) metrics?: TargetMetricsDto
 }
 
 export class CreateContentDto {
