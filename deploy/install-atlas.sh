@@ -15,6 +15,8 @@
 #   growth-os-dispatch-sweep.timer   engagement_sweep every 4 to 6 hours (installed, NOT enabled)
 #   growth-os-tiktok.service         TikTok authorization page, 127.0.0.1:8768 (installed, NOT enabled)
 #   growth-os-tiktok-pull.timer      read-only TikTok pull, daily 07:30 UTC (installed, NOT enabled)
+#   growth-os-threads.service        Threads authorization page, 127.0.0.1:8769 (installed, NOT enabled)
+#   growth-os-threads-pull.timer     read-only Threads replies into the queue, every 4 hours (installed, NOT enabled)
 #   growth-os-buffer-channels.service lists the Buffer organization and channels into the journal (run by hand)
 #   growth-os-buffer-sync.timer      schedules creator-approved platform versions in Buffer, every 5 min (installed, NOT enabled)
 #   growth-os-deploy.timer           deploy/update-atlas.sh every 5 min: CI-green origin/main only (installed, NOT enabled)
@@ -69,6 +71,11 @@ TIKTOK_PORT="${TIKTOK_PORT:-8768}"
 # (root only, written on the host by the creator); this script never reads or prints them.
 TIKTOK_REDIRECT_URI="$(keep growth-os-tiktok.service TIKTOK_REDIRECT_URI "${TIKTOK_REDIRECT_URI:-}")"
 TIKTOK_TOKEN_FILE=/var/lib/growth-os/tiktok/token.json
+THREADS_PORT="${THREADS_PORT:-8769}"
+# Registered in the Meta app's Threads use case. The app id and secret live in /etc/growth-os/threads.env
+# (root only, written on the host by the creator); this script never reads or prints them.
+THREADS_REDIRECT_URI="$(keep growth-os-threads.service THREADS_REDIRECT_URI "${THREADS_REDIRECT_URI:-}")"
+THREADS_TOKEN_FILE=/var/lib/growth-os/threads/token.json
 NODE="$(command -v node)"
 
 mkdir -p "$DATA"
@@ -314,6 +321,56 @@ Persistent=true
 WantedBy=timers.target
 EOF
 
+mkdir -p "$(dirname "$THREADS_TOKEN_FILE")"
+chown "$APP_USER" "$(dirname "$THREADS_TOKEN_FILE")"
+chmod 700 "$(dirname "$THREADS_TOKEN_FILE")"
+
+cat > "$UNITS/growth-os-threads.service" <<EOF
+[Unit]
+Description=Growth OS Threads connector: authorization page on 127.0.0.1 (read-only; enable to authorize)
+After=network-online.target
+
+[Service]
+Type=simple
+User=$APP_USER
+WorkingDirectory=$APP_DIR/server
+EnvironmentFile=-/etc/growth-os/threads.env
+Environment=THREADS_REDIRECT_URI=$THREADS_REDIRECT_URI
+Environment=THREADS_TOKEN_FILE=$THREADS_TOKEN_FILE
+Environment=THREADS_CONNECTOR_PORT=$THREADS_PORT
+ExecStart=$NODE dist/worker/threads-connector.js serve
+Restart=on-failure
+RestartSec=10
+EOF
+
+cat > "$UNITS/growth-os-threads-pull.service" <<EOF
+[Unit]
+Description=Growth OS Threads connector: read-only pull of replies to recent posts into the engagement queue
+After=network-online.target growth-os-api.service
+
+[Service]
+Type=oneshot
+User=$APP_USER
+WorkingDirectory=$APP_DIR/server
+EnvironmentFile=-/etc/growth-os/threads.env
+Environment=THREADS_TOKEN_FILE=$THREADS_TOKEN_FILE
+Environment=GROWTH_OS_API=http://127.0.0.1:$API_PORT
+Environment=GROWTH_OS_CREATOR_KEY=$CREATOR_KEY
+ExecStart=$NODE dist/worker/threads-connector.js pull
+EOF
+
+cat > "$UNITS/growth-os-threads-pull.timer" <<EOF
+[Unit]
+Description=Growth OS Threads replies pull, every 4 hours (before each engagement sweep window)
+
+[Timer]
+OnCalendar=*-*-* 00/4:45:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
 # Buffer: the one publish path. BUFFER_API_KEY (and any BUFFER_ORGANIZATION_ID / BUFFER_CHANNEL_* overrides) live in
 # /etc/growth-os/buffer.env (root only, written on the host by the creator); this script never reads or prints them.
 for mode in channels sync; do
@@ -354,5 +411,5 @@ systemctl daemon-reload
 systemctl enable --now growth-os-mongo.service growth-os-api.service growth-os-web.service
 systemctl restart growth-os-api.service growth-os-web.service
 echo "Installed. Web: http://$BIND_HOST:$WEB_PORT  API (local): 127.0.0.1:$API_PORT"
-echo "Timers installed, not enabled: growth-os-dispatch-daily.timer, growth-os-dispatch-measure.timer, growth-os-dispatch-x.timer, growth-os-dispatch-weekly.timer, growth-os-dispatch-sweep.timer, growth-os-tiktok-pull.timer, growth-os-buffer-sync.timer, growth-os-deploy.timer"
+echo "Timers installed, not enabled: growth-os-dispatch-daily.timer, growth-os-dispatch-measure.timer, growth-os-dispatch-x.timer, growth-os-dispatch-weekly.timer, growth-os-dispatch-sweep.timer, growth-os-tiktok-pull.timer, growth-os-threads-pull.timer, growth-os-buffer-sync.timer, growth-os-deploy.timer"
 echo "Creator login: user $CREATOR_USER. Password and per-role keys are in $UNITS/growth-os-api.service (root only)."
