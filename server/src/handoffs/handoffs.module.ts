@@ -1,5 +1,5 @@
 import { BadRequestException, Body, Controller, ForbiddenException, Get, Injectable, Module, Param, Post, Query } from '@nestjs/common'
-import { AUDIT_ID, CreateHandoffDto, HandoffQuery, type ContentItem, type EventName, type Handoff, type Ref } from '@growth-os/contracts'
+import { AUDIT_ID, CreateHandoffDto, HandoffQuery, type ContentItem, type EventName, type Handoff, type PublishTarget, type Ref } from '@growth-os/contracts'
 import { isCreator, Writer, type WriteContext } from '../common/actor'
 import { CollectionService, RuleViolation, stamp } from '../common/collection.service'
 import { EVENT_FOR_TYPE, EventsModule, EventsService } from '../events/events.module'
@@ -7,7 +7,24 @@ import { AuditService } from '../db/audit.service'
 import { DuplicateIdError, Store } from '../db/store'
 
 const DAY_MS = 86_400_000
+const HOUR_MS = 3_600_000
 const today = () => new Date().toISOString().slice(0, 10)
+/** How long a measure request waits past its window for the Buffer connector's metrics read (it reads every 12h). */
+export const MEASURE_GRACE_HOURS = 12
+const PLATFORM_NAME: Record<PublishTarget['platform'], string> = { tiktok: 'TikTok', threads: 'Threads', x: 'X' }
+const number = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
+
+/** One live version's Buffer metrics for the analyst: values with units, when Buffer measured them and the post's age then. */
+export function bufferLine(t: PublishTarget) {
+  const head = `- ${PLATFORM_NAME[t.platform]} (${t.liveUrl || 'no live link yet'})`
+  const m = t.metrics
+  if (!m) return `${head}: not read from Buffer yet (UNKNOWN).`
+  if (!m.values.length) return `${head}: Buffer had no metrics yet (checked ${m.readAt}; UNKNOWN).`
+  const values = m.values.map((v) => `${v.name} ${number.format(v.value)}${v.unit === 'percentage' ? '%' : ''}`).join(', ')
+  const measured = Date.parse(m.measuredAt)
+  const when = Number.isFinite(measured) ? `measured by Buffer ${m.measuredAt}, about ${Math.round((measured - Date.parse(t.scheduledAt)) / HOUR_MS)}h after it went out` : `read ${m.readAt}, Buffer gave no measurement time`
+  return `${head}: ${values} (${when}).`
+}
 
 /**
  * The handoff log is the conversation between the agents and the creator. Agents send only as themselves;
@@ -159,17 +176,25 @@ export class HandoffsService extends CollectionService<Handoff> {
     return this.system(ctx, `H-SWEEP-${date}-${window}`, { contentItemId: `AUDIT-${date}`, from: 'creator', to: 'creative', type: 'question', body, refs: [] }, 'engagement_sweep')
   }
 
-  /** measure_request 24h and 72h after a post was published. Idempotent per item and window. */
+  /**
+   * measure_request 24h and 72h after a post was published. Idempotent per item and window.
+   * A post published through Buffer waits until the Buffer connector has read every live version's metrics past that
+   * age (or MEASURE_GRACE_HOURS more have passed), and the request carries what Buffer reported.
+   */
   async measureRequests(ctx: WriteContext, now = Date.now()) {
     const items = await this.store.collection<ContentItem>('content_items').list({ status: 'published' })
     const sent: string[] = []
     for (const c of items) {
       const at = Date.parse(c.publishedAt)
       if (!Number.isFinite(at)) continue
+      const live = (c.targets ?? []).filter((t) => t.status === 'sent')
       for (const hours of [24, 72]) {
-        if (now < at + hours * 3_600_000) continue
+        if (now < at + hours * HOUR_MS) continue
+        const read = live.every((t) => t.metrics && Date.parse(t.metrics.readAt) >= Date.parse(t.scheduledAt) + hours * HOUR_MS)
+        if (live.length && !read && now < at + (hours + MEASURE_GRACE_HOURS) * HOUR_MS) continue
         const refs: Ref[] = [{ collection: 'content_items', id: c.id }]
-        const body = `Measure ${c.id} at ${hours}h after publishing (${c.url}). Record the results in the experiment log${c.experimentId ? ` (${c.experimentId})` : ''}; compare with similar posts at the same age.`
+        const buffer = live.length ? `\n\nBuffer's latest metrics per platform (as Buffer reported them; anything not listed is UNKNOWN, never 0):\n${live.map(bufferLine).join('\n')}` : ''
+        const body = `Measure ${c.id} at ${hours}h after publishing (${c.url}). Record the results in the experiment log${c.experimentId ? ` (${c.experimentId})` : ''}; compare with similar posts at the same age.${buffer}`
         const r = await this.system(ctx, `H-MEASURE-${c.id}-${hours}h`, { contentItemId: c.id, from: 'creator', to: 'analyst', type: 'question', body, refs }, 'measure_request')
         if (r.created) sent.push(r.handoff.id)
       }

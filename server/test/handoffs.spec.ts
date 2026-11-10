@@ -2,7 +2,10 @@ import type { INestApplication } from '@nestjs/common'
 import { createServer, type IncomingMessage, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import type { ContentItem, PublishTarget, TargetMetric } from '@growth-os/contracts'
+import { Store } from '../src/db/store'
 import { EventsService } from '../src/events/events.module'
+import { HandoffsService, MEASURE_GRACE_HOURS } from '../src/handoffs/handoffs.module'
 import { NOTE_PREFIX } from '../src/worker/threads-connector'
 import { as, basic, bearer, contentItem, makeApp } from './helpers'
 
@@ -295,6 +298,46 @@ describe('next step', () => {
     const killed = await get()
     expect(killed.contentItem.status).toBe('killed')
     expect(killed.latestBrief.status).toBe('killed')
+    await app.close()
+  })
+})
+
+describe('measure requests for posts published through Buffer', () => {
+  const H = 3_600_000
+  const published = Date.parse('2026-11-10T12:00:00.000Z')
+  const target = (platform: PublishTarget['platform'], over: Partial<PublishTarget> = {}): PublishTarget => ({ platform, caption: 'c', scheduledAt: new Date(published).toISOString(), status: 'sent', bufferPostId: `b-${platform}`, liveUrl: `https://example.com/${platform}/1`, error: '', ...over })
+  const metrics = (readAfterHours: number, values: TargetMetric[] = [{ type: 'views', name: 'Views', value: 1200, unit: 'count' }, { type: 'engagementRate', name: 'Engagement Rate', value: 4.5, unit: 'percentage' }]) => ({ source: 'buffer' as const, measuredAt: new Date(published + (readAfterHours - 2) * H).toISOString(), readAt: new Date(published + readAfterHours * H).toISOString(), values })
+
+  async function setup(targets: PublishTarget[]) {
+    const app = await makeApp()
+    const id = await contentItem(app)
+    const repo = app.get(Store).collection<ContentItem>('content_items')
+    const item = (await repo.get(id))!
+    await repo.replace({ ...item, status: 'published', approval: 'approved', url: 'https://example.com/threads/1', publishedAt: new Date(published).toISOString(), targets })
+    const service = app.get(HandoffsService)
+    const run = async (atHours: number) => (await service.measureRequests({ actor: { name: 'scheduler', role: 'worker' }, source: 'scheduler' }, published + atHours * H)).sent
+    const body = async (hours: number) => (await as(app, basic).get(`/api/content-items/${id}/handoffs`)).body.find((h: { id: string }) => h.id === `H-MEASURE-${id}-${hours}h`)?.body as string | undefined
+    return { app, id, run, body, repo }
+  }
+
+  it('waits for Buffer\'s metrics read past the window, then sends them per platform with units and age', async () => {
+    const { app, id, run, body, repo } = await setup([target('threads', { metrics: metrics(13) }), target('x', { metrics: metrics(13) })])
+    expect(await run(25)).toEqual([])
+    const item = (await repo.get(id))!
+    await repo.replace({ ...item, targets: [target('threads', { metrics: metrics(26) }), target('x', { metrics: metrics(26, []) })] })
+    expect(await run(26)).toEqual([`H-MEASURE-${id}-24h`])
+    const text = (await body(24))!
+    expect(text).toContain('anything not listed is UNKNOWN, never 0')
+    expect(text).toContain('- Threads (https://example.com/threads/1): Views 1,200, Engagement Rate 4.5% (measured by Buffer 2026-11-11T12:00:00.000Z, about 24h after it went out).')
+    expect(text).toMatch(/- X \(https:\/\/example\.com\/x\/1\): Buffer had no metrics yet \(checked .*; UNKNOWN\)\./)
+    await app.close()
+  })
+
+  it('sends anyway after the grace period, saying what Buffer has not given', async () => {
+    const { app, id, run, body } = await setup([target('threads')])
+    expect(await run(24 + MEASURE_GRACE_HOURS - 1)).toEqual([])
+    expect(await run(24 + MEASURE_GRACE_HOURS)).toEqual([`H-MEASURE-${id}-24h`])
+    expect(await body(24)).toContain('- Threads (https://example.com/threads/1): not read from Buffer yet (UNKNOWN).')
     await app.close()
   })
 })
