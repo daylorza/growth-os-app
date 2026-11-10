@@ -66,6 +66,30 @@ export interface PostMetrics {
 export const TARGET_STATUSES = ['draft', 'approved', 'scheduled', 'sent', 'failed', 'cancelled'] as const
 export type TargetStatus = (typeof TARGET_STATUSES)[number]
 
+/** Buffer's metric units: a count, or a percentage between 0 and 100. */
+export const TARGET_METRIC_UNITS = ['count', 'percentage'] as const
+
+/** One metric Buffer read from the platform, under Buffer's normalised type (e.g. views, reactions, comments). */
+export interface TargetMetric {
+  type: string
+  name: string
+  value: number
+  unit: (typeof TARGET_METRIC_UNITS)[number]
+}
+
+/**
+ * A sent version's metrics as Buffer last reported them. A metric Buffer did not report is absent (UNKNOWN), never 0;
+ * an empty list means Buffer had none yet.
+ */
+export interface TargetMetrics {
+  source: 'buffer'
+  /** When Buffer last refreshed them from the platform (Buffer's metricsUpdatedAt). Empty until Buffer has. */
+  measuredAt: string
+  /** When the Buffer connector read them. */
+  readAt: string
+  values: TargetMetric[]
+}
+
 export interface PublishTarget {
   platform: Platform
   caption: string
@@ -78,6 +102,8 @@ export interface PublishTarget {
   liveUrl: string
   /** Why Buffer could not schedule or publish it. */
   error: string
+  /** Read from Buffer once the version is sent. Unset until then. */
+  metrics?: TargetMetrics
 }
 
 export interface ContentItem extends BaseDoc {

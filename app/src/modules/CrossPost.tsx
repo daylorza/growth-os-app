@@ -8,7 +8,8 @@ import { PLATFORM, PLATFORMS, TARGET_STATUS, TARGET_TONE } from '../lib/labels'
 import { useProfile } from '../lib/profile'
 import { mediaUrlError, MIN_LEAD_MINUTES, targetApproveError } from '../lib/rules'
 import { patch, useAppState, useSyncStatus } from '../lib/store'
-import type { ContentItem, Platform, PublishTarget } from '../lib/types'
+import { fmt } from '../lib/metrics'
+import type { ContentItem, Platform, PublishTarget, TargetMetrics } from '../lib/types'
 
 const blank = (platform: Platform): PublishTarget => ({ platform, caption: '', scheduledAt: '', status: 'draft', bufferPostId: '', liveUrl: '', error: '' })
 
@@ -109,6 +110,7 @@ function TargetRow({ item, t, who, onChange, onRemove }: { item: ContentItem; t:
           Open the live {name} post
         </a>
       )}
+      {t.status === 'sent' && t.metrics && <BufferMetrics m={t.metrics} />}
       <div className="flex flex-wrap gap-2">
         {editable &&
           (blocked ? (
@@ -138,6 +140,24 @@ function TargetRow({ item, t, who, onChange, onRemove }: { item: ContentItem; t:
       </div>
       {t.status === 'approved' && <p className="text-xs text-faint">The Buffer connector picks this up within 5 minutes.</p>}
       {t.status === 'cancelled' && t.bufferPostId && <p className="text-xs text-faint">Removing it from Buffer within 5 minutes.</p>}
+    </div>
+  )
+}
+
+/** Only the metrics Buffer reported, with when it measured them. Anything else is not shown, never shown as 0. */
+function BufferMetrics({ m }: { m: TargetMetrics }) {
+  if (!m.values.length) return <p className="text-xs text-faint">Buffer has no metrics for this post yet (checked {shortDateTime(m.readAt)}).</p>
+  return (
+    <div className="grid gap-1">
+      <dl className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        {m.values.map((v) => (
+          <div key={v.type} className="flex gap-1">
+            <dt className="text-muted">{v.name}</dt>
+            <dd>{v.unit === 'percentage' ? `${fmt(v.value)}%` : fmt(v.value, 0)}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="text-xs text-faint">From Buffer, measured {shortDateTime(m.measuredAt)}.</p>
     </div>
   )
 }

@@ -39,6 +39,16 @@ export interface PublishTarget {
   bufferPostId: string
   liveUrl: string
   error: string
+  /** Read from Buffer once sent. A metric Buffer did not report is absent, never 0. */
+  metrics?: TargetMetrics
+}
+
+export interface TargetMetrics {
+  source: 'buffer'
+  /** When Buffer last refreshed them from the platform. Empty until it has. */
+  measuredAt: string
+  readAt: string
+  values: { type: string; name: string; value: number; unit: 'count' | 'percentage' }[]
 }
 
 export interface ContentItem {

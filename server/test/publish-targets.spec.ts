@@ -106,6 +106,25 @@ describe('platform versions published through Buffer', () => {
     expect(thread.some((h) => h.to === 'analyst' && h.body.includes('Published through Buffer'))).toBe(true)
   })
 
+  it('Buffer metrics on a live version: written only with the creator key, kept when a save leaves them out, never on a new version', async () => {
+    const id = await approvedItem('threads', 'x')
+    await approve(id, 'threads')
+    const [t, x] = await targets(id)
+    await setTargets(day(), id, [{ ...t, status: 'scheduled', bufferPostId: 'b-t' }, x])
+    const live = { ...t, status: 'sent', bufferPostId: 'b-t', liveUrl: 'https://www.threads.com/@me/post/2' }
+    await setTargets(day(), id, [live, x])
+    const metrics = { source: 'buffer', measuredAt: '2026-11-10T03:00:00.000Z', readAt: '2026-11-10T12:00:00.000Z', values: [{ type: 'views', name: 'Views', value: 12, unit: 'count' }] }
+    expect((await setTargets(day(), id, [{ ...live, metrics }, x])).status).toBe(200)
+    const creative = as(app, bearer('creative'))
+    const forged = { ...metrics, values: [{ type: 'views', name: 'Views', value: 9000, unit: 'count' }] }
+    expect((await setTargets(creative, id, [{ ...live, metrics: forged }, x])).status).toBe(403)
+    expect((await setTargets(creative, id, [{ ...live, metrics: { values: metrics.values, readAt: metrics.readAt, measuredAt: metrics.measuredAt, source: 'buffer' } }, { ...x, caption: 'new X caption' }])).status).toBe(200)
+    expect((await setTargets(creative, id, [live, { ...x, caption: 'another X caption' }])).status).toBe(200)
+    expect((await targets(id))[0].metrics).toEqual(metrics)
+    expect((await setTargets(day(), id, [{ ...live, metrics }, x, target('tiktok', { metrics })])).body.message).toMatch(/starts as a draft/)
+    expect((await setTargets(day(), id, [{ ...live, metrics: { ...metrics, values: [{ type: 'views', name: 'Views', value: -1, unit: 'count' }] } }, x])).status).toBe(400)
+  })
+
   it('a new version starts as a draft, and there is one per platform', async () => {
     const id = await approvedItem()
     expect((await setTargets(day(), id, [target('x', { status: 'approved' })])).body.message).toMatch(/starts as a draft/)

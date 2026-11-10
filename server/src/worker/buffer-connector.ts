@@ -1,18 +1,19 @@
 /**
  * Buffer connector: the one publish path in Growth OS. It schedules a content item's platform version (target) in
  * Buffer only after the creator approved that version and its time, and deletes a Buffer post the creator cancelled.
+ * It reads back what Buffer reports (sent with the live link, or failed with Buffer's reason, then post metrics).
  * It never replies, likes, follows or messages. ci/no-platform-writes.sh allows Buffer's API only in this file, and
  * test/draft-only.spec.ts pins the mutations it may send.
  *
  *   node dist/worker/buffer-connector.js channels   list the Buffer organization and channels (ids, names, services)
- *   node dist/worker/buffer-connector.js sync       schedule approved versions, delete cancelled ones
+ *   node dist/worker/buffer-connector.js sync       schedule approved versions, delete cancelled ones, read back status and metrics
  *
  * Env: BUFFER_API_KEY (personal key, host only), BUFFER_ORGANIZATION_ID (optional: defaults to the only organization),
  * BUFFER_CHANNEL_TIKTOK / BUFFER_CHANNEL_THREADS / BUFFER_CHANNEL_X (optional: needed only when a platform has more
  * than one channel), GROWTH_OS_API (default http://127.0.0.1:8767), GROWTH_OS_CREATOR_KEY (sync only).
  * The key is never printed.
  */
-import type { ContentItem, Platform, PublishTarget } from '@growth-os/contracts'
+import { TARGET_METRIC_UNITS, type ContentItem, type Platform, type PublishTarget, type TargetMetric } from '@growth-os/contracts'
 
 const BUFFER_API = 'https://api.buffer.com'
 /** Buffer's channel service for each Growth OS platform. */
@@ -105,6 +106,60 @@ export async function deletePost(f: Fetch, id: string): Promise<PostResult> {
   return d.deletePost.id ? { id: d.deletePost.id } : { message: d.deletePost.message ?? 'Buffer did not delete it.' }
 }
 
+/** One Buffer post as Buffer reports it (field names from Buffer's Post type). */
+export interface BufferPost {
+  id: string
+  /** draft | needs_approval | scheduled | sending | sent | error */
+  status: string
+  externalLink?: string | null
+  error?: { message?: string } | null
+  /** Null until the post is sent and Buffer's daily job has read the platform. */
+  metrics?: TargetMetric[] | null
+  metricsUpdatedAt?: string | null
+}
+
+export async function readPost(f: Fetch, id: string) {
+  const d = await gql<{ post: BufferPost }>(
+    f,
+    'query Post($input: PostInput!) { post(input: $input) { id status externalLink error { message } metrics { type name value unit } metricsUpdatedAt } }',
+    { input: { id } },
+  )
+  return d.post
+}
+
+const HOUR = 3_600_000
+/** Buffer refreshes metrics once a day: read a sent post from a day after its time, twice a day, for 30 days. */
+const METRICS_FROM = 24 * HOUR
+const METRICS_UNTIL = 30 * 24 * HOUR
+const METRICS_EVERY = 12 * HOUR
+
+/** Whether this version needs a Buffer read: scheduled and due, or sent and missing its link or due a metrics read. */
+export function needsRead(t: PublishTarget, now: number) {
+  if (!t.bufferPostId) return false
+  const age = now - Date.parse(t.scheduledAt)
+  if (t.status === 'scheduled') return age >= 0
+  if (t.status !== 'sent' || age > METRICS_UNTIL) return false
+  if (!t.liveUrl) return true
+  return age >= METRICS_FROM && !(t.metrics && now - Date.parse(t.metrics.readAt) < METRICS_EVERY)
+}
+
+/** What Buffer reports for one scheduled or sent version, as changes to record; null when there is nothing new. */
+export function readChanges(t: PublishTarget, p: BufferPost, now: number): Partial<PublishTarget> | null {
+  if (t.status === 'scheduled' && p.status === 'error') return { status: 'failed', error: `Buffer could not publish it: ${p.error?.message?.trim() || 'Buffer gave no reason.'}` }
+  if (p.status !== 'sent') return null
+  const changes: Partial<PublishTarget> = t.status === 'scheduled' ? { status: 'sent', error: '' } : {}
+  const link = p.externalLink?.trim() ?? ''
+  if (!t.liveUrl && /^https:\/\/\S+$/.test(link)) changes.liveUrl = link
+  if (now - Date.parse(t.scheduledAt) >= METRICS_FROM) {
+    // Only what Buffer reported, as Buffer reported it. A metric it did not report stays absent, never 0.
+    const values = (p.metrics ?? [])
+      .filter((m) => typeof m?.type === 'string' && typeof m.value === 'number' && Number.isFinite(m.value) && m.value >= 0 && (TARGET_METRIC_UNITS as readonly string[]).includes(m.unit))
+      .map(({ type, name, value, unit }) => ({ type, name: name || type, value, unit }))
+    changes.metrics = { source: 'buffer', measuredAt: p.metricsUpdatedAt ?? '', readAt: new Date(now).toISOString(), values }
+  }
+  return Object.keys(changes).length ? changes : null
+}
+
 // ---------- Growth OS calls ----------
 
 async function api(f: Fetch, path: string, init: { method?: string; body?: unknown } = {}) {
@@ -135,21 +190,42 @@ export interface SyncResult {
   scheduled: string[]
   cancelled: string[]
   failed: string[]
+  sent: string[]
+  measured: string[]
   problems: string[]
 }
 
 export async function sync(f: Fetch = fetch as unknown as Fetch, now = Date.now()): Promise<SyncResult> {
-  const out: SyncResult = { scheduled: [], cancelled: [], failed: [], problems: [] }
+  const out: SyncResult = { scheduled: [], cancelled: [], failed: [], sent: [], measured: [], problems: [] }
   const res = await api(f, '/api/content-items')
   if (!res.ok) throw new Error(`Could not read content items: HTTP ${res.status}`)
   const items = (await json(res)) as unknown as ContentItem[]
-  const work = (Array.isArray(items) ? items : []).flatMap((c) => (c.targets ?? []).filter((t) => (t.status === 'approved' && !t.bufferPostId) || (t.status === 'cancelled' && t.bufferPostId)).map((t) => ({ c, t })))
-  if (!work.length) return out
-  const channels = await listChannels(f, await organizationId(f))
+  const work = (Array.isArray(items) ? items : []).flatMap((c) =>
+    (c.targets ?? []).filter((t) => (t.status === 'approved' && !t.bufferPostId) || (t.status === 'cancelled' && t.bufferPostId) || needsRead(t, now)).map((t) => ({ c, t })),
+  )
+  let channels: Channel[] | null = null
 
   for (const { c, t } of work) {
     const label = `${c.id} ${t.platform}`
     const note = (p: string | null) => p && out.problems.push(p)
+    if (t.status === 'scheduled' || t.status === 'sent') {
+      const post = await readPost(f, t.bufferPostId).catch((e: Error) => e)
+      if (post instanceof Error) {
+        out.problems.push(`${label}: could not read Buffer post ${t.bufferPostId}: ${post.message}`)
+        continue
+      }
+      const changes = readChanges(t, post, now)
+      if (!changes) continue
+      const saved = await record(f, c.id, t.platform, t.status, changes)
+      if (saved) {
+        out.problems.push(saved)
+        continue
+      }
+      if (changes.status === 'failed') out.failed.push(label)
+      if (changes.status === 'sent') out.sent.push(label)
+      if (changes.metrics) out.measured.push(label)
+      continue
+    }
     if (t.status === 'cancelled') {
       const r = await deletePost(f, t.bufferPostId)
       if (r.id) {
@@ -166,6 +242,7 @@ export async function sync(f: Fetch = fetch as unknown as Fetch, now = Date.now(
       await fail('The approved time passed before it reached Buffer. Pick a new time and approve again.')
       continue
     }
+    channels ??= await listChannels(f, await organizationId(f))
     const channel = channelFor(t.platform, channels)
     if ('error' in channel) {
       await fail(channel.error)

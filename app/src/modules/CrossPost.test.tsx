@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { toLocalInput } from '../lib/dates'
 import { createSampleSeed, SAMPLE_PROFILE } from '../lib/seed'
-import { getState, resetAll } from '../lib/store'
+import { getState, patch, resetAll } from '../lib/store'
 import ContentStudio from './ContentStudio'
 
 const who = SAMPLE_PROFILE.creatorName
@@ -58,6 +58,19 @@ describe('Content Studio: publishing through Buffer', () => {
     expect(within(queue).getByText('Approved, sending to Buffer')).toBeTruthy()
     fireEvent.click(within(x).getByRole('button', { name: 'Unapprove' }))
     expect(c001().targets![0].status).toBe('draft')
+  })
+
+  it('a live version shows only the metrics Buffer reported, with when Buffer measured them', () => {
+    const sent = { platform: 'x' as const, caption: 'X take', scheduledAt: '2026-11-08T12:00:00.000Z', status: 'sent' as const, bufferPostId: 'b', liveUrl: 'https://x.com/a/status/1', error: '' }
+    const values = [{ type: 'views', name: 'Views', value: 1200, unit: 'count' as const }, { type: 'engagementRate', name: 'Engagement Rate', value: 4.5, unit: 'percentage' as const }]
+    patch('content', 'C-001', { targets: [{ ...sent, metrics: { source: 'buffer', measuredAt: '2026-11-10T03:00:00.000Z', readAt: '2026-11-10T12:00:00.000Z', values } }, { ...sent, platform: 'threads', liveUrl: 'https://www.threads.com/@me/post/1', metrics: { source: 'buffer', measuredAt: '', readAt: '2026-11-10T12:00:00.000Z', values: [] } }] })
+    const d = openC001()
+    const x = row(d, 'x')
+    expect(within(x).getByText('Views').nextSibling?.textContent).toBe('1,200')
+    expect(within(x).getByText('Engagement Rate').nextSibling?.textContent).toBe('4.5%')
+    expect(within(x).queryByText('Reach')).toBeNull()
+    expect(within(x).getByText(/^From Buffer, measured/)).toBeTruthy()
+    expect(within(row(d, 'threads')).getByText(/Buffer has no metrics for this post yet/)).toBeTruthy()
   })
 
   it('keeps an invalid media link out of the item', () => {
