@@ -73,7 +73,7 @@ describe('Buffer connector', () => {
       item('C-2', [t('threads', { status: 'draft' }), t('x', { status: 'scheduled', bufferPostId: 'bp-9' })]),
     ])
     const r = await sync(f, NOW)
-    expect(r).toEqual({ scheduled: ['C-1 threads'], cancelled: ['C-1 tiktok'], failed: ['C-1 x'], sent: [], measured: [], problems: [] })
+    expect(r).toEqual({ scheduled: ['C-1 threads'], cancelled: ['C-1 tiktok'], retried: [], failed: ['C-1 x'], sent: [], measured: [], problems: [] })
     const [threads, x, tiktok] = store.get('C-1')!.targets!
     expect(threads).toMatchObject({ status: 'scheduled', bufferPostId: 'bp-ch-th', error: '' })
     expect(x).toMatchObject({ status: 'failed', bufferPostId: '', error: expect.stringContaining('time passed') })
@@ -87,12 +87,24 @@ describe('Buffer connector', () => {
     for (const c of calls.filter((x) => x.url.startsWith('http://127.0.0.1'))) expect(c.source).toBe('buffer connector')
   })
 
+  it('sync: a retried failed version is deleted from Buffer and returns to draft; a failed delete keeps it waiting', async () => {
+    const { f, store, bufferCalls } = fake([
+      item('C-1', [t('x', { status: 'cancelled', bufferPostId: 'bp-err', retry: true }), t('threads', { status: 'cancelled', bufferPostId: 'bp-stuck', retry: true })]),
+    ], (op, v) => (op === 'DeletePost' && (v.input as { id: string }).id === 'bp-stuck' ? { deletePost: { message: 'Buffer is down' } } : {}))
+    const r = await sync(f, NOW)
+    expect(r).toMatchObject({ retried: ['C-1 x'], cancelled: [], scheduled: [], problems: [] })
+    expect(bufferCalls().map((b) => b.variables.input)).toEqual([{ id: 'bp-err' }, { id: 'bp-stuck' }])
+    const [x, threads] = store.get('C-1')!.targets!
+    expect(x).toMatchObject({ status: 'draft', bufferPostId: '', error: '', retry: false, caption: 'x text' })
+    expect(threads).toMatchObject({ status: 'cancelled', bufferPostId: 'bp-stuck', retry: true, error: 'Buffer did not delete it: Buffer is down' })
+  })
+
   it('sync: nothing approved, cancelled or due for a read means no Buffer call at all', async () => {
     const { f, bufferCalls } = fake([
       item('C-1', [t('threads', { status: 'draft' }), t('x', { status: 'sent', bufferPostId: 'b', liveUrl: 'https://x.com/a/status/1' })]),
       item('C-2', [t('threads', { status: 'scheduled', bufferPostId: 'bp-later' })]),
     ])
-    expect(await sync(f, NOW)).toEqual({ scheduled: [], cancelled: [], failed: [], sent: [], measured: [], problems: [] })
+    expect(await sync(f, NOW)).toEqual({ scheduled: [], cancelled: [], retried: [], failed: [], sent: [], measured: [], problems: [] })
     expect(bufferCalls()).toHaveLength(0)
   })
 
@@ -111,7 +123,7 @@ describe('Buffer connector', () => {
       },
     )
     const r = await sync(f, NOW)
-    expect(r).toEqual({ scheduled: [], cancelled: [], failed: ['C-1 x'], sent: ['C-1 threads'], measured: [], problems: [] })
+    expect(r).toEqual({ scheduled: [], cancelled: [], retried: [], failed: ['C-1 x'], sent: ['C-1 threads'], measured: [], problems: [] })
     expect(bufferCalls().map((b) => b.variables.input)).toEqual([{ id: 'bp-th' }, { id: 'bp-x' }, { id: 'bp-tt' }])
     expect(bufferCalls().every((b) => b.query.startsWith('query Post('))).toBe(true)
     const [threads, x] = store.get('C-1')!.targets!

@@ -73,6 +73,19 @@ describe('Content Studio: publishing through Buffer', () => {
     expect(within(row(d, 'threads')).getByText(/Buffer has no metrics for this post yet/)).toBeTruthy()
   })
 
+  it('retries a failed version: through Buffer when Buffer still holds the post, straight to draft when it does not', () => {
+    const failed = { platform: 'x' as const, caption: 'X take', scheduledAt: '2026-11-08T12:00:00.000Z', status: 'failed' as const, bufferPostId: 'b-err', liveUrl: '', error: 'Buffer could not publish it: Channel disconnected' }
+    patch('content', 'C-001', { targets: [failed, { ...failed, platform: 'threads', bufferPostId: '', error: 'The approved time passed before it reached Buffer.' }] })
+    const d = openC001()
+    fireEvent.click(within(row(d, 'x')).getByRole('button', { name: 'Retry' }))
+    expect(c001().targets![0]).toMatchObject({ status: 'cancelled', retry: true, bufferPostId: 'b-err', error: '' })
+    expect(within(row(d, 'x')).getByText(/then this version returns to draft/)).toBeTruthy()
+    expect(within(row(d, 'x')).getByText('Retrying')).toBeTruthy()
+    fireEvent.click(within(row(d, 'threads')).getByRole('button', { name: 'Retry' }))
+    expect(c001().targets![1]).toMatchObject({ status: 'draft', error: '' })
+    expect((within(row(d, 'threads')).getByLabelText('Threads caption') as HTMLTextAreaElement).readOnly).toBe(false)
+  })
+
   it('keeps an invalid media link out of the item', () => {
     const d = openC001()
     const media = within(d).getByLabelText('Media link')
