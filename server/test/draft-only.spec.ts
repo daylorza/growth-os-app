@@ -1,6 +1,6 @@
 import type { INestApplication } from '@nestjs/common'
 import { ROUTES } from '@growth-os/contracts'
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { as, basic, bearer, contentItem, makeApp, routes } from './helpers'
@@ -30,11 +30,11 @@ describe('draft-only', () => {
     for (const r of actual) expect(r).not.toMatch(/publish|\/post\b|reply|send|message|tweet|\bdm\b|like|follow|share|upload/i)
   })
 
-  it('only the webhook outbox and the workers make outbound calls; only the TikTok connector reaches a platform', () => {
+  it('only the webhook outbox and the workers make outbound calls; only the TikTok and Buffer connectors reach a platform', () => {
     const files = sourceFiles(srcDir)
     const outbound = files.filter((f) => /\bfetch\(|fetch as |from 'node:https?'|axios|undici/.test(readFileSync(f, 'utf8'))).map((f) => f.slice(srcDir.length + 1))
-    expect(outbound.sort()).toEqual(['events/events.module.ts', 'worker/dispatch-worker.ts', 'worker/tiktok-connector.ts'])
-    expect(files.filter((f) => PLATFORM_HOSTS.test(readFileSync(f, 'utf8'))).map((f) => f.slice(srcDir.length + 1))).toEqual(['worker/tiktok-connector.ts'])
+    expect(outbound.sort()).toEqual(['events/events.module.ts', 'worker/buffer-connector.ts', 'worker/dispatch-worker.ts', 'worker/tiktok-connector.ts'])
+    expect(files.filter((f) => PLATFORM_HOSTS.test(readFileSync(f, 'utf8'))).map((f) => f.slice(srcDir.length + 1)).sort()).toEqual(['worker/buffer-connector.ts', 'worker/tiktok-connector.ts'])
   })
 
   it('the scheduler only calls this endpoint: no model or platform API', () => {
@@ -51,9 +51,9 @@ describe('draft-only', () => {
     expect(new Set([...src.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1]))).toEqual(new Set(['www.tiktok.com', 'open.tiktokapis.com', '127.0.0.1', 'localhost']))
   })
 
-  it.skipIf(!existsSync(bufferFile))('the Buffer connector calls only api.buffer.com and sends only schedule, edit or cancel mutations', () => {
+  it('the Buffer connector calls only api.buffer.com and this endpoint, and sends only schedule, edit or cancel mutations', () => {
     const src = readFileSync(bufferFile, 'utf8')
-    expect(new Set([...src.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1]))).toEqual(new Set(['api.buffer.com']))
+    expect(new Set([...src.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1]))).toEqual(new Set(['api.buffer.com', '127.0.0.1']))
     const mutations = [...src.matchAll(/mutation\s*\w*\s*(?:\([^)]*\))?\s*\{\s*(\w+)/g)].map((m) => m[1])
     expect(mutations.length).toBeGreaterThan(0)
     for (const m of mutations) expect(BUFFER_MUTATIONS).toContain(m)

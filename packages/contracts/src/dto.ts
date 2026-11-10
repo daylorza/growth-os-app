@@ -42,6 +42,7 @@ import {
   REPLY_CHANNELS,
   REPLY_STATUSES,
   SNAPSHOT_SOURCE_TYPES,
+  TARGET_STATUSES,
   type AudienceSnapshot,
   type CheckIn,
   type ContentItem,
@@ -53,6 +54,7 @@ import {
   type Lead,
   type Owner,
   type Platform,
+  type TargetStatus,
   type Task,
 } from './domain'
 import { UNKNOWN } from './unknown'
@@ -97,6 +99,17 @@ export class PostMetricsDto {
   @IsOptional() @IsString() source?: string
 }
 
+export class PublishTargetDto {
+  @IsIn(PLATFORMS) platform: Platform
+  @OptionalText() caption?: string
+  /** An ISO date-time, or empty while it is a draft. */
+  @IsOptional() @Matches(/^(|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2}))$/, { message: 'scheduledAt must be an ISO date-time with a time zone' }) scheduledAt?: string
+  @IsOptional() @IsIn(TARGET_STATUSES) status?: TargetStatus
+  @OptionalText(200) bufferPostId?: string
+  @IsOptional() @Matches(/^(|https:\/\/\S+)$/, { message: 'liveUrl must be an https link' }) @MaxLength(2000) liveUrl?: string
+  @OptionalText(2000) error?: string
+}
+
 export class CreateContentDto {
   @IsOptional() @Matches(ID_PATTERN) id?: string
   @OptionalText() title?: string
@@ -124,6 +137,9 @@ export class CreateContentDto {
   @IsOptional() @IsString() @MaxLength(2000) url?: string
   @OptionalText() publishedAt?: string
   @IsOptional() @IsObject() @ValidateNested() @Type(() => PostMetricsDto) metrics?: PostMetricsDto
+  /** Public https link Buffer fetches at publish time. Not a signed or expiring link. */
+  @IsOptional() @Matches(/^(|https:\/\/\S+)$/, { message: 'mediaUrl must be a public https link' }) @MaxLength(2000) mediaUrl?: string
+  @IsOptional() @IsArray() @ArrayMaxSize(PLATFORMS.length) @ValidateNested({ each: true }) @Type(() => PublishTargetDto) targets?: PublishTargetDto[]
   @IsOptional() @IsBoolean() demo?: boolean
 }
 export class UpdateContentDto extends PartialType(CreateContentDto) {}

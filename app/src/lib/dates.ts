@@ -38,3 +38,18 @@ export const shortDate = (s: string) =>
   s ? parseDate(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'
 
 export const nowStamp = () => new Date().toISOString()
+
+/** An ISO date-time as a `datetime-local` input value, in this browser's time zone. */
+export const toLocalInput = (iso: string) => {
+  const d = new Date(iso)
+  return iso && Number.isFinite(d.getTime()) ? `${toISODate(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}` : ''
+}
+
+/** A `datetime-local` input value (this browser's time zone) as an ISO date-time. */
+export const fromLocalInput = (v: string) => {
+  const d = new Date(v)
+  return v && Number.isFinite(d.getTime()) ? d.toISOString() : ''
+}
+
+export const shortDateTime = (iso: string) =>
+  iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—'

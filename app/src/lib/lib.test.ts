@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 import type { AppState } from './types'
-import { campaignPosition, weekRange } from './dates'
+import { campaignPosition, fromLocalInput, toLocalInput, weekRange } from './dates'
 import { growthPct, milestoneProgress, netFollowers, per1k, periodChange, profileToFollow } from './metrics'
 import {
   alreadyHandled,
@@ -24,9 +24,11 @@ import {
   channelFor,
   earlierContact,
   isPostLink,
+  mediaUrlError,
+  targetApproveError,
 } from './rules'
 import { createSampleSeed, migrateState } from './seed'
-import type { Engagement, FollowerSnapshot } from './types'
+import type { Engagement, FollowerSnapshot, PublishTarget } from './types'
 
 describe('measurement formulas', () => {
   it('net followers and growth %', () => {
@@ -266,5 +268,32 @@ describe('workspace migration', () => {
     expect(m.brief.projectEvent).toEqual({ value: 'Launch week', verified: true })
     expect('oldProjectKey' in m.brief).toBe(false)
     expect(m.profile).toEqual(base.profile)
+  })
+})
+
+describe('Buffer platform versions', () => {
+  const NOW = Date.parse('2026-11-10T12:00:00Z')
+  const t = (over: Partial<PublishTarget> = {}): PublishTarget => ({ platform: 'threads', caption: 'Hello', scheduledAt: '2026-11-10T13:00:00.000Z', status: 'draft', bufferPostId: '', liveUrl: '', error: '', ...over })
+  const ok = { approval: 'approved' as const, mediaUrl: 'https://m.example.com/a.mp4' }
+  it('approval needs an approved item, a caption, a time at least 10 minutes out and (TikTok) a video', () => {
+    expect(targetApproveError(ok, t(), 'Sam', NOW)).toBeNull()
+    expect(targetApproveError({ ...ok, approval: 'pending' }, t(), 'Sam', NOW)).toBe('Sam must approve this item before its Threads version.')
+    expect(targetApproveError(ok, t({ caption: '  ' }), 'Sam', NOW)).toBe('Write the Threads caption first.')
+    expect(targetApproveError(ok, t({ scheduledAt: '2026-11-10T12:05:00.000Z' }), 'Sam', NOW)).toMatch(/at least 10 minutes/)
+    expect(targetApproveError(ok, t({ scheduledAt: '' }), 'Sam', NOW)).toMatch(/at least 10 minutes/)
+    expect(targetApproveError({ ...ok, mediaUrl: '' }, t({ platform: 'tiktok' }), 'Sam', NOW)).toMatch(/TikTok needs a video/)
+    expect(targetApproveError({ ...ok, mediaUrl: '' }, t({ platform: 'x' }), 'Sam', NOW)).toBeNull()
+  })
+  it('media links must be public https files, not share pages', () => {
+    expect(mediaUrlError('')).toBeNull()
+    expect(mediaUrlError('https://cdn.example.com/a.mp4')).toBeNull()
+    expect(mediaUrlError('http://cdn.example.com/a.mp4')).toBe('Use a public https link.')
+    expect(mediaUrlError('https://drive.google.com/file/d/1/view')).toMatch(/ask for a login/)
+  })
+  it('publish times round-trip through the local date-time input', () => {
+    const iso = '2026-11-10T18:30:00.000Z'
+    expect(fromLocalInput(toLocalInput(iso))).toBe(iso)
+    expect(toLocalInput('')).toBe('')
+    expect(fromLocalInput('')).toBe('')
   })
 })

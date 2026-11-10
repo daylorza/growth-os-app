@@ -1,4 +1,4 @@
-import type { ContentItem, Engagement, Handoff, KeywordRule } from './types'
+import type { ContentItem, Engagement, Handoff, KeywordRule, PublishTarget } from './types'
 
 /** Tokenize text into uppercase alphanumeric words. */
 const tokens = (s: string): string[] => s.toUpperCase().match(/[A-Z0-9]+/g) ?? []
@@ -104,6 +104,25 @@ export function publishLogError(item: Pick<ContentItem, 'approval' | 'url'>, who
 export function scheduleError(item: Pick<ContentItem, 'approval'>, who: string): string | null {
   return item.approval === 'approved' ? null : `${who} must approve this item before it can be marked scheduled.`
 }
+
+/** Same as the server: the Buffer connector runs every few minutes, so an approved time needs room. */
+export const MIN_LEAD_MINUTES = 10
+const TARGET_NAME: Record<PublishTarget['platform'], string> = { tiktok: 'TikTok', threads: 'Threads', x: 'X' }
+
+/** Why a platform version cannot be approved for Buffer yet, or null. Mirrors the server's rule. */
+export function targetApproveError(item: Pick<ContentItem, 'approval' | 'mediaUrl'>, t: PublishTarget, who: string, now = Date.now()): string | null {
+  const name = TARGET_NAME[t.platform]
+  if (item.approval !== 'approved') return `${who} must approve this item before its ${name} version.`
+  if (!t.caption.trim()) return `Write the ${name} caption first.`
+  const at = Date.parse(t.scheduledAt)
+  if (!Number.isFinite(at) || at < now + MIN_LEAD_MINUTES * 60_000) return `Pick a ${name} publish time at least ${MIN_LEAD_MINUTES} minutes from now.`
+  if (t.platform === 'tiktok' && !item.mediaUrl) return 'TikTok needs a video. Add the public media link first.'
+  return null
+}
+
+/** A media link Buffer can fetch: public https, not a share page. Empty is fine (text-only posts). */
+export const mediaUrlError = (url: string) =>
+  !url || /^https:\/\/\S+$/.test(url.trim()) ? (/(drive\.google|dropbox|icloud)\.com/i.test(url) ? 'Share links from Drive, Dropbox or iCloud ask for a login. Use a direct public file link.' : null) : 'Use a public https link.'
 
 export function replyApproveError(e: Pick<Engagement, 'draftReply' | 'category'>, who: string): string | null {
   if (e.category === 'sensitive') return `Sensitive items go to ${who}. Escalate instead of approving a reply.`

@@ -11,12 +11,23 @@ import type {
   Platform,
   ReplyChannel,
   ReplyStatus,
+  TargetStatus,
 } from './types'
 
 export const PLATFORM: Record<Platform, string> = { tiktok: 'TikTok', x: 'X', threads: 'Threads' }
 /** Every platform, in display order. Each is reported on its own and never added to another. */
 export const PLATFORMS = Object.keys(PLATFORM) as Platform[]
 export const ENGAGEMENT_PLATFORM: Record<EngagementPlatform, string> = { ...PLATFORM, instagram: 'Instagram' }
+
+export const TARGET_STATUS: Record<TargetStatus, string> = {
+  draft: 'Draft',
+  approved: 'Approved, sending to Buffer',
+  scheduled: 'Scheduled in Buffer',
+  sent: 'Live',
+  failed: 'Failed',
+  cancelled: 'Cancelled',
+}
+export const TARGET_TONE: Record<TargetStatus, 'neutral' | 'accent' | 'ok' | 'danger'> = { draft: 'neutral', approved: 'accent', scheduled: 'accent', sent: 'ok', failed: 'danger', cancelled: 'neutral' }
 /** Engagement items waiting on the creator: the Engagement Hub "Needs action" tab and the nav badge. */
 export const NEEDS_ACTION: ReplyStatus[] = ['new', 'drafted', 'escalated']
 
