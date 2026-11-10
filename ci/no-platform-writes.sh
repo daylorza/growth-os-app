@@ -6,7 +6,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-PATTERN='api\.twitter\.com|api\.x\.com|upload\.twitter\.com|upload\.x\.com|/2/tweets|statuses/(update|retweet)|favorites/create|friendships/create|direct_messages|/2/dm_|/2/users/[^ ]*/(likes|following|retweets|bookmarks)|media/upload|(create|post|send)Tweet|graph\.facebook\.com|graph\.instagram\.com|open\.tiktokapis\.com|open-api\.tiktok\.com|api\.buffer\.com|api\.bufferapp\.com'
+PATTERN='api\.twitter\.com|api\.x\.com|upload\.twitter\.com|upload\.x\.com|/2/tweets|statuses/(update|retweet)|favorites/create|friendships/create|direct_messages|/2/dm_|/2/users/[^ ]*/(likes|following|retweets|bookmarks)|media/upload|(create|post|send)Tweet|graph\.facebook\.com|graph\.instagram\.com|open\.tiktokapis\.com|open-api\.tiktok\.com|api\.buffer\.com|api\.bufferapp\.com|graph\.threads\.(com|net)|threads\.(com|net)/oauth|threads_publish|manage_reply|manage_pending_reply'
 
 # Exception 1: the read-only TikTok connector (and its tests) may name TikTok's OAuth token endpoint and
 # Display API reads, nothing else. Every TikTok URL there must be on this list; every other platform stays banned.
@@ -18,10 +18,15 @@ TIKTOK_ALLOWED='^https://(www\.tiktok\.com/v2/auth/authorize/|open\.tiktokapis\.
 BUFFER_FILES=(server/src/worker/buffer-connector.ts server/test/buffer.spec.ts server/test/draft-only.spec.ts)
 BUFFER_ALLOWED='^https://api\.buffer\.com/?$'
 
+# Exception 3: the read-only Threads connector (and its tests) may name the Threads OAuth endpoints, the creator's own
+# post list and the media node prefix (read for /conversation only). Threads write endpoints stay banned even there.
+THREADS_FILES=(server/src/worker/threads-connector.ts server/test/threads.spec.ts server/test/draft-only.spec.ts)
+THREADS_ALLOWED='^https://(threads\.com/oauth/authorize|graph\.threads\.com/(oauth/access_token|access_token|refresh_access_token|v1\.0/me/threads|v1\.0/))$'
+
 without() { local p="$PATTERN"; for alt in "$@"; do p="${p//|$alt/}"; done; printf '%s' "$p"; }
 
 exclude=(-e '^ci/no-platform-writes\.sh$' -e 'pnpm-lock\.yaml$' -e '\.png$')
-for f in "${TIKTOK_FILES[@]}" "${BUFFER_FILES[@]}"; do exclude+=(-e "^${f//./\\.}\$"); done
+for f in "${TIKTOK_FILES[@]}" "${BUFFER_FILES[@]}" "${THREADS_FILES[@]}"; do exclude+=(-e "^${f//./\\.}\$"); done
 hits=$(git ls-files -z | grep -zv "${exclude[@]}" | xargs -0 grep -nIE "$PATTERN" || true)
 
 check() { # file, allowed-URL regex, URL extractor, pattern without this file's exceptions
@@ -35,6 +40,8 @@ check() { # file, allowed-URL regex, URL extractor, pattern without this file's 
 }
 TIKTOK_URLS="https://(open\.tiktokapis\.com|[A-Za-z0-9.-]*tiktok\.com/v[0-9]+/)[^'\"\` ]*"
 BUFFER_URLS="https?://[A-Za-z0-9.-]*buffer(app)?\.com[^'\"\` ]*"
+THREADS_URLS="https?://([A-Za-z0-9.-]*\.)?threads\.(com|net)[^'\"\`? ]*"
+THREADS_WITHOUT=$(without 'graph\\.threads\\.(com|net)' 'threads\\.(com|net)/oauth')
 for f in "${TIKTOK_FILES[@]}"; do
   if [ "$f" = server/test/draft-only.spec.ts ]; then continue; fi
   check "$f" "$TIKTOK_ALLOWED" "$TIKTOK_URLS" "$(without 'open\\.tiktokapis\\.com')"
@@ -43,8 +50,12 @@ for f in "${BUFFER_FILES[@]}"; do
   if [ "$f" = server/test/draft-only.spec.ts ]; then continue; fi
   check "$f" "$BUFFER_ALLOWED" "$BUFFER_URLS" "$(without 'api\\.buffer\\.com')"
 done
-# The draft-only spec pins both connectors' URLs, so it may name both hosts and nothing else.
-check server/test/draft-only.spec.ts "$TIKTOK_ALLOWED|$BUFFER_ALLOWED" "$TIKTOK_URLS|$BUFFER_URLS" "$(without 'open\\.tiktokapis\\.com' 'api\\.buffer\\.com')"
+for f in "${THREADS_FILES[@]}"; do
+  if [ "$f" = server/test/draft-only.spec.ts ]; then continue; fi
+  check "$f" "$THREADS_ALLOWED" "$THREADS_URLS" "$THREADS_WITHOUT"
+done
+# The draft-only spec pins the connectors' URLs, so it may name their hosts and nothing else.
+check server/test/draft-only.spec.ts "$TIKTOK_ALLOWED|$BUFFER_ALLOWED|$THREADS_ALLOWED" "$TIKTOK_URLS|$BUFFER_URLS|$THREADS_URLS" "$(without 'open\\.tiktokapis\\.com' 'api\\.buffer\\.com' 'graph\\.threads\\.(com|net)' 'threads\\.(com|net)/oauth')"
 
 hits=$(printf '%s' "$hits" | sed '/^$/d')
 if [ -n "$hits" ]; then
@@ -52,4 +63,4 @@ if [ -n "$hits" ]; then
   echo "$hits" >&2
   exit 1
 fi
-echo "No platform write calls (TikTok connector: read-only endpoints; Buffer connector: api.buffer.com only)."
+echo "No platform write calls (TikTok and Threads connectors: read-only endpoints; Buffer connector: api.buffer.com only)."
