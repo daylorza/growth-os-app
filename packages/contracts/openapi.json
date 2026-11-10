@@ -2041,6 +2041,9 @@
           "metrics": {
             "$ref": "#/components/schemas/TargetMetricsDto",
             "type": "object"
+          },
+          "retry": {
+            "type": "boolean"
           }
         },
         "type": "object",

@@ -11,7 +11,7 @@ const sourceFiles = (dir: string): string[] =>
     const p = join(dir, f)
     return statSync(p).isDirectory() ? sourceFiles(p) : p.endsWith('.ts') ? [p] : []
   })
-const PLATFORM_HOSTS = /tiktok\.com|tiktokapis\.com|twitter\.com|api\.x\.com|upload\.x\.com|\/\/x\.com|instagram\.com|facebook\.com|graph\.|threads\.net|linkedin\.com|youtube\.com|googleapis\.com|buffer(app)?\.com/
+const PLATFORM_HOSTS = /tiktok\.com|tiktokapis\.com|twitter\.com|api\.x\.com|upload\.x\.com|\/\/x\.com|instagram\.com|facebook\.com|graph\.|threads\.(net|com)|linkedin\.com|youtube\.com|googleapis\.com|buffer(app)?\.com/
 const bufferFile = join(srcDir, 'worker', 'buffer-connector.ts')
 /** The only Buffer mutations the connector may send: schedule, edit or cancel a creator-approved platform version. */
 const BUFFER_MUTATIONS = ['createPost', 'deletePost', 'editPost']
@@ -30,11 +30,11 @@ describe('draft-only', () => {
     for (const r of actual) expect(r).not.toMatch(/publish|\/post\b|reply|send|message|tweet|\bdm\b|like|follow|share|upload/i)
   })
 
-  it('only the webhook outbox and the workers make outbound calls; only the TikTok and Buffer connectors reach a platform', () => {
+  it('only the webhook outbox and the workers make outbound calls; only the TikTok, Threads and Buffer connectors reach a platform', () => {
     const files = sourceFiles(srcDir)
     const outbound = files.filter((f) => /\bfetch\(|fetch as |from 'node:https?'|axios|undici/.test(readFileSync(f, 'utf8'))).map((f) => f.slice(srcDir.length + 1))
-    expect(outbound.sort()).toEqual(['events/events.module.ts', 'worker/buffer-connector.ts', 'worker/dispatch-worker.ts', 'worker/tiktok-connector.ts'])
-    expect(files.filter((f) => PLATFORM_HOSTS.test(readFileSync(f, 'utf8'))).map((f) => f.slice(srcDir.length + 1)).sort()).toEqual(['worker/buffer-connector.ts', 'worker/tiktok-connector.ts'])
+    expect(outbound.sort()).toEqual(['events/events.module.ts', 'worker/buffer-connector.ts', 'worker/dispatch-worker.ts', 'worker/threads-connector.ts', 'worker/tiktok-connector.ts'])
+    expect(files.filter((f) => PLATFORM_HOSTS.test(readFileSync(f, 'utf8'))).map((f) => f.slice(srcDir.length + 1)).sort()).toEqual(['worker/buffer-connector.ts', 'worker/threads-connector.ts', 'worker/tiktok-connector.ts'])
   })
 
   it('the scheduler only calls this endpoint: no model or platform API', () => {
@@ -49,6 +49,21 @@ describe('draft-only', () => {
     expect(urls).toEqual(new Set(['https://www.tiktok.com/v2/auth/authorize/', 'https://open.tiktokapis.com/v2/oauth/token/', 'https://open.tiktokapis.com/v2/user/info/', 'https://open.tiktokapis.com/v2/video/list/']))
     expect(src).not.toMatch(/\/v2\/post\/|\/(publish|upload|comment|like|follow|message|dm)\//i)
     expect(new Set([...src.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1]))).toEqual(new Set(['www.tiktok.com', 'open.tiktokapis.com', '127.0.0.1', 'localhost']))
+  })
+
+  it('the Threads connector calls only the OAuth endpoints, the creator\'s post list and reply reads', () => {
+    const src = readFileSync(join(srcDir, 'worker', 'threads-connector.ts'), 'utf8')
+    const urls = new Set([...src.matchAll(/https:\/\/[a-z0-9.-]*threads\.(?:com|net)[^'"`\s]*/gi)].map((m) => m[0]))
+    expect(urls).toEqual(new Set(['https://threads.com/oauth/authorize', 'https://graph.threads.com/oauth/access_token', 'https://graph.threads.com/access_token', 'https://graph.threads.com/refresh_access_token', 'https://graph.threads.com/v1.0/me/threads', 'https://graph.threads.com/v1.0/']))
+    // The media prefix is only ever followed by a post id and /conversation.
+    expect([...src.matchAll(/THREADS\.media\}([^`]*)`/g)].map((m) => m[1])).toEqual(['${encodeURIComponent(postId)}/conversation'])
+    expect(src).not.toMatch(/threads_(publish|content_publish|manage_replies|manage_insights)|manage_(pending_)?reply|\/repost|\/replies\b/i)
+    expect(src).toMatch(/SCOPES = \['threads_basic', 'threads_read_replies'\]/)
+    // The only POST to Threads is the authorization-code exchange; the other POST queues a draft in this endpoint.
+    const posts = src.split('\n').filter((l) => l.includes("method: 'POST'"))
+    expect(posts).toHaveLength(2)
+    expect(posts.every((l) => /f\(THREADS\.token, \{ method: 'POST'|api\(f, '\/api\/engagement-queue', \{ method: 'POST'/.test(l))).toBe(true)
+    expect(new Set([...src.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1]))).toEqual(new Set(['threads.com', 'graph.threads.com', '127.0.0.1', 'localhost']))
   })
 
   it('the Buffer connector calls only api.buffer.com and this endpoint, and sends only schedule, edit or cancel mutations', () => {

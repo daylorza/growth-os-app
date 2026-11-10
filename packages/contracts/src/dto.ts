@@ -124,6 +124,7 @@ export class PublishTargetDto {
   @IsOptional() @Matches(/^(|https:\/\/\S+)$/, { message: 'liveUrl must be an https link' }) @MaxLength(2000) liveUrl?: string
   @OptionalText(2000) error?: string
   @IsOptional() @IsObject() @ValidateNested() @Type(() => TargetMetricsDto) metrics?: TargetMetricsDto
+  @IsOptional() @IsBoolean() retry?: boolean
 }
 
 export class CreateContentDto {

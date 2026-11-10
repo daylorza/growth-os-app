@@ -6,6 +6,7 @@ import type { ContentItem, PublishTarget, TargetMetric } from '@growth-os/contra
 import { Store } from '../src/db/store'
 import { EventsService } from '../src/events/events.module'
 import { HandoffsService, MEASURE_GRACE_HOURS } from '../src/handoffs/handoffs.module'
+import { NOTE_PREFIX } from '../src/worker/threads-connector'
 import { as, basic, bearer, contentItem, makeApp } from './helpers'
 
 interface Received {
@@ -157,6 +158,8 @@ describe('the agent loop: no human step between a brief and an analysis', () => 
     expect(a.body.handoff.id).toMatch(/^H-SWEEP-\d{4}-\d{2}-\d{2}-(00|04|08|12|16|20)$/)
     expect(b.body).toMatchObject({ created: false, handoff: { id: a.body.handoff.id } })
     expect(a.body.handoff).toMatchObject({ to: 'creative', type: 'question' })
+    // The sweep skips Threads replies the Threads connector already queues (its note prefix).
+    expect(a.body.handoff.body).toContain(`their note starts with "${NOTE_PREFIX}"`)
     await idle()
     expect(hooks.got.filter((g) => g.body.event === 'engagement_sweep')).toHaveLength(1)
     expect((await as(app, bearer('analyst')).post('/api/dispatch/engagement-sweep', {})).status).toBe(403)

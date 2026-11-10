@@ -29,7 +29,9 @@ export function checkContent(actor: Actor, prev: ContentItem | null, next: Conte
 export const MIN_LEAD_MINUTES = 10
 const PLATFORM_NAME: Record<Platform, string> = { tiktok: 'TikTok', threads: 'Threads', x: 'X' }
 /** Publishing state and Buffer's metrics: written by the creator, or by the Buffer connector with her key. Never by an agent. */
-const PUBLISH_FIELDS = ['status', 'bufferPostId', 'liveUrl', 'error', 'metrics'] as const
+const PUBLISH_FIELDS = ['status', 'bufferPostId', 'liveUrl', 'error', 'metrics', 'retry'] as const
+/** Unset and false mean the same: no retry asked for. */
+const publishValue = (t: PublishTarget, k: (typeof PUBLISH_FIELDS)[number]) => (k === 'retry' ? !!t.retry : t[k])
 /** Key order does not matter: a client echoing the metrics back in another order has not changed them. */
 const canonical = (v: unknown): unknown =>
   Array.isArray(v) ? v.map(canonical) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b)).map(([k, x]) => [k, canonical(x)])) : v
@@ -65,10 +67,12 @@ export function checkTargets(actor: Actor, prev: ContentItem | null, next: Conte
     const name = PLATFORM_NAME[t.platform]
     const p = before.get(t.platform)
     if (!p) {
-      if (t.status !== 'draft' || t.bufferPostId || t.liveUrl || t.error || t.metrics) throw new RuleViolation(`A new ${name} version starts as a draft.`)
+      if (t.status !== 'draft' || t.bufferPostId || t.liveUrl || t.error || t.metrics || t.retry) throw new RuleViolation(`A new ${name} version starts as a draft.`)
       continue
     }
-    if (PUBLISH_FIELDS.some((k) => !same(t[k], p[k]))) creatorOnly(actor, `change the ${name} version's publishing state`)
+    if (PUBLISH_FIELDS.some((k) => !same(publishValue(t, k), publishValue(p, k)))) creatorOnly(actor, `change the ${name} version's publishing state`)
+    if (t.retry && t.status !== 'cancelled') throw new RuleViolation(`Only a cancelled ${name} version waits to retry.`)
+    if (t.retry && !p.retry && p.status !== 'failed') throw new RuleViolation(`Only a failed ${name} version can be retried.`)
     if (p.status === 'sent' && (t.status !== 'sent' || t.caption !== p.caption || t.scheduledAt !== p.scheduledAt || t.bufferPostId !== p.bufferPostId))
       throw new RuleViolation(`The ${name} version is live. It no longer changes.`)
     if (p.status !== 'draft' && t.status !== 'draft' && (t.caption !== p.caption || t.scheduledAt !== p.scheduledAt))
