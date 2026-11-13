@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowRight, ChartNoAxesColumnIncreasing, Sparkles } from 'lucide-react'
+import { ArrowDown, ArrowRight, ChartNoAxesColumnIncreasing, Sparkles } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Badge, Button, Card, CardTitle, Checkbox, CopyButton, Empty, Field, Mono, PageHeader, Select, Textarea } from '../components/ui'
 import { cx } from '../lib/cx'
@@ -74,14 +74,19 @@ export default function AgentControl() {
 
       <Card className="mt-4">
         <CardTitle>Handoff chain</CardTitle>
-        <ol className="flex flex-wrap items-center gap-2 text-sm">
+        <ol className="flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap sm:items-center">
           {PIPELINE.map(([who, what], i) => (
-            <li key={what} className="flex items-center gap-2">
+            <li key={what} className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <span className="rounded-lg border border-ink-600 bg-ink-900 px-3 py-2">
                 <span className="block text-xs text-accent">{p.owner(who)}</span>
                 {what}
               </span>
-              {i < PIPELINE.length - 1 && <ArrowRight size={14} className="text-faint" aria-hidden />}
+              {i < PIPELINE.length - 1 && (
+                <>
+                  <ArrowDown size={14} className="ml-4 text-faint sm:hidden" aria-hidden />
+                  <ArrowRight size={14} className="hidden text-faint sm:block" aria-hidden />
+                </>
+              )}
             </li>
           ))}
         </ol>

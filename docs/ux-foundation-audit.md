@@ -23,7 +23,7 @@ This is a source-based heuristic audit, not a user study. The first change focus
 | Medium | Content mix bars were about 16px wide on phones, so actual vs target could not be read. | Fixed: on small screens the bar spans the full row under its label; values announce "Actual …, target …" to screen readers. See `screenshots/intelligence-mix-390.png`. |
 | Medium | Settings connector rows truncated the handle to a few characters at 390px. | Fixed: the handle keeps at least 8rem; data age and status wrap to the next line. |
 | Low (axe serious) | The "Content Studio" link in the Post performance empty state was distinguished from text only by colour (1.2:1). | Fixed: underlined. |
-| Low | Handoff chain arrows point right when steps stack vertically on phones. | Open. Cosmetic. |
+| Low | Handoff chain arrows point right when steps stack vertically on phones. | Fixed (2026-11-10): below 640px the steps stack full width with downward arrows; wider screens keep the row with right arrows. |
 | Low | Text links in "Waiting on you" and card headers are 16–20px tall. | Accepted: inline/spaced targets meet the WCAG 2.5.8 spacing exception. |
 
 ## Design foundations
@@ -51,10 +51,19 @@ Production build, fictional sample (`GROWTH_OS_IGNORE_PRIVATE=1`), headless Chro
 - **States:** endpoint unreachable shows the "OFFLINE · Showing the last cached copy, read-only" banner without client errors. Unknown platform followers show `UNKNOWN` with "Needs two snapshots inside this period"; the unknown progress baseline is covered by a unit test.
 - **Charts and tables:** follower sparklines are decorative (`aria-hidden`) with a "View trend data" list of dated values; the scale note says the vertical axis fits the values shown. Tables carry ISO dates, units in headers and the source of lifetime totals.
 
-**Not tested:** real screen readers (VoiceOver, NVDA), real touch devices, Safari and Firefox, and endpoint mode with real data. Automated contrast checks cover rendered text but not text over images. Visual review was done from screenshots, not by a designer.
+## Safari and Firefox spot check (2026-11-10)
+
+Dev server, fictional sample (`GROWTH_OS_IGNORE_PRIVATE=1`), headless Playwright engines: WebKit 27.2 (Safari's engine; at 390px with mobile emulation and touch) and Firefox 159. Scripts were run from a scratch folder; no dependency was added to the repo.
+
+- **Responsive:** all nine routes at 390 and 1440px in both engines. No page overflow, nothing past the viewport outside scroll regions, no console or page errors. The only flag was the visually hidden "Actual" / ", target" labels in Content Intelligence (`sr-only`, 1px by design), a false positive.
+- **Interactions:** in both engines the Content Studio drawer opens, keeps focus inside across 40 Tab presses and closes on Escape; at 390px the phone menu opens and closes on Escape.
+- **Handoff chain:** downward arrows at 390px and a single row with right arrows at 1440px in both engines.
+
+This is engine emulation, not Safari or Firefox on real devices; iOS Safari's dynamic toolbar and real touch behaviour were not covered.
+
+**Not tested:** real screen readers (VoiceOver, NVDA), real touch devices and real Safari/Firefox on devices, and endpoint mode with real data. Automated contrast checks cover rendered text but not text over images. Visual review was done from screenshots, not by a designer.
 
 ## Next passes
 
 1. Screen reader pass (VoiceOver on macOS and iOS) on Overview, Content Studio drawer and Engagement approval.
-2. Safari and Firefox spot check at 390 and 1440px.
-3. Handoff chain layout on phones (vertical arrows).
+2. Real-device check: iOS Safari and Firefox on a phone, at least Overview, Content Studio and the phone menu.
