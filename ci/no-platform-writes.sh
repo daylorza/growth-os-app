@@ -6,7 +6,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-PATTERN='api\.twitter\.com|api\.x\.com|upload\.twitter\.com|upload\.x\.com|/2/tweets|statuses/(update|retweet)|favorites/create|friendships/create|direct_messages|/2/dm_|/2/users/[^ ]*/(likes|following|retweets|bookmarks)|media/upload|(create|post|send)Tweet|graph\.facebook\.com|graph\.instagram\.com|open\.tiktokapis\.com|open-api\.tiktok\.com|api\.buffer\.com|api\.bufferapp\.com|graph\.threads\.(com|net)|threads\.(com|net)/oauth|threads_publish|manage_reply|manage_pending_reply'
+PATTERN='api\.twitter\.com|api\.x\.com|upload\.twitter\.com|upload\.x\.com|/2/tweets|statuses/(update|retweet)|favorites/create|friendships/create|direct_messages|/2/dm_|/2/users/[^ ]*/(likes|following|retweets|bookmarks)|media/upload|(create|post|send)Tweet|graph\.facebook\.com|graph\.instagram\.com|open\.tiktokapis\.com|open-api\.tiktok\.com|business-api\.tiktok\.com|api\.buffer\.com|api\.bufferapp\.com|graph\.threads\.(com|net)|threads\.(com|net)/oauth|threads_publish|manage_reply|manage_pending_reply'
 
 # Exception 1: the read-only TikTok connector (and its tests) may name TikTok's OAuth token endpoint and
 # Display API reads, nothing else. Every TikTok URL there must be on this list; every other platform stays banned.
